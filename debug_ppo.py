@@ -30,8 +30,6 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='I',
                     help='interval between training status logs (default: 10)')
 args = parser.parse_args()
 
-env = gym.make('CartPole-v0')
-env.seed(args.seed)
 torch.manual_seed(args.seed)
 device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
@@ -72,8 +70,6 @@ class ValueFn(nn.Module):
         state_values = self.value_head(F.relu(self.value_affine(state)))
         return state_values
 
-agent = BaseActionAgent(policy=Policy(), valuefn=ValueFn(), id=0, device=device, args=args)
-
 def sample_trajectory(agent, env):
     episode_data = []
     state = env.reset()
@@ -83,7 +79,7 @@ def sample_trajectory(agent, env):
         if args.render:
             env.render()
         mask = 0 if done else 1
-        e = {'state': state, 
+        e = {'state': state,
              'action': action,
              'logprob': log_prob,
              'mask': mask,
@@ -97,6 +93,9 @@ def sample_trajectory(agent, env):
     return returns, t
 
 def main():
+    env = gym.make('CartPole-v0')
+    env.seed(args.seed)
+    agent = BaseActionAgent(policy=Policy(), valuefn=ValueFn(), id=0, device=device, args=args)
     run_avg = RunningAverage()
     for i_episode in range(1, 501):
         ret, t = sample_trajectory(agent, env)
