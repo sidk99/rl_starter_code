@@ -2,14 +2,11 @@ import os
 import pickle
 import torch
 import copy
-# from utils import printf
 
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-
-# from dataloader.image_transforms import convert_image_np
 
 def mkdirp(logdir):
     if '_debug' in logdir:
