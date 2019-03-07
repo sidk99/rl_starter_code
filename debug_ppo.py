@@ -6,6 +6,7 @@ import sys
 from itertools import count
 from collections import namedtuple
 
+import pickle
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,13 +18,15 @@ from rb import Memory
 from ppo import PPO
 from agent import BaseActionAgent
 
-parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
+parser = argparse.ArgumentParser(description='PyTorch ppo example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor (default: 0.99)')
 parser.add_argument('--lr', type=float, default=3e-2, metavar='R',
                     help='learning rate (default: 3e-2)')
 parser.add_argument('--seed', type=int, default=543, metavar='N',
                     help='random seed (default: 543)')
+parser.add_argument('--gpu-index', type=int, default=0,
+                    help='gpu_index (default: 0)')
 parser.add_argument('--render', action='store_true',
                     help='render the environment')
 parser.add_argument('--log-interval', type=int, default=10, metavar='I',
@@ -36,13 +39,18 @@ device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() e
 eps = np.finfo(np.float32).eps.item()
 
 class Policy(nn.Module):
-    def __init__(self):
+    def __init__(self, dims):
         super(Policy, self).__init__()
-        self.action_affine = nn.Linear(4, 128)
-        self.action_head = nn.Linear(128, 2)
+        self.dims = dims
+        self.layers = nn.ModuleList()
+        for i in range(len(self.dims[:-2])):
+            self.layers.append(nn.Linear(self.dims[i], self.dims[i+1]))
+        self.action_head = nn.Linear(self.dims[-2], self.dims[-1])
 
     def forward(self, state):
-        action_scores = self.action_head(F.relu(self.action_affine(state)))
+        for layer in self.layers:
+            state = F.relu(layer(state))
+        action_scores = self.action_head(state)
         action_dist = F.softmax(action_scores, dim=-1)
         return action_dist
 
@@ -61,20 +69,26 @@ class Policy(nn.Module):
         return log_prob
 
 class ValueFn(nn.Module):
-    def __init__(self):
+    def __init__(self, dims):
         super(ValueFn, self).__init__()
-        self.value_affine = nn.Linear(4, 128)
-        self.value_head = nn.Linear(128, 1)
+        self.dims = dims
+        self.layers = nn.ModuleList()
+        for i in range(len(self.dims[:-2])):
+            self.layers.append(nn.Linear(self.dims[i], self.dims[i+1]))
+        self.value_head = nn.Linear(self.dims[-2], self.dims[-1])
 
     def forward(self, state):
-        state_values = self.value_head(F.relu(self.value_affine(state)))
+        for layer in self.layers:
+            state = F.relu(layer(state))
+        state_values = self.value_head(state)
         return state_values
 
 def sample_trajectory(agent, env):
     episode_data = []
     state = env.reset()
     for t in range(10000):  # Don't infinite loop while learning
-        action, log_prob, value = agent(torch.from_numpy(state).float() )
+        # action, log_prob, value = agent(torch.from_numpy(state).float())
+        action, log_prob, value = agent(torch.from_numpy(state).float().to(device))
         state, reward, done, _ = env.step(action)
         if args.render:
             env.render()
@@ -95,21 +109,30 @@ def sample_trajectory(agent, env):
 def main():
     env = gym.make('CartPole-v0')
     env.seed(args.seed)
-    agent = BaseActionAgent(policy=Policy(), valuefn=ValueFn(), id=0, device=device, args=args)
+    discrete = type(env.action_space) == gym.spaces.discrete.Discrete
+    obs_dim = env.observation_space.shape[0]
+    act_dim = env.action_space.n if discrete else env.action_space.shape[0]
+    hdim = 128
+    agent = BaseActionAgent(
+        policy=Policy(dims=[obs_dim, hdim, act_dim]), 
+        valuefn=ValueFn(dims=[obs_dim, hdim, 1]), 
+        id=0, 
+        device=device, 
+        args=args).to(device)
     run_avg = RunningAverage()
+    returns = []
     for i_episode in range(1, 501):
         ret, t = sample_trajectory(agent, env)
         running_reward = run_avg.update_variable('reward', ret)
-        if i_episode % 50 == 0:
+        if i_episode % 10 == 0:
             agent.improve()
         if i_episode % args.log_interval == 0:
-            print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
-                i_episode, t, running_reward))
-        if running_reward > env.spec.reward_threshold:
-            print("Solved! Running reward is now {} and "
-                  "the last episode runs to {} time steps!".format(running_reward, t))
-            break
+            print('Episode {}\tLast return: {:.2f}\tAverage return: {:.2f}'.format(
+                i_episode, ret, running_reward))
+        if i_episode % (10*args.log_interval) == 0:
+            returns.append(running_reward)
 
+    pickle.dump(returns, open('log.p', 'wb'))
 
 if __name__ == '__main__':
     main()
