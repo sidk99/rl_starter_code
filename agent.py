@@ -23,7 +23,7 @@ class BaseActionAgent(nn.Module):
         self.initialize_rl_alg(args)
 
     def initialize_memory(self):
-        self.buffer = Memory(element='simpletransition')
+        self.buffer = Memory(element='simplertransition')
 
     def initialize_optimizer(self, args):
         self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=self.args.lr)
@@ -53,6 +53,7 @@ class BaseActionAgent(nn.Module):
         self.model.cuda()
 
     def forward(self, state):
+        state = state.to(self.device)
         with torch.no_grad():
             action = self.policy.select_action(state.detach())
         log_prob = self.policy.get_log_prob(state.detach(), action)  # not sure about the gradients here. Detach?
@@ -63,10 +64,11 @@ class BaseActionAgent(nn.Module):
         self.buffer.push(
             transition['state'],
             transition['action'],
-            transition['logprob'],
+            # transition['logprob'],
             transition['mask'],
             transition['reward'],
-            transition['value'])
+            # transition['value']
+            )
 
     def improve(self):
         self.rl_alg.improve(args=self.args)

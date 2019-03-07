@@ -87,8 +87,7 @@ def sample_trajectory(agent, env):
     episode_data = []
     state = env.reset()
     for t in range(10000):  # Don't infinite loop while learning
-        # action, log_prob, value = agent(torch.from_numpy(state).float())
-        action, log_prob, value = agent(torch.from_numpy(state).float().to(device))
+        action, log_prob, value = agent(torch.from_numpy(state).float())
         state, reward, done, _ = env.step(action)
         if args.render:
             env.render()
