@@ -102,6 +102,7 @@ class PPO():
                 }
 
                 self.ppo_step(minibatch=minibatch, args=args)
+        self.replay_buffer.clear_buffer()
 
     def ppo_step(self, minibatch, args):
 
