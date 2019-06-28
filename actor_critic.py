@@ -115,50 +115,54 @@ class Agent(nn.Module):
         self.buffer.clear_buffer()
 
 
-def sample_trajectory(agent, env):
-    episode_data = []
-    state = env.reset()
-    for t in range(10000):  # Don't infinite loop while learning
-        action, log_prob, value = agent(state)
-        state, reward, done, _ = env.step(action)
-        if args.render:
-            env.render()
-        mask = 0 if done else 1
-        e = {'state': state,
-             'action': action,
-             'logprob': log_prob,
-             'mask': mask,
-             'reward': reward,
-             'value': value}
-        episode_data.append(e)
-        agent.store_transition(e)
-        if done:
-            break
-    returns = sum([e['reward'] for e in episode_data])
-    return returns
+class Experiment():
+    def __init__(self, agent, env):
+        self.agent = agent
+        self.env = env
 
+    def sample_trajectory(self):
+        episode_data = []
+        state = self.env.reset()
+        for t in range(10000):  # Don't infinite loop while learning
+            action, log_prob, value = self.agent(state)
+            state, reward, done, _ = self.env.step(action)
+            if args.render:
+                self.env.render()
+            mask = 0 if done else 1
+            e = {'state': state,
+                 'action': action,
+                 'logprob': log_prob,
+                 'mask': mask,
+                 'reward': reward,
+                 'value': value}
+            episode_data.append(e)
+            self.agent.store_transition(e)
+            if done:
+                break
+        returns = sum([e['reward'] for e in episode_data])
+        return returns
 
-def train(env, agent):
-    run_avg = RunningAverage()
-    for i_episode in range(601):
-        ret = sample_trajectory(agent, env)
-        running_reward = run_avg.update_variable('reward', ret)
-        agent.update()
-        if i_episode % args.log_interval == 0:
-            print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
-                i_episode, int(ret), running_reward))
-        if running_reward > env.spec.reward_threshold:
-            print("Solved! Running reward is now {} and "
-                  "the last episode runs to {} time steps!".format(running_reward, int(ret)))
-            break
-
+    def train(self):
+        run_avg = RunningAverage()
+        for i_episode in range(601):
+            ret = self.sample_trajectory()
+            running_reward = run_avg.update_variable('reward', ret)
+            self.agent.update()
+            if i_episode % args.log_interval == 0:
+                print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
+                    i_episode, int(ret), running_reward))
+            if running_reward > self.env.spec.reward_threshold:
+                print("Solved! Running reward is now {} and "
+                      "the last episode runs to {} time steps!".format(running_reward, int(ret)))
+                break
 
 def main():
     env = gym.make('CartPole-v0')
     env.seed(args.seed)
     torch.manual_seed(args.seed)
     agent = Agent(Policy(), ValueFn())
-    train(env, agent)
+    experiment = Experiment(agent, env)
+    experiment.train()
 
 
 if __name__ == '__main__':
