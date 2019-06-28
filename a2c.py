@@ -5,7 +5,7 @@ import torch.nn.functional as F
 eps = np.finfo(np.float32).eps.item()
 
 class A2C():
-    def __init__(self, gamma):
+    def __init__(self, gamma=0.99):
         self.gamma = gamma
 
     def improve(self, agent):
