@@ -58,15 +58,11 @@ class Experiment():
         run_avg = RunningAverage()
         for i_episode in range(max_episodes):
             ret = self.sample_trajectory()
-            running_reward = run_avg.update_variable('reward', ret)
+            running_return = run_avg.update_variable('reward', ret)
             self.rl_alg.improve(self.agent)
             if i_episode % args.log_interval == 0:
-                print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
-                    i_episode, int(ret), running_reward))
-            if running_reward > self.env.spec.reward_threshold:
-                print("Solved! Running reward is now {} and "
-                      "the last episode runs to {} time steps!".format(running_reward, int(ret)))
-                break
+                print('Episode {}\tLast Return: {:5d}\tAverage Return: {:.2f}'.format(
+                    i_episode, int(ret), running_return))
 
 def main():
     env = gym.make('CartPole-v0')
