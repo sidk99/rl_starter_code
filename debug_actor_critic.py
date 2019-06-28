@@ -8,11 +8,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.distributions import Categorical
 
 from log import RunningAverage
 from rb import Memory
 from a2c import A2C
+from agent import Agent
+from networks import Policy, ValueFn
 
 parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -24,71 +25,6 @@ parser.add_argument('--render', action='store_true',
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='interval between training status logs (default: 10)')
 args = parser.parse_args()
-
-class Policy(nn.Module):
-    def __init__(self):
-        super(Policy, self).__init__()
-        self.action_encoder = nn.Linear(4, 128)
-        self.action_head = nn.Linear(128, 2)
-
-        self.saved_actions = []
-        self.rewards = []
-
-    def forward(self, x):
-        action_encoded = F.relu(self.action_encoder(x))
-        action_scores = self.action_head(action_encoded)
-        return F.softmax(action_scores, dim=-1)#, state_values
-
-
-class ValueFn(nn.Module):
-    def __init__(self):
-        super(ValueFn, self).__init__()
-        self.value_affine = nn.Linear(4, 128)
-        self.value_head = nn.Linear(128, 1)
-
-    def forward(self, state):
-        state_values = self.value_head(F.relu(self.value_affine(state)))
-        return state_values
-
-
-class Agent(nn.Module):
-    def __init__(self, policy, valuefn):
-        super(Agent, self).__init__()
-        self.policy = policy
-        self.valuefn = valuefn
-
-        self.initalize_memory()
-        self.initialize_optimizer()
-        # self.initialize_rl_alg()
-
-    def initalize_memory(self):
-        self.buffer = Memory(element='simpletransition')
-
-    def initialize_optimizer(self):
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=3e-4)
-        self.value_optimizer = optim.Adam(self.valuefn.parameters(), lr=3e-4)
-
-    def forward(self, x):
-        probs, state_value = self.policy(x), self.valuefn(x)
-        return probs, state_value
-
-    def forward(self, state):
-        state = torch.from_numpy(state).float()
-        action_dist = self.policy(state)
-        value = self.valuefn(state)
-        m = Categorical(action_dist)
-        action = m.sample()
-        log_prob = m.log_prob(action)
-        return action.item(), log_prob, value
-
-    def store_transition(self, transition):
-        self.buffer.push(
-            transition['state'],
-            transition['action'],
-            transition['logprob'],
-            transition['mask'],
-            transition['reward'],
-            transition['value'])
 
 class Experiment():
     def __init__(self, agent, env, rl_alg):
@@ -118,9 +54,9 @@ class Experiment():
         returns = sum([e['reward'] for e in episode_data])
         return returns
 
-    def train(self):
+    def train(self, max_episodes):
         run_avg = RunningAverage()
-        for i_episode in range(601):
+        for i_episode in range(max_episodes):
             ret = self.sample_trajectory()
             running_reward = run_avg.update_variable('reward', ret)
             self.rl_alg.improve(self.agent)
@@ -139,7 +75,7 @@ def main():
     agent = Agent(Policy(), ValueFn())
     rl_alg = A2C(gamma=args.gamma)
     experiment = Experiment(agent, env, rl_alg)
-    experiment.train()
+    experiment.train(max_episodes=601)
 
 
 if __name__ == '__main__':
