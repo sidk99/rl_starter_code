@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
+from log import RunningAverage
 from rb import Memory
 
 parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
@@ -23,14 +24,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='interval between training status logs (default: 10)')
 args = parser.parse_args()
 
-
-env = gym.make('CartPole-v0')
-env.seed(args.seed)
-torch.manual_seed(args.seed)
 eps = np.finfo(np.float32).eps.item()
-
-SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
-
 
 class Policy(nn.Module):
     def __init__(self):
@@ -56,6 +50,7 @@ class ValueFn(nn.Module):
     def forward(self, state):
         state_values = self.value_head(F.relu(self.value_affine(state)))
         return state_values
+
 
 class Agent(nn.Module):
     def __init__(self, policy, valuefn):
@@ -95,7 +90,7 @@ class Agent(nn.Module):
             transition['reward'],
             transition['value'])
 
-    def finish_episode(self):
+    def update(self):
         batch = self.buffer.sample()
         R = 0
         saved_actions = zip(batch.logprob, batch.value)#self.saved_actions
@@ -120,8 +115,6 @@ class Agent(nn.Module):
         self.buffer.clear_buffer()
 
 
-agent = Agent(Policy(), ValueFn())
-
 def sample_trajectory(agent, env):
     episode_data = []
     state = env.reset()
@@ -144,13 +137,13 @@ def sample_trajectory(agent, env):
     returns = sum([e['reward'] for e in episode_data])
     return returns
 
-def main():
-    running_reward = 10
-    for i_episode in range(501):
-        ret = sample_trajectory(agent, env)
 
-        running_reward = running_reward * 0.99 + ret * 0.01
-        agent.finish_episode()
+def train(env, agent):
+    run_avg = RunningAverage()
+    for i_episode in range(601):
+        ret = sample_trajectory(agent, env)
+        running_reward = run_avg.update_variable('reward', ret)
+        agent.update()
         if i_episode % args.log_interval == 0:
             print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
                 i_episode, int(ret), running_reward))
@@ -158,6 +151,14 @@ def main():
             print("Solved! Running reward is now {} and "
                   "the last episode runs to {} time steps!".format(running_reward, int(ret)))
             break
+
+
+def main():
+    env = gym.make('CartPole-v0')
+    env.seed(args.seed)
+    torch.manual_seed(args.seed)
+    agent = Agent(Policy(), ValueFn())
+    train(env, agent)
 
 
 if __name__ == '__main__':
