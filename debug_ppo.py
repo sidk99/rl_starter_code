@@ -21,8 +21,8 @@ from agent import BaseActionAgent
 parser = argparse.ArgumentParser(description='PyTorch ppo example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                     help='discount factor (default: 0.99)')
-parser.add_argument('--lr', type=float, default=3e-2, metavar='R',
-                    help='learning rate (default: 3e-2)')
+parser.add_argument('--lr', type=float, default=3e-4, metavar='R',
+                    help='learning rate (default: 3e-4)')
 parser.add_argument('--seed', type=int, default=543, metavar='N',
                     help='random seed (default: 543)')
 parser.add_argument('--gpu-index', type=int, default=0,
@@ -120,7 +120,7 @@ def main():
         args=args).to(device)
     run_avg = RunningAverage()
     returns = []
-    for i_episode in range(1, 501):
+    for i_episode in range(1, 5001):
         ret, t = sample_trajectory(agent, env)
         running_reward = run_avg.update_variable('reward', ret)
         if i_episode % 10 == 0:
