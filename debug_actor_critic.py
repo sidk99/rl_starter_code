@@ -12,6 +12,7 @@ from torch.distributions import Categorical
 
 from log import RunningAverage
 from rb import Memory
+from a2c import A2C
 
 parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -23,8 +24,6 @@ parser.add_argument('--render', action='store_true',
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='interval between training status logs (default: 10)')
 args = parser.parse_args()
-
-eps = np.finfo(np.float32).eps.item()
 
 class Policy(nn.Module):
     def __init__(self):
@@ -60,6 +59,7 @@ class Agent(nn.Module):
 
         self.initalize_memory()
         self.initialize_optimizer()
+        # self.initialize_rl_alg()
 
     def initalize_memory(self):
         self.buffer = Memory(element='simpletransition')
@@ -90,35 +90,11 @@ class Agent(nn.Module):
             transition['reward'],
             transition['value'])
 
-    def update(self):
-        batch = self.buffer.sample()
-        R = 0
-        saved_actions = zip(batch.logprob, batch.value)#self.saved_actions
-        policy_losses = []
-        value_losses = []
-        rewards = []
-        for r in batch.reward[::-1]:
-            R = r + args.gamma * R
-            rewards.insert(0, R)
-        rewards = torch.tensor(rewards)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
-        for (log_prob, value), r in zip(saved_actions, rewards):
-            reward = r - value.item()
-            policy_losses.append(-log_prob * reward)
-            value_losses.append(F.smooth_l1_loss(value, torch.tensor([r])))
-        self.policy_optimizer.zero_grad()
-        self.value_optimizer.zero_grad()
-        loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
-        loss.backward()
-        self.policy_optimizer.step()
-        self.value_optimizer.step()
-        self.buffer.clear_buffer()
-
-
 class Experiment():
-    def __init__(self, agent, env):
+    def __init__(self, agent, env, rl_alg):
         self.agent = agent
         self.env = env
+        self.rl_alg = rl_alg
 
     def sample_trajectory(self):
         episode_data = []
@@ -147,7 +123,7 @@ class Experiment():
         for i_episode in range(601):
             ret = self.sample_trajectory()
             running_reward = run_avg.update_variable('reward', ret)
-            self.agent.update()
+            self.rl_alg.improve(self.agent)
             if i_episode % args.log_interval == 0:
                 print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
                     i_episode, int(ret), running_reward))
@@ -161,7 +137,8 @@ def main():
     env.seed(args.seed)
     torch.manual_seed(args.seed)
     agent = Agent(Policy(), ValueFn())
-    experiment = Experiment(agent, env)
+    rl_alg = A2C(gamma=args.gamma)
+    experiment = Experiment(agent, env, rl_alg)
     experiment.train()
 
 
