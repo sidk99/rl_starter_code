@@ -5,8 +5,9 @@ import torch.nn.functional as F
 eps = np.finfo(np.float32).eps.item()
 
 class A2C():
-    def __init__(self, gamma=0.99):
-        self.gamma = gamma
+    def __init__(self, device, args):#gamma=0.99):
+        self.device = device
+        self.gamma = args.gamma
 
     def improve(self, agent):
         batch = agent.buffer.sample()

@@ -16,7 +16,7 @@ from torch.distributions import Categorical
 from log import RunningAverage
 from rb import Memory
 from ppo import PPO
-from agent import BaseActionAgent
+from agent_old import BaseActionAgent
 
 parser = argparse.ArgumentParser(description='PyTorch ppo example')
 parser.add_argument('--gamma', type=float, default=0.99, metavar='G',

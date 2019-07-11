@@ -7,10 +7,11 @@ from torch.distributions import Categorical
 from rb import Memory
 
 class Agent(nn.Module):
-    def __init__(self, policy, valuefn):
+    def __init__(self, policy, valuefn, args):
         super(Agent, self).__init__()
         self.policy = policy
         self.valuefn = valuefn
+        self.args = args
 
         self.initalize_memory()
         self.initialize_optimizer()
@@ -19,21 +20,19 @@ class Agent(nn.Module):
         self.buffer = Memory(element='simpletransition')
 
     def initialize_optimizer(self):
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=3e-4)
-        self.value_optimizer = optim.Adam(self.valuefn.parameters(), lr=3e-4)
+        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=self.args.lr)
+        self.value_optimizer = optim.Adam(self.valuefn.parameters(), lr=10*self.args.lr)
 
-    def forward(self, x):
-        probs, state_value = self.policy(x), self.valuefn(x)
-        return probs, state_value
-
-    def forward(self, state):
+    def forward(self, state, deterministic):
         state = torch.from_numpy(state).float()
-        action_dist = self.policy(state)
+        action = self.policy.select_action(state, deterministic)
+        log_prob = self.policy.get_log_prob(state, action)
         value = self.valuefn(state)
-        m = Categorical(action_dist)
-        action = m.sample()
-        log_prob = m.log_prob(action)
-        return action.item(), log_prob, value
+        if action.dim() == 0: 
+            action = action.item()
+        else:
+            action = action.detach().numpy()
+        return action, log_prob, value
 
     def store_transition(self, transition):
         self.buffer.push(

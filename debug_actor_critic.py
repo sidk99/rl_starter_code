@@ -13,12 +13,20 @@ from log import RunningAverage
 from rb import Memory
 from a2c import A2C
 from agent import Agent
-from networks import Policy, ValueFn
+from networks import DiscretePolicy, ValueFn
+import utils
+from experiment import Experiment
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
     parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                         help='discount factor (default: 0.99)')
+    parser.add_argument('--lr', type=float, default=3e-4, metavar='G',
+                        help='learning rate (default: 3e-4)')
+    parser.add_argument('--update-every', type=float, default=1, metavar='G',
+                        help='update every (default: 1)')
+    parser.add_argument('--eval-every', type=float, default=100, metavar='G',
+                        help='eval every (default: 100)')
     parser.add_argument('--seed', type=int, default=543, metavar='N',
                         help='random seed (default: 543)')
     parser.add_argument('--render', action='store_true',
@@ -28,52 +36,23 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-class Experiment():
-    def __init__(self, agent, env, rl_alg, args):
-        self.agent = agent
-        self.env = env
-        self.rl_alg = rl_alg
-        self.args = args
-
-    def sample_trajectory(self):
-        episode_data = []
-        state = self.env.reset()
-        for t in range(10000):  # Don't infinite loop while learning
-            action, log_prob, value = self.agent(state)
-            state, reward, done, _ = self.env.step(action)
-            if self.args.render:
-                self.env.render()
-            mask = 0 if done else 1
-            e = {'state': state,
-                 'action': action,
-                 'logprob': log_prob,
-                 'mask': mask,
-                 'reward': reward,
-                 'value': value}
-            episode_data.append(e)
-            self.agent.store_transition(e)
-            if done:
-                break
-        returns = sum([e['reward'] for e in episode_data])
-        return returns
-
-    def train(self, max_episodes):
-        run_avg = RunningAverage()
-        for i_episode in range(max_episodes):
-            ret = self.sample_trajectory()
-            running_return = run_avg.update_variable('reward', ret)
-            self.rl_alg.improve(self.agent)
-            if i_episode % self.args.log_interval == 0:
-                print('Episode {}\tLast Return: {:5d}\tAverage Return: {:.2f}'.format(
-                    i_episode, int(ret), running_return))
-
 def main():
     args = parse_args()
+    device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
+
     env = gym.make('CartPole-v0')
+
     env.seed(args.seed)
     torch.manual_seed(args.seed)
-    agent = Agent(Policy(), ValueFn())
-    rl_alg = A2C(gamma=args.gamma)
+
+    state_dim = env.observation_space.shape[0]
+    is_disc_action = len(env.action_space.shape) == 0
+    action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
+
+    agent = Agent(
+        DiscretePolicy(state_dim=state_dim, action_dim=action_dim), 
+        ValueFn(state_dim=state_dim), args=args)
+    rl_alg = A2C(device=device, args=args)
     experiment = Experiment(agent, env, rl_alg, args)
     experiment.train(max_episodes=1001)
 
