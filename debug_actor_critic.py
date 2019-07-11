@@ -28,7 +28,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 class Experiment():
     def __init__(self, agent, env, rl_alg, args):
         self.agent = agent
@@ -76,7 +75,7 @@ def main():
     agent = Agent(Policy(), ValueFn())
     rl_alg = A2C(gamma=args.gamma)
     experiment = Experiment(agent, env, rl_alg, args)
-    experiment.train(max_episodes=601)
+    experiment.train(max_episodes=1001)
 
 
 if __name__ == '__main__':
