@@ -20,8 +20,14 @@ class Agent(nn.Module):
         self.buffer = Memory(element='simpletransition')
 
     def initialize_optimizer(self):
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=self.args.lr)
-        self.value_optimizer = optim.Adam(self.valuefn.parameters(), lr=10*self.args.lr)
+        if self.args.opt == 'adam':
+            self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=self.args.plr)
+            self.value_optimizer = optim.Adam(self.valuefn.parameters(), lr=self.args.vlr)
+        elif self.args.opt == 'sgd':
+            self.policy_optimizer = optim.SGD(self.policy.parameters(), lr=self.args.plr, momentum=0.9)
+            self.value_optimizer = optim.SGD(self.valuefn.parameters(), lr=self.args.vlr, momentum=0.9)
+        else:
+            assert False
 
     def forward(self, state, deterministic):
         state = torch.from_numpy(state).float()

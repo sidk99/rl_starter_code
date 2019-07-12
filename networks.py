@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
+from torch.distributions.multivariate_normal import MultivariateNormal
 
 from utils import normal_log_density, normal_entropy
+
 
 class DiscretePolicy(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -52,10 +54,58 @@ class ValueFn(nn.Module):
         state_values = self.value_head(F.relu(self.value_affine(state)))
         return state_values
 
+class GaussianParams(nn.Module):
+    """
+        h --> z
+    """
+    def __init__(self, hdim, zdim):
+        super(GaussianParams, self).__init__()
+        self.hdim = hdim
+        self.zdim = zdim
+        self.mu = nn.Linear(hdim, zdim)
+        self.logstd = nn.Linear(hdim, zdim)
+
+        self.mu.weight.data.mul_(0.1)
+        self.mu.bias.data.mul_(0.0)
+
+    def forward(self, x):
+        mu = self.mu(x)
+        logstd = self.logstd(x)
+        return mu, logstd
 
 class GaussianPolicy(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_size=(128, 128), activation='tanh', log_std=0):
+    def __init__(self, state_dim, action_dim):
         super(GaussianPolicy, self).__init__()
+        self.encoder1 = nn.Linear(state_dim, 128)
+        self.encoder2 = nn.Linear(128, 128)
+        self.decoder = GaussianParams(128, action_dim)
+
+    def forward(self, x):
+        x = F.relu(self.encoder1(x))
+        x = F.relu(self.encoder2(x))
+        mu, logstd = self.decoder(x)
+        return mu, torch.exp(logstd)
+
+    def select_action(self, state, deterministic):
+        mu, std = self.forward(state)
+        if deterministic:
+            return mu
+        else:
+            dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+            action = dist.sample()
+            return action
+
+    def get_log_prob(self, state, action):
+        mu, std = self.forward(state)
+        bsize = mu.size(0)
+        dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+        log_prob = dist.log_prob(action).view(bsize, 1)
+        return log_prob
+
+
+class Policy(nn.Module):
+    def __init__(self, state_dim, action_dim, hidden_size=(128, 128), activation='relu', log_std=0):
+        super().__init__()
         self.is_disc_action = False
         if activation == 'tanh':
             self.activation = torch.tanh
@@ -77,16 +127,16 @@ class GaussianPolicy(nn.Module):
         self.action_log_std = nn.Parameter(torch.ones(1, action_dim) * log_std)
 
     def forward(self, x):
-        x = torch.unsqueeze(x, dim=0)
         for affine in self.affine_layers:
             x = self.activation(affine(x))
+
         action_mean = self.action_mean(x)
         action_log_std = self.action_log_std.expand_as(action_mean)
         action_std = torch.exp(action_log_std)
 
         return action_mean, action_log_std, action_std
 
-    def select_action(self, x):
+    def select_action(self, x, deterministic):
         action_mean, _, action_std = self.forward(x)
         action = torch.normal(action_mean, action_std)
         return action
@@ -117,3 +167,5 @@ class GaussianPolicy(nn.Module):
             param_count += param.view(-1).shape[0]
             id += 1
         return cov_inv.detach(), mean, {'std_id': std_id, 'std_index': std_index}
+
+

@@ -8,6 +8,7 @@ class A2C():
     def __init__(self, device, args):#gamma=0.99):
         self.device = device
         self.gamma = args.gamma
+        self.max_buffer_size = 100
 
     def improve(self, agent):
         batch = agent.buffer.sample()
