@@ -12,8 +12,12 @@ class A2C():
 
     def improve(self, agent):
         batch = agent.buffer.sample()
+        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32)
+        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32)
+        values = agent.valuefn(states)
+        log_probs = agent.policy.get_log_prob(states, actions)
+
         R = 0
-        saved_actions = zip(batch.logprob, batch.value)
         policy_losses = []
         value_losses = []
         rewards = []
@@ -22,7 +26,7 @@ class A2C():
             rewards.insert(0, R)
         rewards = torch.tensor(rewards)
         rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
-        for (log_prob, value), r in zip(saved_actions, rewards):
+        for log_prob, value, r in zip(log_probs, values, rewards):
             reward = r - value.item()
             policy_losses.append(-log_prob * reward)
             value_losses.append(F.smooth_l1_loss(value, torch.tensor([r])))

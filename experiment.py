@@ -3,6 +3,8 @@ import torch
 
 from log import RunningAverage
 
+import ipdb
+
 
 def merge_log(log_list):
     log = dict()
@@ -24,22 +26,29 @@ class Experiment():
     def sample_trajectory(self, deterministic):
         episode_data = []
         state = self.env.reset()
+        # ipdb.set_trace(context=10)
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
-            action, log_prob, value = self.agent(state, deterministic=deterministic)
-            state, reward, done, _ = self.env.step(action)
+            state_var = torch.from_numpy(state).float().unsqueeze(0)
+            with torch.no_grad():
+                action, log_prob, value = self.agent(state_var, deterministic=deterministic)
+            action = action[0]
+            next_state, reward, done, _ = self.env.step(action)
             if self.args.render:
                 self.env.render()
             mask = 0 if done else 1
-            e = {'state': state,
+            e = {
+                 'state': state,
                  'action': action,
                  'logprob': log_prob,
                  'mask': mask,
                  'reward': reward,
-                 'value': value}
+                 'value': value
+                 }
             episode_data.append(e)
             self.agent.store_transition(e)
             if done:
                 break
+            state = next_state
         stats = {'return': sum([e['reward'] for e in episode_data]),
                  'steps': t}
         return episode_data, stats

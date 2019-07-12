@@ -30,7 +30,6 @@ class Agent(nn.Module):
             assert False
 
     def forward(self, state, deterministic):
-        state = torch.from_numpy(state).float()
         action = self.policy.select_action(state, deterministic)
         log_prob = self.policy.get_log_prob(state, action)
         value = self.valuefn(state)
