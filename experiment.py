@@ -49,7 +49,7 @@ class Experiment():
             episode_data, episode_stats= self.sample_trajectory(deterministic)
             all_episodes_data.append(episode_stats)
             num_steps += (episode_stats['steps']+1)
-            # break
+            break
 
         all_returns = [e['return'] for e in all_episodes_data]
         stats = {

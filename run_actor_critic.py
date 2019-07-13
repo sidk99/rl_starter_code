@@ -11,7 +11,8 @@ import torch.optim as optim
 
 from log import RunningAverage
 from rb import Memory
-from a2c import A2C
+# from a2c import A2C
+from rl_algs import A2C
 from agent import Agent
 from networks import DiscretePolicy, ValueFn, GaussianPolicy
 import utils
