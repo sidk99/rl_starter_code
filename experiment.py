@@ -5,17 +5,6 @@ from log import RunningAverage
 
 import ipdb
 
-
-def merge_log(log_list):
-    log = dict()
-    log['total_reward'] = sum([x['total_reward'] for x in log_list])
-    log['num_episodes'] = sum([x['num_episodes'] for x in log_list])
-    log['num_steps'] = sum([x['num_steps'] for x in log_list])
-    log['avg_reward'] = log['total_reward'] / log['num_episodes']
-    log['max_reward'] = max([x['max_reward'] for x in log_list])
-    log['min_reward'] = min([x['min_reward'] for x in log_list])
-    return log
-
 class Experiment():
     def __init__(self, agent, env, rl_alg, args):
         self.agent = agent
@@ -32,7 +21,6 @@ class Experiment():
                 action, log_prob, value = self.agent(state_var, deterministic=deterministic)
             action = action[0]
             next_state, reward, done, _ = self.env.step(action)
-            # ipdb.set_trace(context=10)
             if self.args.render:
                 self.env.render()
             mask = 0 if done else 1
@@ -71,7 +59,6 @@ class Experiment():
             'total_return': np.sum(all_returns),
             'num_episodes': len(all_episodes_data)
         }
-        # print('num_episodes', stats['num_episodes'])
         return all_episodes_data, stats
 
     def train(self, max_episodes):
@@ -79,14 +66,10 @@ class Experiment():
         for i_episode in range(max_episodes):
             episode_data, stats = self.collect_samples(deterministic=False)
             ret = stats['avg_return'] # but we shouldn't do a running avg actually
-            # ret = sum([e['reward'] for e in episode_data])
             running_return = run_avg.update_variable('reward', ret)
             if i_episode % self.args.update_every == 0:
-                # print('buffer size: {}'.format(len(self.agent.buffer)))
                 self.rl_alg.improve(self.agent)
             if i_episode % self.args.log_every == 0:
-                # print('Episode {}\tLast Return: {:.2f}\tAverage Return: {:.2f}'.format(
-                #     i_episode, ret, running_return))
                 print('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
                     i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
 

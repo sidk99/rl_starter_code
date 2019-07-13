@@ -19,10 +19,6 @@ from experiment import Experiment
 
 import ipdb
 
-
-# dtype = torch.float64
-# torch.set_default_dtype(dtype)
-
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch ppo example')
     parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -46,13 +42,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def visualize_parameters(model):
-    for n, p in model.named_parameters():
-        if p.grad is None:
-            print(n, p.data.norm(), None)
-        else:
-            print(n, p.data.norm(), p.grad.data.norm())
-
 def main():
     args = parse_args()
     device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
@@ -74,22 +63,9 @@ def main():
     agent = Agent(
         policy(state_dim=state_dim, action_dim=action_dim), 
         ValueFn(state_dim=state_dim), args=args)
-
-    print('policy_net')
-    visualize_parameters(agent.policy)
-
-    print('value_net')
-    print( visualize_parameters(agent.valuefn))
-
-
-
-
     rl_alg = PPO(device=device, args=args)
-
-    # rl_alg = A2C(device=device, gamma=args.gamma)
     experiment = Experiment(agent, env, rl_alg, args)
-
-    experiment.train(max_episodes=10000001)
+    experiment.train(max_episodes=1001)
 
 
 if __name__ == '__main__':
