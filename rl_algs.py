@@ -6,12 +6,12 @@ import torch.nn.functional as F
 
 from collections import defaultdict
 
-from common import estimate_advantages
+from starter_code.common import estimate_advantages
 
 eps = np.finfo(np.float32).eps.item()
 
 class A2C():
-    def __init__(self, device, args):#gamma=0.99):
+    def __init__(self, device, args):
         self.device = device
         self.gamma = args.gamma
         self.max_buffer_size = 100
