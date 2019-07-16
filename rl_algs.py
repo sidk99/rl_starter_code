@@ -10,6 +10,36 @@ from starter_code.common import estimate_advantages
 
 eps = np.finfo(np.float32).eps.item()
 
+
+class VPG():
+    def __init__(self, device, args):
+        self.device = device
+        self.gamma = args.gamma
+        self.max_buffer_size = 100
+
+    def improve(self, agent):
+        batch = agent.buffer.sample()
+        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32)
+        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32)
+        log_probs = agent.policy.get_log_prob(states, actions)
+
+        R = 0
+        policy_losses = []
+        rewards = []
+        for r in batch.reward[::-1]:
+            R = r + self.gamma * R
+            rewards.insert(0, R)
+        rewards = torch.tensor(rewards)
+        rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+        for log_prob, reward in zip(log_probs, rewards):
+            policy_losses.append(-log_prob * reward)
+        agent.policy_optimizer.zero_grad()
+        loss = torch.stack(policy_losses).sum()
+        loss.backward()
+        agent.policy_optimizer.step()
+        agent.buffer.clear_buffer()
+
+
 class A2C():
     def __init__(self, device, args):
         self.device = device
