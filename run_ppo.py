@@ -49,6 +49,7 @@ def main():
     # env = gym.make('CartPole-v0')
     env = gym.make('InvertedPendulum-v2')
     # env = gym.make('Hopper-v2')
+    # env = gym.make('Hopper-v2')
 
     args.seed = 0
     np.random.seed(args.seed)
@@ -58,7 +59,7 @@ def main():
     state_dim = env.observation_space.shape[0]
     is_disc_action = len(env.action_space.shape) == 0
     action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-    policy = DiscretePolicy if is_disc_action else Policy#GaussianPolicy
+    policy = DiscretePolicy if is_disc_action else Policy
 
     agent = Agent(
         policy(state_dim=state_dim, action_dim=action_dim), 

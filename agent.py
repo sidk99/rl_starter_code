@@ -17,7 +17,7 @@ class Agent(nn.Module):
         self.initialize_optimizer()
 
     def initalize_memory(self):
-        self.buffer = Memory(element='simpletransition')
+        self.buffer = Memory(element='simplertransition')
 
     def initialize_optimizer(self):
         if self.args.opt == 'adam':
@@ -31,20 +31,17 @@ class Agent(nn.Module):
 
     def forward(self, state, deterministic):
         action = self.policy.select_action(state, deterministic)
-        log_prob = self.policy.get_log_prob(state, action)
-        value = self.valuefn(state)
         if action.dim() == 0: 
             action = action.item()
         else:
             action = action.detach().numpy()
-        return action, log_prob, value
+        return action
 
     def store_transition(self, transition):
         self.buffer.push(
             transition['state'],
             transition['action'],
-            transition['logprob'],
             transition['mask'],
             transition['reward'],
-            transition['value'])
+            )
 

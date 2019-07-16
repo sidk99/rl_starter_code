@@ -18,7 +18,7 @@ class Experiment():
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
             state_var = torch.from_numpy(state).float().unsqueeze(0)
             with torch.no_grad():
-                action, log_prob, value = self.agent(state_var, deterministic=deterministic)
+                action = self.agent(state_var, deterministic=deterministic)
             action = action[0]
             next_state, reward, done, _ = self.env.step(action)
             if self.args.render:
@@ -27,10 +27,8 @@ class Experiment():
             e = {
                  'state': state,
                  'action': action,
-                 'logprob': log_prob,
                  'mask': mask,
                  'reward': reward,
-                 'value': value
                  }
             episode_data.append(e)
             self.agent.store_transition(e)
