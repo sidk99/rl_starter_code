@@ -3,9 +3,60 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 from torch.distributions.multivariate_normal import MultivariateNormal
+from torch.distributions.log_normal import LogNormal
 
-from utils import normal_log_density, normal_entropy
+from starter_code.utils import normal_log_density, normal_entropy
 
+
+class MLP(nn.Module):
+    def __init__(self, dims, zero_init=False, output_activation=None):
+        super(MLP, self).__init__()
+        assert len(dims) >= 2
+        self.network = nn.ModuleList([])
+        for i in range(len(dims)-1):
+            layer = nn.Linear(dims[i], dims[i+1])
+            if zero_init:
+                layer.weight.data.zero_()
+                layer.bias.data.zero_()
+            self.network.append(layer)
+        self.output_activation = output_activation
+
+    def forward(self, x):
+        for i, layer in enumerate(self.network):
+            x = layer(x)
+            if i < len(self.network)-1:
+                x = F.relu(x)
+        if self.output_activation:
+            x = self.output_activation(x)
+        return x
+
+class BidPolicy(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(BidPolicy, self).__init__()
+        self.bid_mu = MLP(dims=[state_dim, 2, action_dim], zero_init=True)
+        self.bid_logstd = MLP(dims=[state_dim, 2, action_dim], zero_init=True)
+        # self.bid_mu = MLP(dims=[state_dim, action_dim], zero_init=True)
+        # self.bid_logstd = MLP(dims=[state_dim, action_dim], zero_init=True)
+
+    def forward(self, x):
+        mu = self.bid_mu(x)
+        logstd = self.bid_logstd(x)
+        return mu, torch.exp(logstd)
+
+    def select_action(self, state, deterministic=False):
+        mu, std = self.forward(state)
+        if deterministic:
+            return mu
+        else:
+            dist = LogNormal(mu, std)
+            bid = dist.sample()
+            return bid
+
+    def get_log_prob(self, state, action):
+        mu, std = self.forward(state)
+        dist = LogNormal(mu, std)
+        log_prob = dist.log_prob(action)
+        return log_prob
 
 class DiscretePolicy(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -44,15 +95,15 @@ class DiscretePolicy(nn.Module):
         entropy = action_dist.entropy().view(bsize, 1)
         return entropy
 
-# class ValueFn(nn.Module):
-#     def __init__(self, state_dim):
-#         super(ValueFn, self).__init__()
-#         self.value_affine = nn.Linear(state_dim, 128)
-#         self.value_head = nn.Linear(128, 1)
+class SimpleValueFn(nn.Module):
+    def __init__(self, state_dim, hid_dim):
+        super(SimpleValueFn, self).__init__()
+        self.value_affine = nn.Linear(state_dim, hid_dim)
+        self.value_head = nn.Linear(hid_dim, 1)
 
-#     def forward(self, state):
-#         state_values = self.value_head(F.relu(self.value_affine(state)))
-#         return state_values
+    def forward(self, state):
+        state_values = self.value_head(F.relu(self.value_affine(state)))
+        return state_values
 
 
 class ValueFn(nn.Module):

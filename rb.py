@@ -8,6 +8,8 @@ SimplerTransition = namedtuple('SimplerTransition', ('state', 'action', 'mask','
 InputOutput = namedtuple('InputOutput', ('loss'))
 RNTransition = namedtuple('StepTransition', ('state', 'action', 'logprob', 'mask', 'reward', 'value', 'step', 'task'))
 BanditTransition = namedtuple('BanditTransition', ('state', 'action', 'logprob', 'reward'))
+SimpleBanditTransition = namedtuple('SimpleBanditTransition', ('state', 'action', 'reward'))
+SimpleMaskedBanditTransition = namedtuple('SimpleMaskedBanditTransition', ('state', 'action', 'mask', 'reward'))
 
 class Memory(object):
     def __init__(self, element='transition'):
@@ -24,6 +26,10 @@ class Memory(object):
             self.element = RNTransition
         elif element == 'bandittransition':
             self.element = BanditTransition
+        elif element == 'simplebandittransition':
+            self.element = SimpleBanditTransition
+        elif element == 'simplemaskedbandittransition':
+            self.element = SimpleMaskedBanditTransition
         else:
             assert False
 
