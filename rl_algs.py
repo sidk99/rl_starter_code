@@ -17,21 +17,17 @@ class VPG():
         self.gamma = args.gamma
         self.max_buffer_size = 100
 
+    def unpack_batch(self, batch):
+        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
+        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
+        assert states.dim() == actions.dim() == 2
+        return states, actions
+
     def improve(self, agent):
         batch = agent.buffer.sample()
-        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32)
-        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32)
-
-        # print('states')
-        # print(states.shape)
-        # print('actions')
-        # print(actions.shape)
-
+        states, actions = self.unpack_batch(batch)
         log_probs = agent.policy.get_log_prob(states, actions)
-
-        # print('log_probs')
-        # print(log_probs.shape)
-        # assert False
+        assert log_probs.dim() == 2
 
         R = 0
         policy_losses = []
@@ -59,42 +55,17 @@ class A2C():
         self.max_buffer_size = 100
 
     def unpack_batch(self, batch):
-        # print(dir(batch._file))
-        print(batch._fields)
-        assert False
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
-        # masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
-        # rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
-        # print('states')
-        # print(states.shape)
-        # print('actions')
-        # print(actions.shape)
-        # print('masks')
-        # print(masks.shape)
-        # print('rewards')
-        # print(rewards.shape)
-        return states, actions, masks, rewards
+        assert states.dim() == actions.dim() == 2
+        return states, actions
 
     def improve(self, agent):
         batch = agent.buffer.sample()
-        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32)
-        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32)
-
-        # print('states')
-        # print(states.shape)
-        # print('actions')
-        # print(actions.shape)
-        # assert False
-
+        states, actions = self.unpack_batch(batch)
         values = agent.valuefn(states)
         log_probs = agent.policy.get_log_prob(states, actions)
-
-        # print('values')
-        # print(values.shape)
-        # print('log_probs')
-        # print(log_probs.shape)
-        # assert False
+        assert values.dim() == fixed_log_probs.dim() == 2
 
         R = 0
         policy_losses = []
@@ -211,14 +182,6 @@ class PPO():
 
         """update policy"""
         log_probs = agent.policy.get_log_prob(states, actions)
-
-
-        # print(log_probs.shape)
-        # print(fixed_log_probs.shape)
-
-        # assert False
-
-
         ratio = torch.exp(log_probs - fixed_log_probs)
         surr1 = ratio * advantages
         surr2 = torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantages

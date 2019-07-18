@@ -11,7 +11,6 @@ import torch.optim as optim
 
 from log import RunningAverage
 from rb import Memory
-# from a2c import A2C
 from rl_algs import A2C
 from agent import Agent
 from networks import DiscretePolicy, ValueFn, GaussianPolicy
@@ -61,7 +60,7 @@ def main():
         ValueFn(state_dim=state_dim), args=args)
     rl_alg = A2C(device=device, args=args)
     experiment = Experiment(agent, env, rl_alg, args)
-    experiment.train(max_episodes=201)
+    experiment.train(max_episodes=501)
 
 
 if __name__ == '__main__':
