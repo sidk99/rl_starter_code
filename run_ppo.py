@@ -59,7 +59,7 @@ def main():
     state_dim = env.observation_space.shape[0]
     is_disc_action = len(env.action_space.shape) == 0
     action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-    policy = DiscretePolicy if is_disc_action else Policy
+    policy = DiscretePolicy if is_disc_action else GaussianPolicy# Policy
 
     agent = Agent(
         policy(state_dim=state_dim, action_dim=action_dim), 

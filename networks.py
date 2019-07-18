@@ -38,6 +38,8 @@ class BidPolicy(nn.Module):
         # self.bid_mu = MLP(dims=[state_dim, action_dim], zero_init=True)
         # self.bid_logstd = MLP(dims=[state_dim, action_dim], zero_init=True)
 
+        self.discrete = False
+
     def forward(self, x):
         mu = self.bid_mu(x)
         logstd = self.bid_logstd(x)
@@ -67,6 +69,8 @@ class DiscretePolicy(nn.Module):
         self.saved_actions = []
         self.rewards = []
 
+        self.discrete = True
+
     def forward(self, x):
         action_encoded = F.relu(self.action_encoder(x))
         action_scores = self.action_head(action_encoded)
@@ -74,18 +78,19 @@ class DiscretePolicy(nn.Module):
         return action_probs
 
     def select_action(self, state, deterministic):
+        bsize = state.shape[0]
         action_probs = self.forward(state)
         if deterministic:
-            action = torch.argmax(action_probs)
+            action = torch.argmax(action_probs, dim=-1).unsqueeze(-1)  # (bsize, 1)
         else:
             action_dist = Categorical(action_probs)
-            action = action_dist.sample()
+            action = action_dist.sample().unsqueeze(-1)  # (bsize, 1)
         return action
 
     def get_log_prob(self, state, action):
         action_probs = self.forward(state)
         action_dist = Categorical(action_probs)
-        log_prob = action_dist.log_prob(action)
+        log_prob = action_dist.log_prob(action).unsqueeze(-1)  # (bsize, 1)
         return log_prob
 
     def get_entropy(self, state):
@@ -160,6 +165,8 @@ class GaussianPolicy(nn.Module):
         self.encoder2 = nn.Linear(128, 128)
         self.decoder = GaussianParams(128, action_dim)
 
+        self.discrete = False
+
     def forward(self, x):
         x = F.relu(self.encoder1(x))
         x = F.relu(self.encoder2(x))
@@ -169,23 +176,23 @@ class GaussianPolicy(nn.Module):
     def select_action(self, state, deterministic):
         mu, std = self.forward(state)
         if deterministic:
-            return mu
+            return mu  # (bsize, action_dim)
         else:
             dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
-            action = dist.sample()
+            action = dist.sample()  # (bsize, action_dim)
             return action
 
     def get_log_prob(self, state, action):
         mu, std = self.forward(state)
         dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
-        log_prob = dist.log_prob(action)#.view(bsize, 1)
+        log_prob = dist.log_prob(action).unsqueeze(-1)  # (bsize, 1)
         return log_prob
 
 
 class Policy(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_size=(128, 128), activation='relu', log_std=0):
         super().__init__()
-        self.is_disc_action = False
+        self.discrete = False
         if activation == 'tanh':
             self.activation = torch.tanh
         elif activation == 'relu':

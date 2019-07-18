@@ -31,10 +31,6 @@ class Agent(nn.Module):
 
     def forward(self, state, deterministic):
         action = self.policy.select_action(state, deterministic)
-        if action.dim() == 0: 
-            action = action.item()
-        else:
-            action = action.detach().numpy()
         return action
 
     def store_transition(self, transition):

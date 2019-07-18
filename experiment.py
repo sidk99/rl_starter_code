@@ -4,6 +4,7 @@ import torch
 from log import RunningAverage
 
 import ipdb
+from tqdm import tqdm
 
 class Experiment():
     def __init__(self, agent, env, rl_alg, args):
@@ -18,8 +19,8 @@ class Experiment():
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
             state_var = torch.from_numpy(state).float().unsqueeze(0)
             with torch.no_grad():
-                action = self.agent(state_var, deterministic=deterministic)
-            action = action[0]
+                action = self.agent(state_var, deterministic=deterministic).detach()[0].numpy()  # (adim)
+            if self.agent.policy.discrete: action = int(action)
             next_state, reward, done, _ = self.env.step(action)
             if self.args.render:
                 self.env.render()
