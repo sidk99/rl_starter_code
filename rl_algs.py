@@ -40,8 +40,6 @@ class VPG():
         for log_prob, reward in zip(log_probs, rewards):
             policy_losses.append(-log_prob * reward)
         agent.policy_optimizer.zero_grad()
-        # print(torch.stack(policy_losses).shape)
-        # assert False
         loss = torch.stack(policy_losses).sum()
         loss.backward()
         agent.policy_optimizer.step()
@@ -65,7 +63,7 @@ class A2C():
         states, actions = self.unpack_batch(batch)
         values = agent.valuefn(states)
         log_probs = agent.policy.get_log_prob(states, actions)
-        assert values.dim() == fixed_log_probs.dim() == 2
+        assert values.dim() == log_probs.dim() == 2
 
         R = 0
         policy_losses = []
@@ -132,6 +130,7 @@ class PPO():
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
         masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
         rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
+
         assert states.dim() == actions.dim() == 2
         assert masks.dim() == rewards.dim() == 1
         return states, actions, masks, rewards

@@ -52,20 +52,3 @@ class Memory(object):
 
     def clear_buffer(self):
         del self.memory[:]
-
-    # # def unpack(self, batch):
-    # def unpack_batch(self, batch, key, device):
-    #     return torch.from_numpy(np.stack(batch._fields)).to(torch.float32).to(self.device)
-    #     states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
-    #     actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
-    #     masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
-    #     rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
-    #     print('states')
-    #     print(states.shape)
-    #     print('actions')
-    #     print(actions.shape)
-    #     print('masks')
-    #     print(masks.shape)
-    #     print('rewards')
-    #     print(rewards.shape)
-    #     return states, actions, masks, rewards
