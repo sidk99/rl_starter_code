@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from collections import defaultdict
 
 from starter_code.common import estimate_advantages
+import starter_code.utils as u
 
 eps = np.finfo(np.float32).eps.item()
 
@@ -36,7 +37,8 @@ class VPG():
             R = r + self.gamma * R
             rewards.insert(0, R)
         rewards = torch.tensor(rewards)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+        if len(rewards) > 1:
+            rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
         for log_prob, reward in zip(log_probs, rewards):
             policy_losses.append(-log_prob * reward)
         agent.policy_optimizer.zero_grad()
@@ -73,7 +75,8 @@ class A2C():
             R = r + self.gamma * R
             rewards.insert(0, R)
         rewards = torch.tensor(rewards)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+        if len(rewards) > 1:
+            rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
         for log_prob, value, r in zip(log_probs, values, rewards):
             reward = r - value.item()
             policy_losses.append(-log_prob * reward)
