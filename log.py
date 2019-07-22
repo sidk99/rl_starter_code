@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
+import shutil
 
 class RunningAverage(object):
     def __init__(self):
@@ -25,10 +26,10 @@ class RunningAverage(object):
             assert KeyError
 
 class BaseLogger(object):
-    def __init__(self, root, expname, setdate):
-        self.root = root
-        self.expname = expname
-        self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=setdate)
+    def __init__(self, args):
+        self.root = args.root
+        self.expname = args.expname
+        self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
 
         self.data = {}
         self.metrics = {}
@@ -43,6 +44,14 @@ class BaseLogger(object):
             date=datetime.datetime.now())
         os.mkdir(self.logdir)
         return self.logdir
+
+    def remove_logdir(self):
+        should_remove = input('Remove {}? [y/n] '.format(self.logdir))
+        if should_remove == 'y':
+            shutil.rmtree(self.logdir)
+            print('Removed {}'.format(self.logdir))
+        else:
+            print('Did not remove {}'.format(self.logdir))
 
     def add_variables(self, names):
         for name in names:

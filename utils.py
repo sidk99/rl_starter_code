@@ -1,4 +1,6 @@
+import copy
 import math
+from operator import itemgetter
 
 def to_device(device, *args):
     return [x.to(device) for x in args]
@@ -50,3 +52,63 @@ def visualize_parameters(model):
             print(n, p.data.norm(), None)
         else:
             print(n, p.data.norm(), p.grad.data.norm())
+
+class TupleList(object):
+    def __init__(self, list_of_tuples):
+        """
+            [(index, value), (index, value), ...]
+        """
+        self.list_of_tuples = list_of_tuples
+        self.check_no_duplicates(self.list_of_tuples)
+
+    def check_no_duplicates(self, list_of_tuples):
+        items = set()
+        for index, value in list_of_tuples:
+            before_size = len(items)
+            items.add(index)
+            after_size = len(items)
+            assert after_size == before_size + 1
+
+    def __getitem__(self, key):
+        for pos, element in enumerate(self.list_of_tuples):
+            if element[0] == key:
+                return copy.deepcopy(element[1])
+        raise ValueError('index {} not in list'.format(key))
+
+    def __str__(self):
+        return str(copy.deepcopy(self.list_of_tuples))
+
+    def index_of_max(self):
+        argmax = max(self.list_of_tuples,key=itemgetter(1))[0] 
+        return argmax
+
+    def enumerate(self):
+        for tup in self.list_of_tuples:
+            yield (tup[0], tup[1])
+
+    def indices(self):
+        return [e[0] for e in self.list_of_tuples]
+
+
+# # make a data-structure for [(index, value), (index, value)]
+# # it supports getitem(index)
+# # it supports sorting
+
+
+# # Stops iterating through the list as soon as it finds the value
+def get_index_of_tuple(a_list, index_in_tuple, index_value):
+    for pos,t in enumerate(a_list):
+        if t[index_in_tuple] == index_value:
+            return pos
+
+    # Matches behavior of list.index
+    raise ValueError("list.index(x): x not in list")
+
+# def get_value_of_tuple_at_index(a_list, index_in_tuple, index_value):
+#     index_in_list = get_index_of_tuple(a_list, index_in_tuple, index_value)
+#     value = a_list[index_in_tuple][1]
+#     return value
+
+# # perhaps I should just make a data-structure.
+
+
