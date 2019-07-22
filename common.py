@@ -1,5 +1,8 @@
+import numpy as np
 import torch
 from starter_code.utils import to_device
+
+eps = np.finfo(np.float32).eps.item()
 
 def estimate_advantages(rewards, masks, values, gamma, tau, device):
     rewards, masks, values = to_device(torch.device('cpu'), rewards, masks, values)
@@ -17,7 +20,7 @@ def estimate_advantages(rewards, masks, values, gamma, tau, device):
         prev_advantage = advantages[i, 0]
 
     returns = values + advantages
-    advantages = (advantages - advantages.mean()) / advantages.std()
+    advantages = (advantages - advantages.mean()) / (advantages.std()+eps)
 
     advantages, returns = to_device(device, advantages, returns)
     return advantages, returns
