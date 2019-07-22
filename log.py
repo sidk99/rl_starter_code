@@ -82,39 +82,3 @@ class BaseLogger(object):
             plt.ylabel(var2_name)
             plt.savefig(os.path.join(self.logdir,'{}.png'.format(fname)))
             plt.close()
-
-class VickreyLogger(BaseLogger):
-    def __init__(self, env, root, expname, setdate):
-        super(VickreyLogger, self).__init__(root, expname, setdate)
-        # so if you want to convert this to HDF5 you will need to pre-compute the size
-        # so maybe a low priority for now
-        self.i_episodes = []
-        self.payoffs = {s: [] for s in env.states}
-        self.bids = {s: [] for s in env.states}
-
-    def record_episode(self, i_episode):
-        self.i_episodes.append(i_episode)
-
-    def record_payoffs(self, state, payoffs):
-        self.payoffs[state].append(payoffs)
-
-    def record_bids(self, state, bids):
-        self.bids[state].append(bids)
-
-    def visualize(self, state, title):
-        payoffs = zip(*self.payoffs[state])
-        bids = zip(*self.bids[state])
-
-        for j, payoff in enumerate(payoffs):
-            plt.plot(self.i_episodes, payoff, label='Payoff for agent {}'.format(j))
-        for j, bid in enumerate(bids):
-            plt.plot(self.i_episodes, bid, label='Bid for agent {}'.format(j))
-        plt.legend()
-
-        plt.title(title)
-        plt.tight_layout()
-        fname = '{}.png'.format(title.replace(' ', '_'))
-        plt.savefig(os.path.join(self.logdir, fname))
-        plt.close()  # plt.clf() shrinks the plot for some reason
-
-
