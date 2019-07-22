@@ -100,7 +100,7 @@ class PPO():
         self.tau = 0.95
         self.l2_reg = 1e-3
         self.clip_epsilon = 0.2
-        self.entropy_coeff = 0.005
+        self.entropy_coeff = args.entropy_coeff
 
         self.optim_epochs = optim_epochs
         self.optim_batch_size = optim_batch_size
@@ -171,6 +171,9 @@ class PPO():
 
     def ppo_step(self, agent, states, actions, returns, advantages, fixed_log_probs):
 
+        # print('before')
+        # u.visualize_parameters(agent.policy)
+
         """update critic"""
         for _ in range(self.optim_value_iternum):
             values_pred = agent.valuefn(states)
@@ -188,11 +191,15 @@ class PPO():
         surr1 = ratio * advantages
         surr2 = torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantages
         policy_surr = -torch.min(surr1, surr2).mean()
-        policy_loss = policy_surr
+        entropy = agent.policy.get_entropy(states, actions).mean()
+        policy_loss = policy_surr - self.entropy_coeff*entropy
         agent.policy_optimizer.zero_grad()
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 40)
         agent.policy_optimizer.step()
+
+        # print('after')
+        # u.visualize_parameters(agent.policy)
 
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
