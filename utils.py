@@ -57,6 +57,8 @@ class TupleList(object):
     def __init__(self, list_of_tuples):
         """
             [(index, value), (index, value), ...]
+
+            # Wait. This is just a dictionary.
         """
         self.list_of_tuples = list_of_tuples
         self.check_no_duplicates(self.list_of_tuples)
