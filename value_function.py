@@ -1,14 +1,25 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+from starter_code.networks import MLP
+
+# class SimpleValueFn(nn.Module):
+#     def __init__(self, state_dim, hid_dim):
+#         super(SimpleValueFn, self).__init__()
+#         self.value_affine = nn.Linear(state_dim, hid_dim)
+#         self.value_head = nn.Linear(hid_dim, 1)
+
+#     def forward(self, state):
+#         state_values = self.value_head(F.relu(self.value_affine(state)))
+#         return state_values
+
 class SimpleValueFn(nn.Module):
     def __init__(self, state_dim, hid_dim):
         super(SimpleValueFn, self).__init__()
-        self.value_affine = nn.Linear(state_dim, hid_dim)
-        self.value_head = nn.Linear(hid_dim, 1)
+        self.value_head = MLP(dims=[state_dim, *hid_dim, 1])
 
     def forward(self, state):
-        state_values = self.value_head(F.relu(self.value_affine(state)))
+        state_values = self.value_head(state)
         return state_values
 
 

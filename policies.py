@@ -7,10 +7,10 @@ from torch.distributions.log_normal import LogNormal
 from starter_code.networks import MLP, GaussianParams
 
 class BidPolicy(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, hdim, action_dim):
         super(BidPolicy, self).__init__()
-        self.bid_mu = MLP(dims=[state_dim, 2, action_dim], zero_init=True)
-        self.bid_logstd = MLP(dims=[state_dim, 2, action_dim], zero_init=True)
+        self.bid_mu = MLP(dims=[state_dim, *hdim, action_dim], zero_init=True)
+        self.bid_logstd = MLP(dims=[state_dim, *hdim, action_dim], zero_init=True)
         self.discrete = False
 
     def forward(self, x):
