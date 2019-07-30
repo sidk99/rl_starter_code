@@ -91,6 +91,9 @@ class TupleList(object):
     def indices(self):
         return [e[0] for e in self.list_of_tuples]
 
+    def __len__(self):
+        return len(self.list_of_tuples)
+
 
 # # make a data-structure for [(index, value), (index, value)]
 # # it supports getitem(index)
