@@ -57,10 +57,15 @@ class BaseLogger(object):
         for name in names:
             self.add_variable(name)
 
-    def add_variable(self, name, include_running_avg=False):
+    def add_variable(self, name, incl_run_avg=False, metric=None):
         self.data[name] = []
-        if include_running_avg:
+        if incl_run_avg:
             self.data['running_{}'.format(name)] = []
+        if metric is not None:
+            self.add_metric(
+                name='running_{}'.format(name), 
+                initial_val=metric['value'], 
+                comparator=metric['cmp'])
 
     def update_variable(self, name, index, value, include_running_avg=False):
         if include_running_avg:
@@ -81,10 +86,8 @@ class BaseLogger(object):
 
     def plot(self, var_pairs):
         for var1_name, var2_name in var_pairs:
-
             x_indices, x_values = zip(*self.data[var1_name])
             y_indices, y_values = zip(*self.data[var2_name])
-
             fname = '{}_{}'.format(self.expname, var2_name)
             plt.plot(x_values,y_values)
             plt.xlabel(var1_name)
