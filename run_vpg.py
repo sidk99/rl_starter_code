@@ -13,7 +13,8 @@ from log import RunningAverage
 from rb import Memory
 from rl_algs import VPG
 from agent import Agent
-from networks import DiscretePolicy, ValueFn, GaussianPolicy
+from policies import DiscretePolicy, GaussianPolicy
+from value_function import ValueFn
 import utils
 from experiment import Experiment
 

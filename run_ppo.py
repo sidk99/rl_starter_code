@@ -13,7 +13,8 @@ from log import RunningAverage
 from rb import Memory
 from rl_algs import PPO
 from agent import Agent
-from networks import DiscretePolicy, GaussianPolicy, ValueFn, Policy
+from policies import DiscretePolicy, GaussianPolicy
+from value_function import ValueFn
 import utils
 from experiment import Experiment
 
@@ -27,6 +28,8 @@ def parse_args():
                         help='learning rate (default: 4e-5)')
     parser.add_argument('--vlr', type=float, default=5e-3, metavar='G',
                         help='learning rate (default: 5e-3)')
+    parser.add_argument('--entropy_coeff', type=float, default=0, metavar='G',
+                        help='entropy coeff (default: 0)')
     parser.add_argument('--opt', type=str, default='sgd', metavar='G',
                         help='optimizer: adam | sgd (default: sgd')
     parser.add_argument('--update-every', type=float, default=1, metavar='G',
@@ -59,7 +62,7 @@ def main():
     state_dim = env.observation_space.shape[0]
     is_disc_action = len(env.action_space.shape) == 0
     action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-    policy = DiscretePolicy if is_disc_action else GaussianPolicy# Policy
+    policy = DiscretePolicy if is_disc_action else GaussianPolicy
 
     agent = Agent(
         policy(state_dim=state_dim, action_dim=action_dim), 
