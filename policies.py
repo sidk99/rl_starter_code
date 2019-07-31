@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.distributions import Categorical
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.log_normal import LogNormal
@@ -78,6 +79,43 @@ class DiscretePolicy(nn.Module):
         action_probs = self.forward(state)
         action_dist = Categorical(action_probs)
         entropy = action_dist.entropy().view(bsize, 1)
+        return entropy
+
+class SimpleGaussianPolicy(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(SimpleGaussianPolicy, self).__init__()
+        self.f1 = nn.Linear(state_dim, 10)
+        self.f2 = GaussianParams(10, action_dim)
+        self.discrete = False
+
+
+    def forward(self, x):
+        x = F.relu(self.f1(x))
+        mu, logstd = self.f2(x)
+        return mu, torch.exp(logstd)
+
+    def select_action(self, state, deterministic):
+        mu, std = self.forward(state)
+        # print('mu: {} std: {}'.format(mu, std))
+        if deterministic:
+            return mu  # (bsize, action_dim)
+        else:
+            dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+            action = dist.sample()  # (bsize, action_dim)
+            return action
+
+    def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        mu, std = self.forward(state)
+        dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, state, action):
+        bsize = state.size(0)
+        mu, std = self.forward(state)
+        dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+        entropy = dist.entropy().view(bsize, 1)
         return entropy
 
 class GaussianPolicy(nn.Module):
