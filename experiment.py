@@ -37,7 +37,8 @@ class Experiment():
                 break
             state = next_state
         stats = {'return': sum([e['reward'] for e in episode_data]),
-                 'steps': t}
+                 'steps': t,
+                 'actions': [e['action'] for e in episode_data]}
         return episode_data, stats
 
     def collect_samples(self, deterministic):
@@ -70,6 +71,7 @@ class Experiment():
             if i_episode % self.args.log_every == 0:
                 print('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
                     i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
+                # print('Action: {}'.format(episode_data[0]['actions']))
 
             if i_episode % self.args.eval_every == 0:
                 stats = self.test(max_episodes=10)
