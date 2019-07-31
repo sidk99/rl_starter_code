@@ -204,9 +204,11 @@ class PPO():
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
         ratio_clipped = num_clipped / states.size(0)
+        # print('ratio_clipped', ratio_clipped)
         log = {}
         log['num_clipped'] = num_clipped
         log['ratio_clipped'] = ratio_clipped
+        log['entropy'] = entropy
         log['bsize'] = states.size(0)
         log['value_loss'] = value_loss.item()
         log['policy_surr'] = policy_surr.item()
