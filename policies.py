@@ -82,16 +82,15 @@ class DiscretePolicy(nn.Module):
         return entropy
 
 class SimpleGaussianPolicy(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, hdim, action_dim):
         super(SimpleGaussianPolicy, self).__init__()
-        self.f1 = nn.Linear(state_dim, 10)
-        self.f2 = GaussianParams(10, action_dim)
+        self.encoder = MLP(dims=[state_dim, *hdim])
+        self.decoder = GaussianParams(hdim[-1], action_dim)
         self.discrete = False
 
-
     def forward(self, x):
-        x = F.relu(self.f1(x))
-        mu, logstd = self.f2(x)
+        x = self.encoder(x)
+        mu, logstd = self.decoder(x)
         return mu, torch.exp(logstd)
 
     def select_action(self, state, deterministic):
