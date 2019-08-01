@@ -61,7 +61,7 @@ def main():
         ValueFn(state_dim=state_dim), args=args)
     rl_alg = VPG(device=device, args=args)
     experiment = Experiment(agent, env, rl_alg, args)
-    experiment.train(max_episodes=201)
+    experiment.train(max_episodes=1001)
 
 
 if __name__ == '__main__':
