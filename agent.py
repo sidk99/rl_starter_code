@@ -16,6 +16,8 @@ class Agent(nn.Module):
         self.initalize_memory()
         self.initialize_optimizer()
 
+        print(self)
+
     def initalize_memory(self):
         self.buffer = Memory(element='simplertransition')
 
