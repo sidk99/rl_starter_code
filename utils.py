@@ -95,11 +95,6 @@ class TupleList(object):
         return len(self.list_of_tuples)
 
 
-# # make a data-structure for [(index, value), (index, value)]
-# # it supports getitem(index)
-# # it supports sorting
-
-
 # # Stops iterating through the list as soon as it finds the value
 def get_index_of_tuple(a_list, index_in_tuple, index_value):
     for pos,t in enumerate(a_list):
