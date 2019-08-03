@@ -44,3 +44,50 @@ class GaussianParams(nn.Module):
         mu = self.mu(x)
         logstd = self.logstd(x)
         return mu, logstd
+
+class BetaSoftPlusParams(nn.Module):
+    """
+        h --> z
+    """
+    def __init__(self, hdim, zdim):
+        super(BetaSoftPlusParams, self).__init__()
+        self.hdim = hdim
+        self.zdim = zdim
+        self.alpha = nn.Linear(hdim, zdim)
+        self.beta = nn.Linear(hdim, zdim)
+
+        # initialize to uniform
+        self.alpha.weight.data.fill_(0.0)
+        self.alpha.bias.data.fill_(1.0)
+
+        self.beta.weight.data.fill_(0.0)
+        self.beta.bias.data.fill_(1.0)
+
+    def forward(self, x):
+        alpha = F.softplus(self.alpha(x))  # the parameters for softplus are tunable
+        beta = F.softplus(self.beta(x))  # the parameters for softplus are tunable
+        return alpha, beta
+
+
+class BetaReluParams(nn.Module):
+    """
+        h --> z
+    """
+    def __init__(self, hdim, zdim):
+        super(BetaReluParams, self).__init__()
+        self.hdim = hdim
+        self.zdim = zdim
+        self.alpha = nn.Linear(hdim, zdim)
+        self.beta = nn.Linear(hdim, zdim)
+
+        # initialize to uniform
+        self.alpha.weight.data.fill_(0.0)
+        self.alpha.bias.data.fill_(0.0)
+
+        self.beta.weight.data.fill_(0.0)
+        self.beta.bias.data.fill_(3.0)
+
+    def forward(self, x):    
+        alpha = F.relu(self.alpha(x)) + 1
+        beta = F.relu(self.beta(x)) + 1
+        return alpha, beta

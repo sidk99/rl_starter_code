@@ -3,13 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 from torch.distributions.multivariate_normal import MultivariateNormal
+from torch.distributions.beta import Beta
 from torch.distributions.log_normal import LogNormal
 
-from starter_code.networks import MLP, GaussianParams
+from starter_code.networks import MLP, GaussianParams, BetaSoftPlusParams, BetaReluParams
 
-class BidPolicy(nn.Module):
+class BidPolicyLN(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):
-        super(BidPolicy, self).__init__()
+        super(BidPolicyLN, self).__init__()
         self.bid_mu = MLP(dims=[state_dim, *hdim, action_dim], zero_init=True)
         self.bid_logstd = MLP(dims=[state_dim, *hdim, action_dim], zero_init=True)
         self.discrete = False
@@ -34,7 +35,7 @@ class BidPolicy(nn.Module):
         log_prob = dist.log_prob(action)
         return log_prob
 
-    def get_entropy(self, state, action):
+    def get_entropy(self, state):
         bsize = state.size(0)
         mu, std = self.forward(state)
         dist = LogNormal(mu, std)
@@ -42,19 +43,14 @@ class BidPolicy(nn.Module):
         return entropy
 
 class DiscretePolicy(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, hdim, action_dim):
         super(DiscretePolicy, self).__init__()
-        self.action_encoder = nn.Linear(state_dim, 128)
-        self.action_head = nn.Linear(128, action_dim)
-
-        self.saved_actions = []
-        self.rewards = []
-
+        self.action_dim = action_dim
+        self.network = MLP(dims=[state_dim, *hdim, action_dim])
         self.discrete = True
 
     def forward(self, x):
-        action_encoded = F.relu(self.action_encoder(x))
-        action_scores = self.action_head(action_encoded)
+        action_scores = self.network(x)
         action_probs = F.softmax(action_scores, dim=-1)
         return action_probs
 
@@ -66,12 +62,16 @@ class DiscretePolicy(nn.Module):
         else:
             action_dist = Categorical(action_probs)
             action = action_dist.sample().unsqueeze(-1)  # (bsize, 1)
+        assert action.size() == (bsize, 1)
         return action
 
     def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        action = action.view(bsize)
         action_probs = self.forward(state)
         action_dist = Categorical(action_probs)
-        log_prob = action_dist.log_prob(action).unsqueeze(-1)  # (bsize, 1)
+        log_prob = action_dist.log_prob(action).view(bsize, 1)
+        assert log_prob.size() == (bsize, 1)
         return log_prob
 
     def get_entropy(self, state):
@@ -110,12 +110,86 @@ class SimpleGaussianPolicy(nn.Module):
         log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
         return log_prob
 
-    def get_entropy(self, state, action):
+    def get_entropy(self, state):
         bsize = state.size(0)
         mu, std = self.forward(state)
         dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
         entropy = dist.entropy().view(bsize, 1)
         return entropy
+
+class SimpleBetaSoftPlusPolicy(nn.Module):
+    def __init__(self, state_dim, hdim, action_dim):
+        super(SimpleBetaSoftPlusPolicy, self).__init__()
+        self.encoder = MLP(dims=[state_dim, *hdim])
+        self.decoder = BetaSoftPlusParams(hdim[-1], action_dim)
+        self.discrete = False
+
+    def forward(self, x):
+        x = self.encoder(x)
+        alpha, beta = self.decoder(x)
+        return alpha, beta
+
+    def select_action(self, state, deterministic):
+        alpha, beta = self.forward(state)
+        # if deterministic:
+        #     raise NotImplemeentedError
+        # else:
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        action = dist.sample()  # (bsize, action_dim)
+        return action
+
+    def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, state):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        entropy = dist.entropy().view(bsize, 1)
+        return entropy
+
+class SimpleBetaReluPolicy(nn.Module):
+    def __init__(self, state_dim, hdim, action_dim):
+        super(SimpleBetaReluPolicy, self).__init__()
+        self.encoder = MLP(dims=[state_dim, *hdim])
+        self.decoder = BetaReluParams(hdim[-1], action_dim)
+        self.discrete = False
+
+    def forward(self, x):
+        x = self.encoder(x)
+        alpha, beta = self.decoder(x)
+        return alpha, beta
+
+    def select_action(self, state, deterministic):
+        alpha, beta = self.forward(state)
+        # if deterministic:
+        #     raise NotImplemeentedError
+        # else:
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        action = dist.sample()  # (bsize, action_dim)
+        return action
+
+    def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, state):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        entropy = dist.entropy().view(bsize, 1)
+        return entropy
+
+
+
+
 
 class GaussianPolicy(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -148,7 +222,7 @@ class GaussianPolicy(nn.Module):
         log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
         return log_prob
 
-    def get_entropy(self, state, action):
+    def get_entropy(self, state):
         bsize = state.size(0)
         mu, std = self.forward(state)
         dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
