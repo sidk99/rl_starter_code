@@ -13,6 +13,7 @@ class RunningAverage(object):
         self.alpha = 0.01
 
     def update_variable(self, key, value):
+        self.data[key] = value # overwrite
         if 'running_'+key not in self.data:
             self.data['running_'+key] = value
         else:
@@ -22,6 +23,12 @@ class RunningAverage(object):
     def get_value(self, key):
         if 'running_'+key in self.data:
             return self.data['running_'+key]
+        else:
+            assert KeyError
+
+    def get_last_value(self, key):
+        if key in self.data:
+            return self.data[key]
         else:
             assert KeyError
 
