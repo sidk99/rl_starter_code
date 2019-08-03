@@ -191,7 +191,7 @@ class PPO():
         surr1 = ratio * advantages
         surr2 = torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantages
         policy_surr = -torch.min(surr1, surr2).mean()
-        entropy = agent.policy.get_entropy(states, actions).mean()
+        entropy = agent.policy.get_entropy(states).mean()
         policy_loss = policy_surr - self.entropy_coeff*entropy
         agent.policy_optimizer.zero_grad()
         policy_loss.backward()
