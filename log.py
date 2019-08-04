@@ -5,6 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 import shutil
+import pprint
 
 class RunningAverage(object):
     def __init__(self):
@@ -34,6 +35,7 @@ class RunningAverage(object):
 
 class BaseLogger(object):
     def __init__(self, args):
+        self.args = args
         self.root = args.root
         self.expname = args.expname
         self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
@@ -42,6 +44,22 @@ class BaseLogger(object):
         self.metrics = {}
 
         self.run_avg = RunningAverage()
+
+    def printf(self, string):
+        if self.args.printf:
+            # dirname = os.path.basename(self.logdir)
+            f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
+            print(string, file=f)
+        else:
+            print(string)
+
+    def pprintf(self, string):
+        if self.args.printf:
+            # dirname = os.path.basename(self.logdir)
+            f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
+            pprint.pprint(string, stream=f)
+        else:
+            pprint.pprint(string)
 
     def create_logdir(self, root, expname, setdate):
         self.logdir = os.path.join(root, expname)
