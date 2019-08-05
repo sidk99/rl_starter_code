@@ -47,7 +47,6 @@ class BaseLogger(object):
 
     def printf(self, string):
         if self.args.printf:
-            # dirname = os.path.basename(self.logdir)
             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
             print(string, file=f)
         else:
@@ -55,7 +54,6 @@ class BaseLogger(object):
 
     def pprintf(self, string):
         if self.args.printf:
-            # dirname = os.path.basename(self.logdir)
             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
             pprint.pprint(string, stream=f)
         else:
