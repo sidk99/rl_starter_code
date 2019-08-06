@@ -4,6 +4,28 @@ import torch.nn.functional as F
 
 from starter_code.utils import normal_log_density, normal_entropy
 
+
+class CNN(nn.Module):
+    # from rl-starter-files
+    def __init__(self, n, m):
+        super(CNN, self).__init__()
+        self.image_conv = nn.Sequential(
+            nn.Conv2d(3, 16, (2, 2)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(16, 32, (2, 2)),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, (2, 2)),
+            nn.ReLU()
+        )
+        self.image_embedding_size = ((n-1)//2-2)*((m-1)//2-2)*64
+    def forward(self, x):
+        # (bsize, H, W, C) --> (bsize, C, H, W)
+        x = x.transpose(1, 3).transpose(2, 3)
+        x = self.image_conv(x)
+        x = x.reshape(x.shape[0], -1)
+        return x
+
 class MLP(nn.Module):
     def __init__(self, dims, zero_init=False, output_activation=None):
         super(MLP, self).__init__()

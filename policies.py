@@ -6,7 +6,7 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.beta import Beta
 from torch.distributions.log_normal import LogNormal
 
-from starter_code.networks import MLP, GaussianParams, BetaSoftPlusParams, BetaReluParams
+from starter_code.networks import MLP, GaussianParams, BetaSoftPlusParams, BetaReluParams, CNN
 
 class BidPolicyLN(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):
@@ -114,6 +114,41 @@ class SimpleGaussianPolicy(nn.Module):
         bsize = state.size(0)
         mu, std = self.forward(state)
         dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
+        entropy = dist.entropy().view(bsize, 1)
+        return entropy
+
+class BetaCNNPolicy(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(BetaCNNPolicy, self).__init__()
+        self.encoder = CNN(*state_dim)
+        self.decoder = BetaSoftPlusParams(self.encoder.image_embedding_size, action_dim)
+        self.discrete = False
+
+    def forward(self, x):
+        x = self.encoder(x)
+        alpha, beta = self.decoder(x)
+        return alpha, beta
+
+    def select_action(self, state, deterministic):
+        alpha, beta = self.forward(state)
+        # if deterministic:
+        #     raise NotImplemeentedError
+        # else:
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        action = dist.sample()  # (bsize, action_dim)
+        return action
+
+    def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, state):
+        bsize = state.size(0)
+        alpha, beta = self.forward(state)
+        dist = Beta(concentration1=alpha, concentration0=beta)
         entropy = dist.entropy().view(bsize, 1)
         return entropy
 

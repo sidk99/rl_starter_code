@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from starter_code.networks import MLP
+from starter_code.networks import MLP, CNN
 
 class SimpleValueFn(nn.Module):
     def __init__(self, state_dim, hdim):
@@ -11,6 +11,16 @@ class SimpleValueFn(nn.Module):
 
     def forward(self, state):
         state_values = self.value_head(state)
+        return state_values
+
+class CNNValueFn(nn.Module):
+    def __init__(self, state_dim):
+        super(CNNValueFn, self).__init__()
+        self.encoder = CNN(*state_dim)
+        self.decoder = nn.Linear(self.encoder.image_embedding_size, 1)
+
+    def forward(self, state):
+        state_values = self.decoder(self.encoder(state))
         return state_values
 
 
