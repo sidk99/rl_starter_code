@@ -34,6 +34,8 @@ def parse_args():
                         help='eval every (default: 100)')
     parser.add_argument('--seed', type=int, default=543, metavar='N',
                         help='random seed (default: 543)')
+    parser.add_argument('--gpu-index', type=int, default=0,
+                        help='gpu index (default: 0)')
     parser.add_argument('--render', action='store_true',
                         help='render the environment')
     parser.add_argument('--log-every', type=int, default=10, metavar='N',
@@ -58,9 +60,9 @@ def main():
 
     agent = Agent(
         policy(state_dim=state_dim, action_dim=action_dim), 
-        ValueFn(state_dim=state_dim), args=args)
+        ValueFn(state_dim=state_dim), args=args).to(device)
     rl_alg = VPG(device=device, args=args)
-    experiment = Experiment(agent, env, rl_alg, args)
+    experiment = Experiment(agent, env, rl_alg, device, args)
     experiment.train(max_episodes=1001)
 
 

@@ -7,19 +7,20 @@ import ipdb
 from tqdm import tqdm
 
 class Experiment():
-    def __init__(self, agent, env, rl_alg, args):
+    def __init__(self, agent, env, rl_alg, device, args):
         self.agent = agent
         self.env = env
         self.rl_alg = rl_alg
+        self.device = device
         self.args = args
 
     def sample_trajectory(self, deterministic):
         episode_data = []
         state = self.env.reset()
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
-            state_var = torch.from_numpy(state).float().unsqueeze(0)
+            state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
-                action = self.agent(state_var, deterministic=deterministic).detach()[0].numpy()  # (adim)
+                action = self.agent(state_var, deterministic=deterministic).detach()[0].cpu().numpy()  # (adim)
             if self.agent.policy.discrete: action = int(action)
             next_state, reward, done, _ = self.env.step(action)
             if self.args.render:

@@ -80,7 +80,7 @@ class A2C():
         for log_prob, value, r in zip(log_probs, values, rewards):
             reward = r - value.item()
             policy_losses.append(-log_prob * reward)
-            value_losses.append(F.smooth_l1_loss(value, torch.tensor([r])))
+            value_losses.append(F.smooth_l1_loss(value, torch.tensor([r]).to(self.device)))
         agent.policy_optimizer.zero_grad()
         agent.value_optimizer.zero_grad()
         loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
