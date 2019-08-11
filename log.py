@@ -169,14 +169,8 @@ class MultiBaseLogger(object):
         else:
             print('Did not remove {}'.format(self.logdir))
 
-    # def add_variable(self, env_name, name, incl_run_avg=False, metric=None):
-    #     self.env_wrappers[env_name].env_logger.add_variable(name, incl_run_avg, metric)
-
     def get_recent_variable_value(self, env_name, name):
         self.env_wrappers[env_name].env_logger.get_recent_variable_value(name)
-
-    # def add_metric(self, env_name, name, initial_val, comparator):
-    #     self.env_wrappers[env_name].env_logger.add_metric(name, initial_val, comparator)
 
 
 class EnvLogger(object):
