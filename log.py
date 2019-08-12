@@ -3,8 +3,6 @@ import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import numpy as np
-import operator
 import os
 import shutil
 import pprint
@@ -129,14 +127,14 @@ class RunningAverage(object):
 
 
 class MultiBaseLogger(object):
-    def __init__(self, env_wrappers, args):
-        self.env_wrappers = env_wrappers
+    def __init__(self, env_managers, args):
+        self.env_managers = env_managers
         self.args = args
         self.root = args.root
         self.expname = args.expname
         self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
 
-        for env_name, env_wrapper in self.env_wrappers.items():
+        for env_name, env_wrapper in self.env_managers.items():
             env_wrapper.set_logdir(self.create_logdir(root=self.logdir, expname=env_name, setdate=False))
         # now create the logdirs for all the envs
 
@@ -172,7 +170,7 @@ class MultiBaseLogger(object):
             print('Did not remove {}'.format(self.logdir))
 
     def get_recent_variable_value(self, env_name, name):
-        self.env_wrappers[env_name].env_logger.get_recent_variable_value(name)
+        self.env_managers[env_name].env_logger.get_recent_variable_value(name)
 
 
 class EnvLogger(object):
@@ -219,50 +217,3 @@ class EnvLogger(object):
             plt.ylabel(var2_name)
             plt.savefig(os.path.join(logdir, '{}.png'.format(fname)))
             plt.close()
-
-# this should be in Vickrey_Log
-class EnvManager(EnvLogger):
-    def __init__(self, env_name, env_type, env, env_id, args):
-        super(EnvManager, self).__init__(args)
-        self.env_name = env_name
-        self.env_type = env_type
-        self.env_id = env_id
-        self.env = env
-        self.env.seed(10000+env_id)
-        self.initialize()
-
-    def set_logdir(self, logdir):
-        self.logdir = logdir
-
-    def initialize(self):
-        self.add_variable('i_episode')
-
-        if self.env_type == 'gym' or self.env_type == 'mg':
-            self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
-            self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
-            self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
-            self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        elif self.env_type == 'gw':
-            for state in self.env.starting_states:
-                self.add_variable('min_return_s{}'.format(state), incl_run_avg=True, 
-                    metric={'value': -np.inf, 'cmp': operator.ge})
-                self.add_variable('max_return_s{}'.format(state), incl_run_avg=True, 
-                    metric={'value': -np.inf, 'cmp': operator.ge})
-                self.add_variable('mean_return_s{}'.format(state), incl_run_avg=True, 
-                    metric={'value': -np.inf, 'cmp': operator.ge})
-                self.add_variable('std_return_s{}'.format(state), incl_run_avg=True, 
-                    metric={'value': np.inf, 'cmp': operator.le})
-        else:
-            assert False
-
-
-class TabularEnvManager(EnvManager):
-    def __init__(self, env_name, env_type, env_id, args):
-        super(TabularEnvLogger, self).__init__(env_name, env_type, env_id, args)
-
-class GymEnvManager(EnvManager):
-    def __init__(self, env_name, env_type, env_id, args):
-        super(GymEnvManager, self).__init__(self, env_name, env_type, env_id, args)
-
-
-
