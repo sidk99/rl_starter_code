@@ -3,6 +3,8 @@ import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
+import operator
 import os
 import shutil
 import pprint
@@ -218,6 +220,49 @@ class EnvLogger(object):
             plt.savefig(os.path.join(logdir, '{}.png'.format(fname)))
             plt.close()
 
-class TabularEnvLogger(object):
-    def __init__(self, args):
-        super(TabularEnvLogger, self).__init__()
+# this should be in Vickrey_Log
+class EnvManager(EnvLogger):
+    def __init__(self, env_name, env_type, env, env_id, args):
+        super(EnvManager, self).__init__(args)
+        self.env_name = env_name
+        self.env_type = env_type
+        self.env_id = env_id
+        self.env = env
+        self.env.seed(10000+env_id)
+        self.initialize()
+
+    def set_logdir(self, logdir):
+        self.logdir = logdir
+
+    def initialize(self):
+        self.add_variable('i_episode')
+
+        if self.env_type == 'gym' or self.env_type == 'mg':
+            self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        elif self.env_type == 'gw':
+            for state in self.env.starting_states:
+                self.add_variable('min_return_s{}'.format(state), incl_run_avg=True, 
+                    metric={'value': -np.inf, 'cmp': operator.ge})
+                self.add_variable('max_return_s{}'.format(state), incl_run_avg=True, 
+                    metric={'value': -np.inf, 'cmp': operator.ge})
+                self.add_variable('mean_return_s{}'.format(state), incl_run_avg=True, 
+                    metric={'value': -np.inf, 'cmp': operator.ge})
+                self.add_variable('std_return_s{}'.format(state), incl_run_avg=True, 
+                    metric={'value': np.inf, 'cmp': operator.le})
+        else:
+            assert False
+
+
+class TabularEnvManager(EnvManager):
+    def __init__(self, env_name, env_type, env_id, args):
+        super(TabularEnvLogger, self).__init__(env_name, env_type, env_id, args)
+
+class GymEnvManager(EnvManager):
+    def __init__(self, env_name, env_type, env_id, args):
+        super(GymEnvManager, self).__init__(self, env_name, env_type, env_id, args)
+
+
+
