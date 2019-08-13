@@ -33,99 +33,6 @@ class RunningAverage(object):
         else:
             assert KeyError
 
-# class BaseLogger(object):
-#     def __init__(self, args):
-#         self.args = args
-#         self.root = args.root
-#         self.expname = args.expname
-#         self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
-
-#     def printf(self, string):
-#         if self.args.printf:
-#             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
-#             print(string, file=f)
-#         else:
-#             print(string)
-
-#     def pprintf(self, string):
-#         if self.args.printf:
-#             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
-#             pprint.pprint(string, stream=f)
-#         else:
-#             pprint.pprint(string)
-
-#     def create_logdir(self, root, expname, setdate):
-#         self.logdir = os.path.join(root, expname)
-#         if setdate:
-#             if not expname == '': self.logdir += '-'
-#             self.logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
-#             date=datetime.datetime.now())
-#         os.mkdir(self.logdir)
-#         return self.logdir
-
-#     def remove_logdir(self):
-#         should_remove = input('Remove {}? [y/n] '.format(self.logdir))
-#         if should_remove == 'y':
-#             shutil.rmtree(self.logdir)
-#             print('Removed {}'.format(self.logdir))
-#         else:
-#             print('Did not remove {}'.format(self.logdir))
-
-# class MultiBaseLogger(object):
-#     def __init__(self, loggers, args):
-#         self.loggers = loggers
-#         self.args = args
-#         self.root = args.root
-#         self.expname = args.expname
-#         self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
-
-#     def printf(self, string):
-#         if self.args.printf:
-#             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
-#             print(string, file=f)
-#         else:
-#             print(string)
-
-#     def pprintf(self, string):
-#         if self.args.printf:
-#             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
-#             pprint.pprint(string, stream=f)
-#         else:
-#             pprint.pprint(string)
-
-#     def create_logdir(self, root, expname, setdate):
-#         self.logdir = os.path.join(root, expname)
-#         if setdate:
-#             if not expname == '': self.logdir += '-'
-#             self.logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
-#             date=datetime.datetime.now())
-#         os.mkdir(self.logdir)
-#         return self.logdir
-
-#     def remove_logdir(self):
-#         should_remove = input('Remove {}? [y/n] '.format(self.logdir))
-#         if should_remove == 'y':
-#             shutil.rmtree(self.logdir)
-#             print('Removed {}'.format(self.logdir))
-#         else:
-#             print('Did not remove {}'.format(self.logdir))
-
-#     def add_variable(self, env_name, name, incl_run_avg=False, metric=None):
-#         self.loggers[env_name].add_variable(name, incl_run_avg, metric)
-
-#     def update_variable(self, env_name, name, index, value, include_running_avg=False):
-#         self.loggers[env_name].update_variable(name, index, value, include_running_avg)
-
-#     def get_recent_variable_value(self, env_name, name):
-#         self.loggers[env_name].get_recent_variable_value(name)
-
-#     def add_metric(self, env_name, name, initial_val, comparator):
-#         self.loggers[env_name].add_metric(name, initial_val, comparator)
-
-#     def plot(self, env_name, var_pairs, logdir, expname):
-#         self.loggers[env_name].plot(var_pairs, logdir, expname)
-
-
 class MultiBaseLogger(object):
     def __init__(self, env_managers, args):
         self.env_managers = env_managers
@@ -136,7 +43,6 @@ class MultiBaseLogger(object):
 
         for env_name, env_wrapper in self.env_managers.items():
             env_wrapper.set_logdir(self.create_logdir(root=self.logdir, expname=env_name, setdate=False))
-        # now create the logdirs for all the envs
 
     def printf(self, string):
         if self.args.printf:
