@@ -34,15 +34,11 @@ class RunningAverage(object):
             assert KeyError
 
 class MultiBaseLogger(object):
-    def __init__(self, env_managers, args):
-        self.env_managers = env_managers
+    def __init__(self, args):
         self.args = args
         self.root = args.root
         self.expname = args.expname
         self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
-
-        for env_name, env_wrapper in self.env_managers.items():
-            env_wrapper.set_logdir(self.create_logdir(root=self.logdir, expname=env_name, setdate=False))
 
     def printf(self, string):
         if self.args.printf:
@@ -74,10 +70,6 @@ class MultiBaseLogger(object):
             print('Removed {}'.format(self.logdir))
         else:
             print('Did not remove {}'.format(self.logdir))
-
-    def get_recent_variable_value(self, env_name, name):
-        self.env_managers[env_name].env_logger.get_recent_variable_value(name)
-
 
 class EnvLogger(object):
     def __init__(self, args):
