@@ -1,5 +1,6 @@
 import copy
 import math
+import numpy as np
 from operator import itemgetter
 
 def to_device(device, *args):
@@ -104,11 +105,14 @@ def get_index_of_tuple(a_list, index_in_tuple, index_value):
     # Matches behavior of list.index
     raise ValueError("list.index(x): x not in list")
 
-# def get_value_of_tuple_at_index(a_list, index_in_tuple, index_value):
-#     index_in_list = get_index_of_tuple(a_list, index_in_tuple, index_value)
-#     value = a_list[index_in_tuple][1]
-#     return value
+def to_onehot(state_id, state_dim):
+    state = np.zeros(state_dim)
+    state[state_id] = 1
+    return state
 
-# # perhaps I should just make a data-structure.
-
+def from_onehot(state, state_dim):
+    state_id = np.argmax(state)
+    if state_id == state_dim-1:
+        state_id = -1
+    return state_id
 
