@@ -48,8 +48,7 @@ def main():
     args = parse_args()
     device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
-    # env = gym.make('CartPole-v0')
-    env = gym.make('InvertedPendulum-v2')
+    env = gym.make(args.env_name)
 
     env.seed(args.seed)
     torch.manual_seed(args.seed)
