@@ -133,7 +133,6 @@ class PPO():
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
         masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
         rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
-
         assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
         assert masks.dim() == rewards.dim() == 1
         return states, actions, masks, rewards
