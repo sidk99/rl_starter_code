@@ -86,8 +86,6 @@ class Experiment():
             if i_episode % self.args.log_every == 0:
                 print('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
                     i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
-                # print('Action: {}'.format(episode_data[0]['actions']))
-
             if i_episode % self.args.eval_every == 0:
                 stats = self.test(max_episodes=10)
                 print(stats)
