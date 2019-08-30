@@ -13,7 +13,7 @@ from log import RunningAverage
 from rb import Memory
 from rl_algs import PPO
 from agent import Agent
-from policies import DiscretePolicy, GaussianPolicy
+from policies import DiscretePolicy, SimpleGaussianPolicy
 from value_function import ValueFn
 import utils
 from experiment import Experiment
@@ -44,6 +44,7 @@ def parse_args():
                         help='render the environment')
     parser.add_argument('--log-every', type=int, default=1, metavar='N',
                         help='interval between training status logs (default: 10)')
+    parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
     args = parser.parse_args()
     return args
 
@@ -52,9 +53,7 @@ def main():
     device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
     # env = gym.make('CartPole-v0')
-    env = gym.make('InvertedPendulum-v2')
-    # env = gym.make('Hopper-v2')
-    # env = gym.make('Hopper-v2')
+    env = gym.make(args.env_name)
 
     args.seed = 0
     np.random.seed(args.seed)
@@ -64,10 +63,10 @@ def main():
     state_dim = env.observation_space.shape[0]
     is_disc_action = len(env.action_space.shape) == 0
     action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-    policy = DiscretePolicy if is_disc_action else GaussianPolicy
+    policy = DiscretePolicy if is_disc_action else SimpleGaussianPolicy
 
     agent = Agent(
-        policy(state_dim=state_dim, action_dim=action_dim), 
+        policy(state_dim=state_dim, hdim=[128, 128], action_dim=action_dim), 
         ValueFn(state_dim=state_dim), args=args).to(device)
     rl_alg = PPO(device=device, args=args)
     experiment = Experiment(agent, env, rl_alg, device, args)

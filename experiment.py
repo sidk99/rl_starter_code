@@ -21,14 +21,18 @@ class Experiment():
             state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
                 action = self.agent(state_var, deterministic=deterministic).detach()[0].cpu().numpy()  # (adim)
-            if self.agent.policy.discrete: action = int(action)
+            if self.agent.policy.discrete: 
+                action = int(action)
+                stored_action = [action]
+            else:
+                stored_action = action
             next_state, reward, done, _ = self.env.step(action)
             if self.args.render:
                 self.env.render()
             mask = 0 if done else 1
             e = {
                  'state': state,
-                 'action': action,
+                 'action': stored_action,
                  'mask': mask,
                  'reward': reward,
                  }
