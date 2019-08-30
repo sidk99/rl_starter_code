@@ -19,6 +19,8 @@ import utils
 from experiment import Experiment
 import gym_minigrid
 
+from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager
+
 import ipdb
 
 def parse_args():
@@ -37,6 +39,9 @@ def parse_args():
                         help='render the environment')
     parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
     parser.add_argument('--alg-name', type=str, default='ppo')
+    parser.add_argument('--root', type=str, default='runs')
+    parser.add_argument('--expname', type=str, default='')
+    parser.add_argument('--printf', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -85,35 +90,26 @@ def main():
     args = rlalg_config_switch(args.alg_name)(args)
     device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
-    env = gym.make(args.env_name)
-
-    args.seed = 0
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    env.seed(args.seed)
 
     if 'MiniGrid' in args.env_name:
-        full_state_dim = env.observation_space.spaces['image'].shape  # (H, W, C)
-        state_dim = full_state_dim[:-1]  # (H, W)
-        is_disc_action = len(env.action_space.shape) == 0
-        action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-
+        env_manager = MinigridEnvManager(args.env_name, args)
         policy = DiscreteCNNPolicy
         agent = Agent(
-            policy(state_dim=state_dim, action_dim=action_dim), 
-            CNNValueFn(state_dim=state_dim), args=args).to(device)
+            policy(state_dim=env_manager.state_dim, action_dim=env_manager.action_dim), 
+            CNNValueFn(state_dim=env_manager.state_dim), args=args).to(device)
     else:
-        state_dim = env.observation_space.shape[0]
-        is_disc_action = len(env.action_space.shape) == 0
-        action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-
-        policy = DiscretePolicy if is_disc_action else SimpleGaussianPolicy
+        env_manager = GymEnvManager(args.env_name, args)
+        policy = DiscretePolicy if env_manager.is_disc_action else SimpleGaussianPolicy
         agent = Agent(
-            policy(state_dim=state_dim, hdim=[128, 128], action_dim=action_dim), 
-            ValueFn(state_dim=state_dim), args=args).to(device)
+            policy(state_dim=env_manager.state_dim, hdim=[128, 128], action_dim=env_manager.action_dim), 
+            ValueFn(state_dim=env_manager.state_dim), args=args).to(device)
 
+    logger = MultiBaseLogger(args=args)
+    env_manager.set_logdir(logger.create_logdir(root=logger.logdir, expname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-    experiment = Experiment(agent, env, rl_alg, device, args)
+    experiment = Experiment(agent, env_manager, rl_alg, logger, device, args)
     experiment.train(max_episodes=100001)
 
 

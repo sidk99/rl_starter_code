@@ -1,8 +1,11 @@
 import copy
 import datetime
+import gym
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
+import operator
 import os
 import shutil
 import pprint
@@ -115,3 +118,93 @@ class EnvLogger(object):
             plt.ylabel(var2_name)
             plt.savefig(os.path.join(logdir, '{}.png'.format(fname)))
             plt.close()
+
+class EnvManager(EnvLogger):
+    def __init__(self, env_name, args):
+        super(EnvManager, self).__init__(args)
+        self.env_name = env_name
+        self.env_type = 'mg'  # CHANGED
+        self.env = gym.make(env_name)  # CHANGED
+        self.env.seed(args.seed)  # this should be args.seed
+        self.initialize()
+
+    def set_logdir(self, logdir):
+        self.logdir = logdir
+
+    def initialize(self):
+        self.add_variable('i_episode')
+
+class VisualEnvManager(EnvManager):
+    def __init__(self, env_name, args):
+        super(VisualEnvManager, self).__init__(env_name, args)
+
+    def initialize(self):
+        super(VisualEnvManager, self).initialize()
+        self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
+    def save_image(self, fname, i, ret, frame, bids_t):
+        fig = plt.figure()
+        ax1 = fig.add_subplot(121)
+        ax1.set_xticks([])
+        ax1.set_yticks([])
+        ax1.grid(False)
+        ax1.set_title('Timestep: {}'.format(i))
+        ax1.imshow(frame)
+
+        ax2 = fig.add_subplot(122)
+        agent_ids, bids = zip(*bids_t)
+        ax2.bar(agent_ids, bids, align='center', alpha=0.5)
+        ax2.set_xticks(range(len(agent_ids)), map(int, agent_ids))
+        ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax2.set_ylim(0.0, 1.0)
+        ax2.set_ylabel('Bid')
+        ax2.set_xlabel('Action')
+        fig.suptitle('Return: {}'.format(ret))  # can say what the return is here
+        plt.tight_layout(pad=3)
+        plt.savefig(os.path.join(self.logdir, fname))
+        plt.close()
+
+    def save_gif(self, prefix, gifname, i_episode, test_example, remove_images):
+        def get_key(fname):
+            basename = os.path.basename(fname)
+            delimiter = '_t'
+            start = basename.rfind(delimiter)
+            key = int(basename[start+len(delimiter):-len('.png')])
+            return key
+        fnames = sorted(glob.glob('{}/{}_e{}_n{}_t*.png'.format(self.logdir, prefix, i_episode, test_example)), key=get_key)
+        images = [imageio.imread(fname) for fname in fnames]
+        imshape = images[0].shape
+        for pad in range(2):
+            images.append(imageio.core.util.Array(np.ones(imshape).astype(np.uint8)*255))
+        imageio.mimsave(os.path.join(self.logdir, gifname), images)
+        if remove_images:
+            for fname in fnames:
+                os.remove(fname)
+
+    def save_video(self, i_episode, test_example, bids, ret, society_episode_data):
+        frames = [e['frame'] for e in society_episode_data]
+        for i, frame in tqdm(enumerate(frames)):
+            fname = '{}_e{}_n{}_t{}.png'.format(self.env_name, i_episode, test_example, i)
+            agent_ids = sorted(bids.keys())
+            bids_t = [(agent_id, bids[agent_id][i]) for agent_id in agent_ids]
+            self.save_image(fname, i, ret, frame, bids_t)
+        gifname = 'vid{}_{}_{}.gif'.format(self.env_name, i_episode, test_example)
+        self.save_gif(self.env_name, gifname, i_episode, test_example, remove_images=True)
+
+class GymEnvManager(VisualEnvManager):
+    def __init__(self, env_name, args):
+        super(GymEnvManager, self).__init__(env_name, args)
+        self.state_dim = self.env.observation_space.shape[0]
+        self.is_disc_action = len(self.env.action_space.shape) == 0
+        self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
+
+class MinigridEnvManager(VisualEnvManager):
+    def __init__(self, env_name, args):
+        super(MinigridEnvManager, self).__init__(env_name, args)
+        full_state_dim = self.env.observation_space.spaces['image'].shape  # (H, W, C)
+        self.state_dim = full_state_dim[:-1]  # (H, W)
+        self.is_disc_action = len(self.env.action_space.shape) == 0
+        self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
