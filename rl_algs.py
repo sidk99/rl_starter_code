@@ -21,7 +21,7 @@ class VPG():
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
-        assert states.dim() == actions.dim() == 2
+        assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
         return states, actions
 
     def improve(self, agent):
@@ -57,7 +57,7 @@ class A2C():
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
-        assert states.dim() == actions.dim() == 2
+        assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
         return states, actions
 
     def improve(self, agent):

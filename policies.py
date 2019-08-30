@@ -81,6 +81,48 @@ class DiscretePolicy(nn.Module):
         entropy = action_dist.entropy().view(bsize, 1)
         return entropy
 
+class DiscreteCNNPolicy(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(DiscreteCNNPolicy, self).__init__()
+        self.action_dim = action_dim
+        self.encoder = CNN(*state_dim)
+        self.decoder = MLP(dims=[self.encoder.image_embedding_size, action_dim])
+        self.discrete = True
+
+    def forward(self, x):
+        # action_scores = self.network(x)
+        action_scores = self.decoder(self.encoder(x))
+        action_probs = F.softmax(action_scores, dim=-1)
+        return action_probs
+
+    def select_action(self, state, deterministic):
+        bsize = state.shape[0]
+        action_probs = self.forward(state)
+        if deterministic:
+            action = torch.argmax(action_probs, dim=-1).unsqueeze(-1)  # (bsize, 1)
+        else:
+            action_dist = Categorical(action_probs)
+            action = action_dist.sample().unsqueeze(-1)  # (bsize, 1)
+        assert action.size() == (bsize, 1)
+        return action
+
+    def get_log_prob(self, state, action):
+        bsize = state.size(0)
+        action = action.view(bsize)
+        action_probs = self.forward(state)
+        action_dist = Categorical(action_probs)
+        log_prob = action_dist.log_prob(action).view(bsize, 1)
+        assert log_prob.size() == (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, state):
+        bsize = state.size(0)
+        action_probs = self.forward(state)
+        action_dist = Categorical(action_probs)
+        entropy = action_dist.entropy().view(bsize, 1)
+        return entropy
+
+
 class SimpleGaussianPolicy(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):
         super(SimpleGaussianPolicy, self).__init__()
@@ -131,9 +173,6 @@ class BetaCNNPolicy(nn.Module):
 
     def select_action(self, state, deterministic):
         alpha, beta = self.forward(state)
-        # if deterministic:
-        #     raise NotImplemeentedError
-        # else:
         dist = Beta(concentration1=alpha, concentration0=beta)
         action = dist.sample()  # (bsize, action_dim)
         return action
@@ -166,9 +205,6 @@ class SimpleBetaSoftPlusPolicy(nn.Module):
 
     def select_action(self, state, deterministic):
         alpha, beta = self.forward(state)
-        # if deterministic:
-        #     raise NotImplemeentedError
-        # else:
         dist = Beta(concentration1=alpha, concentration0=beta)
         action = dist.sample()  # (bsize, action_dim)
         return action
@@ -201,9 +237,6 @@ class SimpleBetaReluPolicy(nn.Module):
 
     def select_action(self, state, deterministic):
         alpha, beta = self.forward(state)
-        # if deterministic:
-        #     raise NotImplemeentedError
-        # else:
         dist = Beta(concentration1=alpha, concentration0=beta)
         action = dist.sample()  # (bsize, action_dim)
         return action
@@ -221,10 +254,6 @@ class SimpleBetaReluPolicy(nn.Module):
         dist = Beta(concentration1=alpha, concentration0=beta)
         entropy = dist.entropy().view(bsize, 1)
         return entropy
-
-
-
-
 
 class GaussianPolicy(nn.Module):
     def __init__(self, state_dim, action_dim):

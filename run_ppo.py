@@ -13,10 +13,11 @@ from log import RunningAverage
 from rb import Memory
 from rl_algs import PPO
 from agent import Agent
-from policies import DiscretePolicy, SimpleGaussianPolicy
-from value_function import ValueFn
+from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
+from value_function import ValueFn, CNNValueFn
 import utils
 from experiment import Experiment
+import gym_minigrid
 
 import ipdb
 
@@ -52,7 +53,6 @@ def main():
     args = parse_args()
     device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
-    # env = gym.make('CartPole-v0')
     env = gym.make(args.env_name)
 
     args.seed = 0
@@ -60,14 +60,26 @@ def main():
     torch.manual_seed(args.seed)
     env.seed(args.seed)
 
-    state_dim = env.observation_space.shape[0]
-    is_disc_action = len(env.action_space.shape) == 0
-    action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
-    policy = DiscretePolicy if is_disc_action else SimpleGaussianPolicy
+    if 'MiniGrid' in args.env_name:
+        full_state_dim = env.observation_space.spaces['image'].shape  # (H, W, C)
+        state_dim = full_state_dim[:-1]  # (H, W)
+        is_disc_action = len(env.action_space.shape) == 0
+        action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
 
-    agent = Agent(
-        policy(state_dim=state_dim, hdim=[128, 128], action_dim=action_dim), 
-        ValueFn(state_dim=state_dim), args=args).to(device)
+        policy = DiscreteCNNPolicy
+        agent = Agent(
+            policy(state_dim=state_dim, action_dim=action_dim), 
+            CNNValueFn(state_dim=state_dim), args=args).to(device)
+    else:
+        state_dim = env.observation_space.shape[0]
+        is_disc_action = len(env.action_space.shape) == 0
+        action_dim = env.action_space.n if is_disc_action else env.action_space.shape[0]
+
+        policy = DiscretePolicy if is_disc_action else SimpleGaussianPolicy
+        agent = Agent(
+            policy(state_dim=state_dim, hdim=[128, 128], action_dim=action_dim), 
+            ValueFn(state_dim=state_dim), args=args).to(device)
+
     rl_alg = PPO(device=device, args=args)
     experiment = Experiment(agent, env, rl_alg, device, args)
     experiment.train(max_episodes=1001)

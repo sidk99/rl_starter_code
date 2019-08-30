@@ -17,6 +17,11 @@ class Experiment():
     def sample_trajectory(self, deterministic):
         episode_data = []
         state = self.env.reset()
+        #################################################
+        # Debugging MiniGrid
+        if type(state) == dict:
+            state = state['image']
+        #################################################
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
             state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
@@ -27,6 +32,11 @@ class Experiment():
             else:
                 stored_action = action
             next_state, reward, done, _ = self.env.step(action)
+            #################################################
+            # Debugging MiniGrid
+            if type(next_state) == dict:
+                next_state = next_state['image']
+            #################################################
             if self.args.render:
                 self.env.render()
             mask = 0 if done else 1
