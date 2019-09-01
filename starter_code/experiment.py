@@ -79,22 +79,44 @@ class Experiment():
     def train(self, max_episodes):
         run_avg = RunningAverage()
         for i_episode in range(max_episodes):
+            if i_episode % self.args.eval_every == 0:
+                stats = self.test(i_episode=i_episode, max_episodes=10)
             episode_data, stats = self.collect_samples(deterministic=False)
             ret = stats['avg_return'] # but we shouldn't do a running avg actually
             running_return = run_avg.update_variable('reward', ret)
+
+            def update_optimizer_lr(optimizer, scheduler, name):
+                before_lr = optimizer.state_dict()['param_groups'][0]['lr']
+                scheduler.step()
+                after_lr = optimizer.state_dict()['param_groups'][0]['lr']
+                to_print_alr = 'Learning rate for {} was {}. Now it is {}.'.format(name, before_lr, after_lr)
+                if before_lr != after_lr:
+                    to_print_alr += ' Learning rate changed!'
+                    self.logger.printf(to_print_alr)
+
+            if i_episode >= self.args.anneal_policy_lr_after:
+                update_optimizer_lr(
+                    optimizer=self.agent.policy_optimizer,
+                    scheduler=self.agent.po_scheduler,
+                    name='policy')
+                update_optimizer_lr(
+                    optimizer=self.agent.value_optimizer,
+                    scheduler=self.agent.vo_scheduler,
+                    name='value')
+
             if i_episode % self.args.update_every == 0:
                 self.rl_alg.improve(self.agent)
+
             if i_episode % self.args.log_every == 0:
-                print('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
+                self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
                     i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
-            if i_episode % self.args.eval_every == 0:
-                stats = self.test(i_episode=i_episode, max_episodes=10)
 
     def test(self, i_episode, max_episodes):
         returns = []
-        for i in range(max_episodes):
+        for i in tqdm(range(max_episodes)):
             with torch.no_grad():
-                episode_data, stats = self.sample_trajectory(deterministic=True)
+                # TODO: something about this being deterministic is making things worse. Why?
+                episode_data, stats = self.sample_trajectory(deterministic=False)
                 ret = stats['return']
             returns.append(ret)
         returns = np.array(returns)

@@ -15,6 +15,7 @@ class Agent(nn.Module):
 
         self.initalize_memory()
         self.initialize_optimizer()
+        self.initialize_optimizer_schedulers(args)
 
         print(self)
 
@@ -30,6 +31,11 @@ class Agent(nn.Module):
             self.value_optimizer = optim.SGD(self.valuefn.parameters(), lr=self.args.vlr, momentum=0.9)
         else:
             assert False
+
+    def initialize_optimizer_schedulers(self, args):
+        if not self.args.anneal_policy_lr: assert self.args.anneal_policy_lr_gamma == 1
+        self.po_scheduler = optim.lr_scheduler.StepLR(self.policy_optimizer, step_size=args.anneal_policy_lr_step, gamma=args.anneal_policy_lr_gamma, last_epoch=-1)
+        self.vo_scheduler = optim.lr_scheduler.StepLR(self.value_optimizer, step_size=args.anneal_policy_lr_step, gamma=args.anneal_policy_lr_gamma, last_epoch=-1)
 
     def forward(self, state, deterministic):
         action = self.policy.select_action(state, deterministic)

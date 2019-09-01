@@ -64,6 +64,10 @@ def rlalg_switch(alg_name):
 def ppo_config(args):
     args.plr = 4e-5
     args.vlr = 5e-3
+    args.anneal_policy_lr = True
+    args.anneal_policy_lr_step = 100
+    args.anneal_policy_lr_gamma = 0.99
+    args.anneal_policy_lr_after = 500
     args.opt = 'sgd'
     args.eval_every = 10
     args.log_every = 1
