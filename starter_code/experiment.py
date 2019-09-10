@@ -49,8 +49,6 @@ class Experiment():
             if type(next_state) == dict:
                 next_state = next_state['image']
             #################################################
-            # if self.args.render:
-            #     self.env_manager.env.render()
             mask = 0 if done else 1
             e = {
                  'state': state,
