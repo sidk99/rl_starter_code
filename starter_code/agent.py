@@ -50,8 +50,18 @@ class Agent(nn.Module):
             last_epoch=-1)
 
     def forward(self, state, deterministic):
-        action = self.policy.select_action(state, deterministic)
-        return action
+        action, dist = self.policy.select_action(state, deterministic)
+        action = action.detach()[0].cpu().numpy()  # (adim)
+        if self.policy.discrete:
+            action = int(action)
+            stored_action = [action]
+        else:
+            stored_action = action
+        action_dict = {
+            'action': action, 
+            'stored_action': stored_action, 
+            'action_dist': dist}
+        return action_dict
 
     def store_transition(self, transition):
         self.buffer.push(

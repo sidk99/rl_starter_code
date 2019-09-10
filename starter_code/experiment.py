@@ -1,3 +1,5 @@
+import cv2
+from collections import defaultdict
 import numpy as np
 import torch
 
@@ -15,7 +17,21 @@ class Experiment():
         self.device = device
         self.args = args
 
-    def sample_trajectory(self, deterministic):
+    def render(self, env, scale):
+        frame = env.render(mode='rgb_array')
+        h, w = frame.shape[:-1]
+        frame = cv2.resize(frame, dsize=(int(h*scale), int(w*scale)), interpolation=cv2.INTER_CUBIC)
+        return frame
+
+    def get_bids_for_episode(self, episode_data):
+        episode_bids = defaultdict(lambda: [])
+        for step in episode_data:
+            probs = list(step['action_dist'].probs.detach()[0].cpu().numpy())
+            for index, prob in enumerate(probs):
+                episode_bids[index].append(prob)
+        return episode_bids
+
+    def sample_trajectory(self, deterministic, render):
         episode_data = []
         state = self.env_manager.env.reset()
         #################################################
@@ -26,27 +42,26 @@ class Experiment():
         for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
             state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
-                action = self.agent(state_var, deterministic=deterministic).detach()[0].cpu().numpy()  # (adim)
-            if self.agent.policy.discrete: 
-                action = int(action)
-                stored_action = [action]
-            else:
-                stored_action = action
-            next_state, reward, done, _ = self.env_manager.env.step(action)
+                action_dict = self.agent(state_var, deterministic=deterministic)
+            next_state, reward, done, _ = self.env_manager.env.step(action_dict['action'])
             #################################################
             # Debugging MiniGrid
             if type(next_state) == dict:
                 next_state = next_state['image']
             #################################################
-            if self.args.render:
-                self.env_manager.env.render()
+            # if self.args.render:
+            #     self.env_manager.env.render()
             mask = 0 if done else 1
             e = {
                  'state': state,
-                 'action': stored_action,
+                 'action': action_dict['stored_action'],
+                 'action_dist': action_dict['action_dist'],
                  'mask': mask,
                  'reward': reward,
                  }
+            if render:
+                frame = self.render(env=self.env_manager.env, scale=0.25)# width=600, height=400)
+                e['frame'] = frame
             episode_data.append(e)
             self.agent.store_transition(e)
             if done:
@@ -62,7 +77,7 @@ class Experiment():
         all_episodes_data = []
 
         while num_steps < self.rl_alg.max_buffer_size:
-            episode_data, episode_stats= self.sample_trajectory(deterministic)
+            episode_data, episode_stats= self.sample_trajectory(deterministic, False)
             all_episodes_data.append(episode_stats)
             num_steps += (episode_stats['steps']+1)
 
@@ -112,12 +127,17 @@ class Experiment():
                     i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
 
     def test(self, i_episode, max_episodes):
+        visualize = True
         returns = []
         for i in tqdm(range(max_episodes)):
             with torch.no_grad():
                 # TODO: something about this being deterministic is making things worse. Why?
-                episode_data, stats = self.sample_trajectory(deterministic=False)
+                episode_data, stats = self.sample_trajectory(deterministic=False, render=visualize)
                 ret = stats['return']
+
+                if i == 0 and visualize:
+                    bids = self.get_bids_for_episode(episode_data)
+                    self.env_manager.save_video(i_episode, i, bids, ret, episode_data)
             returns.append(ret)
         returns = np.array(returns)
         stats = {'mean_return': np.mean(returns),

@@ -1,5 +1,7 @@
 import copy
 import datetime
+import imageio
+import glob
 import gym
 import matplotlib
 matplotlib.use('Agg')
@@ -9,6 +11,9 @@ import operator
 import os
 import shutil
 import pprint
+from tqdm import tqdm
+from matplotlib.ticker import MaxNLocator
+
 
 def create_logdir(root, dirname, setdate):
     logdir = os.path.join(root, dirname)
@@ -84,6 +89,7 @@ class EnvLogger(object):
 
     def set_logdir(self, logdir):
         self.logdir = logdir
+        print('blah')
         self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
         self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
 
@@ -167,7 +173,7 @@ class VisualEnvManager(EnvManager):
         ax2.set_xlabel('Action')
         fig.suptitle('Return: {}'.format(ret))  # can say what the return is here
         plt.tight_layout(pad=3)
-        plt.savefig(os.path.join(self.logdir, fname))
+        plt.savefig(os.path.join(self.qualitative_dir, fname))
         plt.close()
 
     def save_gif(self, prefix, gifname, i_episode, test_example, remove_images):
@@ -177,12 +183,12 @@ class VisualEnvManager(EnvManager):
             start = basename.rfind(delimiter)
             key = int(basename[start+len(delimiter):-len('.png')])
             return key
-        fnames = sorted(glob.glob('{}/{}_e{}_n{}_t*.png'.format(self.logdir, prefix, i_episode, test_example)), key=get_key)
+        fnames = sorted(glob.glob('{}/{}_e{}_n{}_t*.png'.format(self.qualitative_dir, prefix, i_episode, test_example)), key=get_key)
         images = [imageio.imread(fname) for fname in fnames]
         imshape = images[0].shape
         for pad in range(2):
             images.append(imageio.core.util.Array(np.ones(imshape).astype(np.uint8)*255))
-        imageio.mimsave(os.path.join(self.logdir, gifname), images)
+        imageio.mimsave(os.path.join(self.qualitative_dir, gifname), images)
         if remove_images:
             for fname in fnames:
                 os.remove(fname)
