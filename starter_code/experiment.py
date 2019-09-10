@@ -130,7 +130,6 @@ class Experiment():
                 name=metric, index=i_episode, value=stats[metric], include_running_avg=True)
         self.env_manager.plot(
             var_pairs=[(('i_episode', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
-            logdir=self.env_manager.logdir,
             expname=self.logger.expname)
         self.logger.pprintf(stats)
         return stats

@@ -9,8 +9,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from log import RunningAverage
-from rb import Memory
 from rl_algs import PPO, A2C, VPG
 from agent import Agent
 from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
@@ -19,7 +17,7 @@ import utils
 from experiment import Experiment
 import gym_minigrid
 
-from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager
+from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, create_logdir
 
 import ipdb
 
@@ -111,7 +109,7 @@ def main():
             ValueFn(state_dim=env_manager.state_dim), args=args).to(device)
 
     logger = MultiBaseLogger(args=args)
-    env_manager.set_logdir(logger.create_logdir(root=logger.logdir, expname='{}'.format(args.env_name), setdate=False))
+    env_manager.set_logdir(create_logdir(root=logger.logdir, dirname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
     experiment = Experiment(agent, env_manager, rl_alg, logger, device, args)
     experiment.train(max_episodes=100001)

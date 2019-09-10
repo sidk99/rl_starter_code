@@ -10,6 +10,15 @@ import os
 import shutil
 import pprint
 
+def create_logdir(root, dirname, setdate):
+    logdir = os.path.join(root, dirname)
+    if setdate:
+        if not dirname == '': logdir += '-'
+        logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
+        date=datetime.datetime.now())
+    os.mkdir(logdir)
+    return logdir
+
 class RunningAverage(object):
     def __init__(self):
         super(RunningAverage, self).__init__()
@@ -41,7 +50,8 @@ class MultiBaseLogger(object):
         self.args = args
         self.root = args.root
         self.expname = args.expname
-        self.logdir = self.create_logdir(root=self.root, expname=self.expname, setdate=True)
+        self.logdir = create_logdir(root=self.root, dirname=self.expname, setdate=True)
+        self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
 
     def printf(self, string):
         if self.args.printf:
@@ -57,15 +67,6 @@ class MultiBaseLogger(object):
         else:
             pprint.pprint(string)
 
-    def create_logdir(self, root, expname, setdate):
-        logdir = os.path.join(root, expname)
-        if setdate:
-            if not expname == '': logdir += '-'
-            logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
-            date=datetime.datetime.now())
-        os.mkdir(logdir)
-        return logdir
-
     def remove_logdir(self):
         should_remove = input('Remove {}? [y/n] '.format(self.logdir))
         if should_remove == 'y':
@@ -80,6 +81,11 @@ class EnvLogger(object):
         self.data = {}
         self.metrics = {}
         self.run_avg = RunningAverage()
+
+    def set_logdir(self, logdir):
+        self.logdir = logdir
+        self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
+        self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
 
     def add_variable(self, name, incl_run_avg=False, metric=None):
         self.data[name] = []
@@ -108,7 +114,7 @@ class EnvLogger(object):
     def add_metric(self, name, initial_val, comparator):
         self.metrics[name] = {'value': initial_val, 'cmp': comparator}
 
-    def plot(self, var_pairs, logdir, expname):
+    def plot(self, var_pairs, expname):
         for var1_name, var2_name in var_pairs:
             x_indices, x_values = zip(*self.data[var1_name])
             y_indices, y_values = zip(*self.data[var2_name])
@@ -116,7 +122,7 @@ class EnvLogger(object):
             plt.plot(x_values,y_values)
             plt.xlabel(var1_name)
             plt.ylabel(var2_name)
-            plt.savefig(os.path.join(logdir, '{}.png'.format(fname)))
+            plt.savefig(os.path.join(self.quantitative_dir, '{}.png'.format(fname)))
             plt.close()
 
 class EnvManager(EnvLogger):
@@ -127,9 +133,6 @@ class EnvManager(EnvLogger):
         self.env = gym.make(env_name)  # CHANGED
         self.env.seed(args.seed)  # this should be args.seed
         self.initialize()
-
-    def set_logdir(self, logdir):
-        self.logdir = logdir
 
     def initialize(self):
         self.add_variable('i_episode')
