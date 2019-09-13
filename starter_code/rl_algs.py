@@ -15,7 +15,7 @@ eps = np.finfo(np.float32).eps.item()
 class VPG():
     def __init__(self, device, args):
         self.device = device
-        self.gamma = args.gamma
+        self.gamma = 0.99
         self.max_buffer_size = 100
 
     def unpack_batch(self, batch):
@@ -51,7 +51,7 @@ class VPG():
 class A2C():
     def __init__(self, device, args):
         self.device = device
-        self.gamma = args.gamma
+        self.gamma = 0.99
         self.max_buffer_size = 100
 
     def unpack_batch(self, batch):
