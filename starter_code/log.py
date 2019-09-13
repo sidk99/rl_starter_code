@@ -72,7 +72,7 @@ class Saver(object):
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
         torch.save(state_dict, ckpt_name)
-        self.evict()
+        # self.evict()
         self.save_summary()
         print('Saved to {}.'.format(ckpt_name))
 
@@ -109,6 +109,9 @@ class MultiBaseLogger(object):
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
 
+    def get_state_dict(self):
+        return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}
+
     def printf(self, string):
         if self.args.printf:
             f = open(os.path.join(self.logdir, self.expname+'.txt'), 'a')
@@ -138,9 +141,14 @@ class EnvLogger(object):
         self.metrics = {}
         self.run_avg = RunningAverage()
 
+    def get_state_dict(self):
+        state_dict = {
+            **super(EnvLogger, self).get_state_dict(),
+            **{'qualitative_dir': self.qualitative_dir, 'quantitative_dir': self.quantitative_dir}}
+        return state_dict
+
     def set_logdir(self, logdir):
         self.logdir = logdir
-        print('blah')
         self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
         self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
 
