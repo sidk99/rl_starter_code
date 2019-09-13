@@ -25,3 +25,5 @@ def vpg_config(args):
     args.eval_every = 100
     args.log_every = 10
     return args
+
+# maybe you should spend some time doing the configs

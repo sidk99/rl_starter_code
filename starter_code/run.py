@@ -88,6 +88,5 @@ def main():
     experiment = Experiment(agent, env_manager, rl_alg, logger, device, args)
     experiment.train(max_episodes=100001)
 
-
 if __name__ == '__main__':
     main()
