@@ -1,4 +1,5 @@
 import copy
+import csv
 import datetime
 import imageio
 import glob
@@ -11,8 +12,10 @@ import operator
 import os
 import shutil
 import pprint
+import torch
 from tqdm import tqdm
 from matplotlib.ticker import MaxNLocator
+import heapq
 
 
 def create_logdir(root, dirname, setdate):
@@ -50,6 +53,53 @@ class RunningAverage(object):
         else:
             assert KeyError
 
+class Saver(object):
+    def __init__(self, checkpoint_dir, heapsize=1):
+        self.checkpoint_dir = checkpoint_dir
+        self.heapsize = heapsize
+        self.most_recents = []  # largest is most recent
+        self.bests = []  # largest is best
+        self.create_save_file = lambda i_episode: os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(i_episode))
+
+        with open(os.path.join(self.checkpoint_dir, 'summary.csv'), 'w') as f:
+            csv_writer = csv.DictWriter(f, fieldnames=['recent', 'best'])
+            csv_writer.writeheader()
+
+    def save(self, i_episode, state_dict):
+        ckpt_id = int(state_dict['experiment']['batch'])
+        ckpt_return = float(state_dict['experiment']['mean_return'])
+        ckpt_name = self.create_save_file(i_episode)
+        heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
+        heapq.heappush(self.bests, (ckpt_return, ckpt_name))
+        torch.save(state_dict, ckpt_name)
+        self.evict()
+        self.save_summary()
+        print('Saved to {}.'.format(ckpt_name))
+
+    def save_summary(self):
+        most_recent = os.path.basename(heapq.nlargest(1, self.most_recents)[0][-1])
+        best = os.path.basename(heapq.nlargest(1, self.bests)[0][-1])
+        with open(os.path.join(self.checkpoint_dir, 'summary.csv'), 'a') as f:
+            csv_writer = csv.DictWriter(f, fieldnames=['recent', 'best'])
+            csv_writer.writerow({'recent': most_recent, 'best': best})
+
+    def evict(self):
+        to_evict = set()
+        if len(self.most_recents) > self.heapsize:
+            most_recents = [x[-1] for x in heapq.nlargest(1, self.most_recents)]
+            higest_returns = [x[-1] for x in heapq.nlargest(1, self.bests)]
+
+            least_recent = heapq.heappop(self.most_recents)[-1]
+            lowest_return = heapq.heappop(self.bests)[-1]
+
+            # only evict least_recent if it is not in highest_returns
+            if least_recent not in higest_returns and os.path.exists(least_recent):
+                os.remove(least_recent)
+            # only evict lowest_return if it is not in lowest_return
+            if lowest_return not in most_recents and os.path.exists(lowest_return):
+                os.remove(lowest_return)
+
+
 class MultiBaseLogger(object):
     def __init__(self, args):
         self.args = args
@@ -57,6 +107,7 @@ class MultiBaseLogger(object):
         self.expname = args.expname
         self.logdir = create_logdir(root=self.root, dirname=self.expname, setdate=True)
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
+        self.saver = Saver(self.checkpoint_dir)
 
     def printf(self, string):
         if self.args.printf:
