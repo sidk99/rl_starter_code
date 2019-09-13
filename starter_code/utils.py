@@ -47,12 +47,18 @@ def normal_log_density(x, mean, log_std, std):
     log_density = -(x - mean).pow(2) / (2 * var) - 0.5 * math.log(2 * math.pi) - log_std
     return log_density.sum(1, keepdim=True)
 
-def visualize_parameters(model):
+def visualize_parameters(model, pfunc):
     for n, p in model.named_parameters():
         if p.grad is None:
-            print(n, p.data.norm(), None)
+            pfunc(n, p.data.norm(), None)
         else:
-            print(n, p.data.norm(), p.grad.data.norm())
+            pfunc(n, p.data.norm(), p.grad.data.norm())
+
+def visualize_params(dict_of_models, pfunc):
+    for k, v in dict_of_models.items():
+        pfunc('#'*20 + ' {} '.format(k) + '#'*(80-len(k)-2-20))
+        visualize_parameters(v, pfunc)
+    pfunc('#'*80)
 
 class TupleList(object):
     def __init__(self, list_of_tuples):
