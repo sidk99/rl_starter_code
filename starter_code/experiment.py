@@ -94,6 +94,11 @@ class Experiment():
         for i_episode in range(max_episodes):
             if i_episode % self.args.eval_every == 0:
                 stats = self.test(i_episode=i_episode, max_episodes=10)
+                self.logger.saver.save(i_episode, 
+                    {'args': self.args,
+                     'experiment': stats,
+                     'agent': self.agent.get_state_dict()})
+
             episode_data, stats = self.collect_samples(deterministic=False)
             ret = stats['avg_return'] # but we shouldn't do a running avg actually
             running_return = run_avg.update_variable('reward', ret)
@@ -138,7 +143,8 @@ class Experiment():
                     self.env_manager.save_video(i_episode, i, bids, ret, episode_data)
             returns.append(ret)
         returns = np.array(returns)
-        stats = {'mean_return': np.mean(returns),
+        stats = {'batch': i_episode,
+                 'mean_return': np.mean(returns),
                  'std_return': np.std(returns),
                  'min_return': np.min(returns),
                  'max_return': np.max(returns)}
