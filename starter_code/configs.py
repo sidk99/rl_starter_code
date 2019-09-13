@@ -6,8 +6,8 @@ def ppo_config(args):
     args.anneal_policy_lr_gamma = 0.99
     args.anneal_policy_lr_after = 500
     args.opt = 'sgd'
-    args.eval_every = 10
-    args.log_every = 1
+    args.eval_every = 100
+    args.log_every = 10
     return args
 
 def a2c_config(args):
