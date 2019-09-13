@@ -71,3 +71,12 @@ class Agent(nn.Module):
             transition['reward'],
             )
 
+    def get_state_dict(self):
+        state_dict = {
+            'policy': self.policy.state_dict(),
+            'valuefn': self.valuefn.state_dict(),
+            'policy_optimizer': self.policy_optimizer.state_dict(),
+            'value_optimizer': self.value_optimizer.state_dict(),
+            }
+        return state_dict
+
