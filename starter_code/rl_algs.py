@@ -91,20 +91,23 @@ class A2C():
 
 
 class PPO():
-    def __init__(self, device, args, optim_epochs=10, optim_batch_size=256):
+    def __init__(self, device, args):
         self.device = device
         self.args = args
         self.max_buffer_size = 4096
 
         self.gamma = 0.99
-        self.tau = 0.95
+        self.tau = 0.95 
         self.l2_reg = 1e-3
         self.clip_epsilon = 0.2
         self.entropy_coeff = args.entropy_coeff
 
-        self.optim_epochs = optim_epochs
-        self.optim_batch_size = optim_batch_size
+        self.optim_epochs = 10
+        self.optim_batch_size = 256
         self.optim_value_iternum = 1
+
+        self.max_buffer_size = 100
+        self.optim_batch_size = 10
 
         self.reset_record()
 
