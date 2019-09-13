@@ -21,6 +21,8 @@ from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, create_logdi
 
 import ipdb
 
+from configs import ppo_config, a2c_config, vpg_config
+
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch ppo example')
     parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
@@ -28,7 +30,7 @@ def parse_args():
     parser.add_argument('--entropy_coeff', type=float, default=0, metavar='G',
                         help='entropy coeff (default: 0)')
     parser.add_argument('--update-every', type=float, default=1, metavar='G',
-                        help='learning rate (default: 200)')
+                        help='learning rate (default: 1)')
     parser.add_argument('--seed', type=int, default=543, metavar='N',
                         help='random seed (default: 543)')
     parser.add_argument('--gpu-index', type=int, default=0,
@@ -58,34 +60,6 @@ def rlalg_switch(alg_name):
         'vpg': VPG
     }
     return rlalgs[alg_name]
-
-def ppo_config(args):
-    args.plr = 4e-5
-    args.vlr = 5e-3
-    args.anneal_policy_lr = True
-    args.anneal_policy_lr_step = 100
-    args.anneal_policy_lr_gamma = 0.99
-    args.anneal_policy_lr_after = 500
-    args.opt = 'sgd'
-    args.eval_every = 10
-    args.log_every = 1
-    return args
-
-def a2c_config(args):
-    args.plr = 1e-4
-    args.vlr = 5e-3
-    args.opt = 'adam'
-    args.eval_every = 100
-    args.log_every = 10
-    return args
-
-def vpg_config(args):
-    args.plr = 1e-4
-    args.vlr = 5e-3
-    args.opt = 'adam'
-    args.eval_every = 100
-    args.log_every = 10
-    return args
 
 def main():
     args = parse_args()
