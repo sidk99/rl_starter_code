@@ -63,7 +63,7 @@ class DiscretePolicy(nn.Module):
         else:
             action = action_dist.sample().unsqueeze(-1)  # (bsize, 1)
         assert action.size() == (bsize, 1)
-        return action, acton_dist
+        return action, action_dist
 
     def get_log_prob(self, state, action):
         bsize = state.size(0)

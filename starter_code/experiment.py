@@ -138,7 +138,7 @@ class Experiment():
                 episode_data, stats = self.sample_trajectory(deterministic=False, render=visualize)
                 ret = stats['return']
 
-                if i == 0 and visualize:
+                if i == 0 and visualize and self.agent.policy.discrete:
                     bids = self.get_bids_for_episode(episode_data)
                     self.env_manager.save_video(i_episode, i, bids, ret, episode_data)
             returns.append(ret)
