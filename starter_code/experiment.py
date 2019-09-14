@@ -10,10 +10,19 @@ from tqdm import tqdm
 
 import env_utils as eu
 
+# class Experiment():
+#     def __init__(self, agent, env_manager, rl_alg, logger, device, args):
+#         self.agent = agent
+#         self.env_manager = env_manager
+#         self.rl_alg = rl_alg
+#         self.logger = logger
+#         self.device = device
+#         self.args = args
+
 class Experiment():
-    def __init__(self, agent, env_manager, rl_alg, logger, device, args):
+    def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         self.agent = agent
-        self.env_manager = env_manager
+        self.task_progression = task_progression
         self.rl_alg = rl_alg
         self.logger = logger
         self.device = device
@@ -27,9 +36,9 @@ class Experiment():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_trajectory(self, deterministic, render):
+    def sample_trajectory(self, env, deterministic, render):
         episode_data = []
-        state = self.env_manager.env.reset()
+        state = env.reset()
         #################################################
         # Debugging MiniGrid
         if type(state) == dict:
@@ -39,7 +48,7 @@ class Experiment():
             state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
                 action_dict = self.agent(state_var, deterministic=deterministic)
-            next_state, reward, done, _ = self.env_manager.env.step(action_dict['action'])
+            next_state, reward, done, _ = env.step(action_dict['action'])
             #################################################
             # Debugging MiniGrid
             if type(next_state) == dict:
@@ -54,7 +63,7 @@ class Experiment():
                  'reward': reward,
                  }
             if render:
-                frame = eu.render(env=self.env_manager.env, scale=0.25)
+                frame = eu.render(env=env, scale=0.25)
                 e['frame'] = frame
             episode_data.append(e)
             self.agent.store_transition(e)
@@ -71,7 +80,8 @@ class Experiment():
         all_episodes_data = []
 
         while num_steps < self.rl_alg.max_buffer_size:
-            episode_data, episode_stats= self.sample_trajectory(deterministic, False)
+            train_env_manager = self.task_progression.sample(i=0, mode='train')
+            episode_data, episode_stats= self.sample_trajectory(env=train_env_manager.env, deterministic=deterministic, render=False)
             all_episodes_data.append(episode_stats)
             num_steps += (episode_stats['steps'])
 
@@ -89,7 +99,8 @@ class Experiment():
         run_avg = RunningAverage()
         for epoch in range(max_epochs):
             if epoch % self.args.eval_every == 0:
-                stats = self.eval_env(env_manager=self.env_manager, epoch=epoch)
+                # stats = self.eval_env(env_manager=self.env_manager, epoch=epoch)
+                stats = self.eval_env(epoch=epoch)
                 self.logger.saver.save(epoch, 
                     {'args': self.args,
                      'logger': self.logger.get_state_dict(),
@@ -113,7 +124,7 @@ class Experiment():
         returns = []
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_data, stats = self.sample_trajectory(deterministic=False, render=visualize)
+                episode_data, stats = self.sample_trajectory(env=env_manager.env, deterministic=False, render=visualize)
                 ret = stats['return']
 
                 if i == 0 and visualize and self.agent.policy.discrete:
@@ -128,16 +139,18 @@ class Experiment():
                  'max_return': np.max(returns)}
         return stats
 
-    def eval_env(self, env_manager, epoch):
-        stats = self.test(epoch, env_manager, num_test=10, visualize=True)
-        env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-        for metric in ['min_return', 'max_return', 'mean_return', 'std_return']:
-            env_manager.update_variable(
-                name=metric, index=epoch, value=stats[metric], include_running_avg=True)
-        env_manager.plot(
-            var_pairs=[(('epoch', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
-            expname=self.logger.expname)
-        self.logger.pprintf(stats)
-        return stats
+    def eval_env(self, epoch):
+        for mode in ['train']:
+            for env_manager in self.task_progression[0][mode]:  # epoch=0 is hardcoded!!
+                stats = self.test(epoch, env_manager, num_test=10, visualize=True)
+                env_manager.update_variable(name='epoch', index=epoch, value=epoch)
+                for metric in ['min_return', 'max_return', 'mean_return', 'std_return']:
+                    env_manager.update_variable(
+                        name=metric, index=epoch, value=stats[metric], include_running_avg=True)
+                env_manager.plot(
+                    var_pairs=[(('epoch', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
+                    expname=self.logger.expname)
+                self.logger.pprintf(stats)
+                return stats
 
 
