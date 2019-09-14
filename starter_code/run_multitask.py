@@ -74,31 +74,18 @@ def main():
     if 'MiniGrid' in args.env_name:
         task_progression = construct_task_progression(
             default_task_prog_spec(args.env_name),
-            MinigridEnvManager,
-            logger,
-            args)
-
-        # env_manager = MinigridEnvManager(args.env_name, args)
-
-
+            MinigridEnvManager, logger, args)
         policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
         critic = CNNValueFn(state_dim=task_progression.state_dim)
     else:
         task_progression = construct_task_progression(
             default_task_prog_spec(args.env_name),
-            GymEnvManager,
-            logger,
-            args)
-
-        # env_manager = GymEnvManager(args.env_name, args)
-
-
+            GymEnvManager, logger, args)
         policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
         policy = policy_builder(state_dim=task_progression.state_dim, hdim=[128, 128], action_dim=task_progression.action_dim)
         critic = ValueFn(state_dim=task_progression.state_dim)
 
     agent = Agent(policy, critic, args).to(device)
-    # env_manager.set_logdir(create_logdir(root=logger.logdir, dirname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
     experiment = Experiment(agent, task_progression, rl_alg, logger, device, args)
     experiment.train(max_epochs=100001)

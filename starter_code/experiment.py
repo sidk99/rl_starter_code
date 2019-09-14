@@ -10,15 +10,6 @@ from tqdm import tqdm
 
 import env_utils as eu
 
-# class Experiment():
-#     def __init__(self, agent, env_manager, rl_alg, logger, device, args):
-#         self.agent = agent
-#         self.env_manager = env_manager
-#         self.rl_alg = rl_alg
-#         self.logger = logger
-#         self.device = device
-#         self.args = args
-
 class Experiment():
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         self.agent = agent
