@@ -50,7 +50,7 @@ class Agent(nn.Module):
             last_epoch=-1)
 
     def step_optimizer_schedulers(self, pfunc):
-        def update_optimizer_lr(self, optimizer, scheduler, name):
+        def update_optimizer_lr(optimizer, scheduler, name):
             before_lr = optimizer.state_dict()['param_groups'][0]['lr']
             scheduler.step()
             after_lr = optimizer.state_dict()['param_groups'][0]['lr']
@@ -81,6 +81,9 @@ class Agent(nn.Module):
             'stored_action': stored_action, 
             'action_dist': dist}
         return action_dict
+
+    def update(self, rl_alg):
+        rl_alg.improve(self)
 
     def store_transition(self, transition):
         self.buffer.push(

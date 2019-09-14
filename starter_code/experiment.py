@@ -19,6 +19,7 @@ class Experiment():
         self.device = device
         self.args = args
         self.epoch = 0
+        self.run_avg = RunningAverage()
 
     def get_bids_for_episode(self, episode_data):
         episode_bids = defaultdict(lambda: [])
@@ -28,7 +29,7 @@ class Experiment():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_trajectory(self, env, deterministic, render):
+    def sample_episode(self, env, deterministic, render):
         episode_data = []
         state = env.reset()
         #################################################
@@ -65,62 +66,78 @@ class Experiment():
         stats = {'return': sum([e['reward'] for e in episode_data]),
                  'steps': t+1,
                  'actions': [e['action'] for e in episode_data]}
-        return episode_data, stats
+
+        episode_info = {
+            'episode_data': episode_data,
+            'episode_stats': stats
+        }
+        return episode_info
 
     def collect_samples(self, deterministic):
         num_steps = 0
-        all_episodes_data = []
+        num_episodes = 0
+        all_returns = []
 
         while num_steps < self.rl_alg.max_buffer_size:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
-            episode_data, episode_stats= self.sample_trajectory(env=train_env_manager.env, deterministic=deterministic, render=False)
-            all_episodes_data.append(episode_stats)
-            num_steps += (episode_stats['steps'])
-
-        all_returns = [e['return'] for e in all_episodes_data]
+            episode_info = self.sample_episode(env=train_env_manager.env, deterministic=deterministic, render=False)
+            all_returns.append(episode_info['episode_stats']['return'])
+            num_steps += (episode_info['episode_stats']['steps'])
+            num_episodes += 1
         stats = {
             'avg_return': np.mean(all_returns),
             'min_return': np.min(all_returns),
             'max_return': np.max(all_returns),
             'total_return': np.sum(all_returns),
-            'num_episodes': len(all_episodes_data)
+            'num_episodes': num_episodes
         }
-        return all_episodes_data, stats
+        self.run_avg.update_variable('reward', stats['avg_return'])
+
+        episode_info['epoch_stats'] = stats
+        return episode_info
 
     def train(self, max_epochs):
-        run_avg = RunningAverage()
         for epoch in range(max_epochs):
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)
                 self.logger.saver.save(epoch, 
                     {'args': self.args,
+                     'epoch': epoch,
                      'logger': self.logger.get_state_dict(),
                      'experiment': stats,
-                     'agent': self.organism.get_state_dict()})
+                     'organism': self.organism.get_state_dict()})
 
-            episode_data, stats = self.collect_samples(deterministic=False)
-            running_return = run_avg.update_variable('reward', stats['avg_return'])
+            epoch_info = self.collect_samples(deterministic=False)
 
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
 
             if epoch % self.args.update_every == 0:
-                self.rl_alg.improve(self.organism)
+                self.organism.update(self.rl_alg)
 
             if epoch % self.args.log_every == 0:
-                self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
-                    epoch, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
+                self.log(epoch, epoch_info)
+
+        self.finish_training()
+
+    def finish_training(self):
+        # env.close()
+        plt.close()
+
+    def log(self, epoch, epoch_info):
+        stats = epoch_info['epoch_stats']
+        self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
+            epoch, stats['avg_return'], stats['min_return'], stats['max_return'], self.run_avg.get_value('reward')))
 
     def test(self, epoch, env_manager, num_test, visualize):
         returns = []
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_data, stats = self.sample_trajectory(env=env_manager.env, deterministic=False, render=visualize)
-                ret = stats['return']
-
+                episode_info = self.sample_episode(env=env_manager.env, deterministic=False, render=visualize)
+                ret = episode_info['episode_stats']['return']
                 if i == 0 and visualize and self.organism.policy.discrete:
-                    bids = self.get_bids_for_episode(episode_data)
-                    env_manager.save_video(epoch, i, bids, ret, episode_data)
+                    bids = self.get_bids_for_episode(episode_info['episode_data'])
+                    env_manager.save_video(epoch, i, bids, ret, episode_info['episode_data'])
             returns.append(ret)
         returns = np.array(returns)
         stats = {'returns': returns,

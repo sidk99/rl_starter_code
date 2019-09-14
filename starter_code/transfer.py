@@ -73,7 +73,7 @@ def load_checkpoint(agent, args):
     # load checkpoint
     u.visualize_params({'agent': agent}, print)
     checkpoint = torch.load(os.path.join(args.model_dir, 'checkpoints', 'ckpt_batch{}.pth.tar'.format(args.ckpt_id)))
-    agent.load_state_dict(checkpoint['agent'])
+    agent.load_state_dict(checkpoint['organism'])
     u.visualize_params({'agent': agent}, print)
     return agent
 
