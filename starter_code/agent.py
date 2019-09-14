@@ -49,6 +49,25 @@ class Agent(nn.Module):
             gamma=args.anneal_policy_lr_gamma, 
             last_epoch=-1)
 
+    def step_optimizer_schedulers(self, pfunc):
+        def update_optimizer_lr(self, optimizer, scheduler, name):
+            before_lr = optimizer.state_dict()['param_groups'][0]['lr']
+            scheduler.step()
+            after_lr = optimizer.state_dict()['param_groups'][0]['lr']
+            to_print_alr = 'Learning rate for {} was {}. Now it is {}.'.format(name, before_lr, after_lr)
+            if before_lr != after_lr:
+                to_print_alr += ' Learning rate changed!'
+                pfunc(to_print_alr)
+        update_optimizer_lr(
+            optimizer=self.policy_optimizer,
+            scheduler=self.po_scheduler,
+            name='policy')
+        update_optimizer_lr(
+            optimizer=self.value_optimizer,
+            scheduler=self.vo_scheduler,
+            name='value')
+
+
     def forward(self, state, deterministic):
         action, dist = self.policy.select_action(state, deterministic)
         action = action.detach()[0].cpu().numpy()  # (adim)

@@ -68,11 +68,19 @@ def main():
     torch.manual_seed(args.seed)
 
     if 'MiniGrid' in args.env_name:
+
+
         env_manager = MinigridEnvManager(args.env_name, args)
+
+
         policy = DiscreteCNNPolicy(state_dim=env_manager.state_dim, action_dim=env_manager.action_dim)
         critic = CNNValueFn(state_dim=env_manager.state_dim)
     else:
+
+
         env_manager = GymEnvManager(args.env_name, args)
+
+
         policy_builder = DiscretePolicy if env_manager.is_disc_action else SimpleGaussianPolicy
         policy = policy_builder(state_dim=env_manager.state_dim, hdim=[128, 128], action_dim=env_manager.action_dim)
         critic = ValueFn(state_dim=env_manager.state_dim)
@@ -82,7 +90,7 @@ def main():
     env_manager.set_logdir(create_logdir(root=logger.logdir, dirname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
     experiment = Experiment(agent, env_manager, rl_alg, logger, device, args)
-    experiment.train(max_episodes=100001)
+    experiment.train(max_epochs=100001)
 
 if __name__ == '__main__':
     main()
