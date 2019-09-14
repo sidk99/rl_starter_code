@@ -23,6 +23,8 @@ import ipdb
 
 from configs import ppo_config, a2c_config, vpg_config
 
+from starter_code.multitask import construct_task_progression, default_task_prog_spec
+
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
     parser.add_argument('--entropy_coeff', type=float, default=0, metavar='G',
@@ -67,29 +69,25 @@ def main():
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    logger = MultiBaseLogger(args=args)
+
     if 'MiniGrid' in args.env_name:
-
-
-        env_manager = MinigridEnvManager(args.env_name, args)
-
-
-        policy = DiscreteCNNPolicy(state_dim=env_manager.state_dim, action_dim=env_manager.action_dim)
-        critic = CNNValueFn(state_dim=env_manager.state_dim)
+        task_progression = construct_task_progression(
+            default_task_prog_spec(args.env_name),
+            MinigridEnvManager, logger, args)
+        policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
+        critic = CNNValueFn(state_dim=task_progression.state_dim)
     else:
-
-
-        env_manager = GymEnvManager(args.env_name, args)
-
-
-        policy_builder = DiscretePolicy if env_manager.is_disc_action else SimpleGaussianPolicy
-        policy = policy_builder(state_dim=env_manager.state_dim, hdim=[128, 128], action_dim=env_manager.action_dim)
-        critic = ValueFn(state_dim=env_manager.state_dim)
+        task_progression = construct_task_progression(
+            default_task_prog_spec(args.env_name),
+            GymEnvManager, logger, args)
+        policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
+        policy = policy_builder(state_dim=task_progression.state_dim, hdim=[128, 128], action_dim=task_progression.action_dim)
+        critic = ValueFn(state_dim=task_progression.state_dim)
 
     agent = Agent(policy, critic, args).to(device)
-    logger = MultiBaseLogger(args=args)
-    env_manager.set_logdir(create_logdir(root=logger.logdir, dirname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-    experiment = Experiment(agent, env_manager, rl_alg, logger, device, args)
+    experiment = Experiment(agent, task_progression, rl_alg, logger, device, args)
     experiment.train(max_epochs=100001)
 
 if __name__ == '__main__':
