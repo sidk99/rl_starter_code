@@ -24,9 +24,7 @@ import ipdb
 from configs import ppo_config, a2c_config, vpg_config
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='PyTorch ppo example')
-    parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
-                        help='discount factor (default: 0.99)')
+    parser = argparse.ArgumentParser(description='PyTorch Train')
     parser.add_argument('--entropy_coeff', type=float, default=0, metavar='G',
                         help='entropy coeff (default: 0)')
     parser.add_argument('--update-every', type=float, default=1, metavar='G',
@@ -71,17 +69,15 @@ def main():
 
     if 'MiniGrid' in args.env_name:
         env_manager = MinigridEnvManager(args.env_name, args)
-        policy = DiscreteCNNPolicy
-        agent = Agent(
-            policy(state_dim=env_manager.state_dim, action_dim=env_manager.action_dim), 
-            CNNValueFn(state_dim=env_manager.state_dim), args=args).to(device)
+        policy = DiscreteCNNPolicy(state_dim=env_manager.state_dim, action_dim=env_manager.action_dim)
+        critic = CNNValueFn(state_dim=env_manager.state_dim)
     else:
         env_manager = GymEnvManager(args.env_name, args)
-        policy = DiscretePolicy if env_manager.is_disc_action else SimpleGaussianPolicy
-        agent = Agent(
-            policy(state_dim=env_manager.state_dim, hdim=[128, 128], action_dim=env_manager.action_dim), 
-            ValueFn(state_dim=env_manager.state_dim), args=args).to(device)
+        policy_builder = DiscretePolicy if env_manager.is_disc_action else SimpleGaussianPolicy
+        policy = policy_builder(state_dim=env_manager.state_dim, hdim=[128, 128], action_dim=env_manager.action_dim)
+        critic = ValueFn(state_dim=env_manager.state_dim)
 
+    agent = Agent(policy, critic, args).to(device)
     logger = MultiBaseLogger(args=args)
     env_manager.set_logdir(create_logdir(root=logger.logdir, dirname='{}'.format(args.env_name), setdate=False))
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
@@ -90,3 +86,11 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# python information_economy/scratch/vickrey.py --rlalg ppo --env MiniGrid-Empty-Random-5x5-v0 --envtype mg --policy cbeta --debug --auctiontype bb --critic cnn
+
+
+
+
+
+

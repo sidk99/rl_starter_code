@@ -59,16 +59,16 @@ class Saver(object):
         self.heapsize = heapsize
         self.most_recents = []  # largest is most recent
         self.bests = []  # largest is best
-        self.create_save_file = lambda i_episode: os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(i_episode))
+        self.create_save_file = lambda epoch: os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(epoch))
 
         with open(os.path.join(self.checkpoint_dir, 'summary.csv'), 'w') as f:
             csv_writer = csv.DictWriter(f, fieldnames=['recent', 'best'])
             csv_writer.writeheader()
 
-    def save(self, i_episode, state_dict):
-        ckpt_id = int(state_dict['experiment']['batch'])
+    def save(self, epoch, state_dict):
+        ckpt_id = epoch#int(state_dict['experiment']['epoch'])
         ckpt_return = float(state_dict['experiment']['mean_return'])
-        ckpt_name = self.create_save_file(i_episode)
+        ckpt_name = self.create_save_file(epoch)
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
         torch.save(state_dict, ckpt_name)
@@ -200,7 +200,7 @@ class EnvManager(EnvLogger):
         self.initialize()
 
     def initialize(self):
-        self.add_variable('i_episode')
+        self.add_variable('epoch')
 
 class VisualEnvManager(EnvManager):
     def __init__(self, env_name, args):
@@ -235,14 +235,14 @@ class VisualEnvManager(EnvManager):
         plt.savefig(os.path.join(self.qualitative_dir, fname))
         plt.close()
 
-    def save_gif(self, prefix, gifname, i_episode, test_example, remove_images):
+    def save_gif(self, prefix, gifname, epoch, test_example, remove_images):
         def get_key(fname):
             basename = os.path.basename(fname)
             delimiter = '_t'
             start = basename.rfind(delimiter)
             key = int(basename[start+len(delimiter):-len('.png')])
             return key
-        fnames = sorted(glob.glob('{}/{}_e{}_n{}_t*.png'.format(self.qualitative_dir, prefix, i_episode, test_example)), key=get_key)
+        fnames = sorted(glob.glob('{}/{}_e{}_n{}_t*.png'.format(self.qualitative_dir, prefix, epoch, test_example)), key=get_key)
         images = [imageio.imread(fname) for fname in fnames]
         imshape = images[0].shape
         for pad in range(2):
@@ -252,15 +252,15 @@ class VisualEnvManager(EnvManager):
             for fname in fnames:
                 os.remove(fname)
 
-    def save_video(self, i_episode, test_example, bids, ret, society_episode_data):
+    def save_video(self, epoch, test_example, bids, ret, society_episode_data):
         frames = [e['frame'] for e in society_episode_data]
         for i, frame in tqdm(enumerate(frames)):
-            fname = '{}_e{}_n{}_t{}.png'.format(self.env_name, i_episode, test_example, i)
+            fname = '{}_e{}_n{}_t{}.png'.format(self.env_name, epoch, test_example, i)
             agent_ids = sorted(bids.keys())
             bids_t = [(agent_id, bids[agent_id][i]) for agent_id in agent_ids]
             self.save_image(fname, i, ret, frame, bids_t)
-        gifname = 'vid{}_{}_{}.gif'.format(self.env_name, i_episode, test_example)
-        self.save_gif(self.env_name, gifname, i_episode, test_example, remove_images=True)
+        gifname = 'vid{}_{}_{}.gif'.format(self.env_name, epoch, test_example)
+        self.save_gif(self.env_name, gifname, epoch, test_example, remove_images=True)
 
 class GymEnvManager(VisualEnvManager):
     def __init__(self, env_name, args):

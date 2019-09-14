@@ -91,11 +91,12 @@ class Experiment():
 
     def train(self, max_episodes):
         run_avg = RunningAverage()
-        for i_episode in range(max_episodes):
-            if i_episode % self.args.eval_every == 0:
-                stats = self.test(i_episode=i_episode, max_episodes=10)
-                self.logger.saver.save(i_episode, 
+        for epoch in range(max_episodes):
+            if epoch % self.args.eval_every == 0:
+                stats = self.test(epoch=epoch, max_episodes=10)
+                self.logger.saver.save(epoch, 
                     {'args': self.args,
+                     'logger': self.logger.get_state_dict(),
                      'experiment': stats,
                      'agent': self.agent.get_state_dict()})
 
@@ -112,7 +113,7 @@ class Experiment():
                     to_print_alr += ' Learning rate changed!'
                     self.logger.printf(to_print_alr)
 
-            if i_episode >= self.args.anneal_policy_lr_after:
+            if epoch >= self.args.anneal_policy_lr_after:
                 update_optimizer_lr(
                     optimizer=self.agent.policy_optimizer,
                     scheduler=self.agent.po_scheduler,
@@ -122,14 +123,14 @@ class Experiment():
                     scheduler=self.agent.vo_scheduler,
                     name='value')
 
-            if i_episode % self.args.update_every == 0:
+            if epoch % self.args.update_every == 0:
                 self.rl_alg.improve(self.agent)
 
-            if i_episode % self.args.log_every == 0:
+            if epoch % self.args.log_every == 0:
                 self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
-                    i_episode, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
+                    epoch, stats['avg_return'], stats['min_return'], stats['max_return'], running_return))
 
-    def test(self, i_episode, max_episodes):
+    def test(self, epoch, max_episodes):
         visualize = True
         returns = []
         for i in tqdm(range(max_episodes)):
@@ -140,20 +141,19 @@ class Experiment():
 
                 if i == 0 and visualize and self.agent.policy.discrete:
                     bids = self.get_bids_for_episode(episode_data)
-                    self.env_manager.save_video(i_episode, i, bids, ret, episode_data)
+                    self.env_manager.save_video(epoch, i, bids, ret, episode_data)
             returns.append(ret)
         returns = np.array(returns)
-        stats = {'batch': i_episode,
-                 'mean_return': np.mean(returns),
+        stats = {'mean_return': np.mean(returns),
                  'std_return': np.std(returns),
                  'min_return': np.min(returns),
                  'max_return': np.max(returns)}
-        self.env_manager.update_variable(name='i_episode', index=i_episode, value=i_episode)
+        self.env_manager.update_variable(name='epoch', index=epoch, value=epoch)
         for metric in ['min_return', 'max_return', 'mean_return', 'std_return']:
             self.env_manager.update_variable(
-                name=metric, index=i_episode, value=stats[metric], include_running_avg=True)
+                name=metric, index=epoch, value=stats[metric], include_running_avg=True)
         self.env_manager.plot(
-            var_pairs=[(('i_episode', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
+            var_pairs=[(('epoch', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
             expname=self.logger.expname)
         self.logger.pprintf(stats)
         return stats

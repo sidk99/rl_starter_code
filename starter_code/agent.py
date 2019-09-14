@@ -80,3 +80,12 @@ class Agent(nn.Module):
             }
         return state_dict
 
+    def load_state_dict(self, agent_state_dict, reset_optimizer=True):
+        self.policy.load_state_dict(agent_state_dict['policy'])
+        self.valuefn.load_state_dict(agent_state_dict['valuefn'])
+        if not reset_optimizer:
+            self.policy_optimizer.load_state_dict(agent_state_dict['policy_optimizer'])
+            self.value_optimizerl.load_state_dict(agent_state_dict['value_optimizerl'])
+
+
+
