@@ -178,3 +178,71 @@ def construct_task_progression(task_prog_spec, env_manager_builder, logger, args
         task_progression.append(task_distribution_group)
     return task_progression
 
+
+
+#######
+# debug
+
+
+def debug_task_progression_mg():
+    args = process_args(parse_args())
+
+    env_registry = EnvRegistry()
+
+    task_prog_spec = {
+        0: {
+            'train': ['MiniGrid-Empty-Random-5x5-v0', 'MiniGrid-Empty-5x5-v0'],
+            'test': ['MiniGrid-Empty-Random-6x6-v0', 'MiniGrid-Empty-6x6-v0'],
+        },
+        1: {
+            'train': ['MiniGrid-SimpleCrossingS9N1-v0', 'MiniGrid-SimpleCrossingS9N2-v0'],
+            'test': ['MiniGrid-SimpleCrossingS9N3-v0', 'MiniGrid-SimpleCrossingS11N5-v0'],
+        },
+    }
+
+    task_progression = construct_task_progression(task_prog_spec, GymEnvManager, args)
+
+    for i in range(2):
+        for mode in ['train', 'test']:
+            for k in range(5):
+                env_manager = task_progression.sample(i, mode)
+                print('i: {}\tmode: {}\tk: {}\tenv_name: {}'.format(i, mode, k, env_manager.env_name), end=' ')
+                # sample episode from this env_manager
+                state = env_manager.env.reset()
+                for t in range(10):
+                    print('{:.2f}'.format(np.linalg.norm(state['image'])), end=' ')
+                    action = np.random.randint(6)
+                    next_state, reward, done, _ = env_manager.env.step(action)
+                    state = next_state
+                print('')
+
+def debug_task_progression_tab():
+    args = process_args(parse_args())
+
+    env_registry = EnvRegistry()
+    task_prog_spec = {
+        0: {
+            'train': ['3s2t2af', '3s2t2af'],
+            'test': ['3s2t2af', '3s2t2af'],
+        },
+        1: {
+            'train': ['3s2t2af', '3s2t2af'],
+            'test': ['3s2t2af', '3s2t2af'],
+        },
+    }
+
+    task_progression = construct_task_progression(task_prog_spec, TabularEnvManager, args)
+
+    for i in range(2):
+        for mode in ['train', 'test']:
+            for k in range(5):
+                env_manager = task_progression.sample(i, mode)
+                print('i: {}\tmode: {}\tk: {}\tenv_name: {}'.format(i, mode, k, env_manager.env_name), end=' ')
+                # sample episode from this env_manager
+                state = env_manager.env.reset()
+                for t in range(2):
+                    print('{:.2f}'.format(np.linalg.norm(state)), end=' ')
+                    action = np.random.randint(2)
+                    next_state, reward, done, _ = env_manager.env.step(action)
+                    state = next_state
+                print('')
