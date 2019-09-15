@@ -17,6 +17,9 @@ from tqdm import tqdm
 from matplotlib.ticker import MaxNLocator
 import heapq
 
+from env_config import EnvRegistry
+
+er = EnvRegistry()
 
 def create_logdir(root, dirname, setdate):
     logdir = os.path.join(root, dirname)
@@ -194,9 +197,9 @@ class EnvManager(EnvLogger):
     def __init__(self, env_name, args):
         super(EnvManager, self).__init__(args)
         self.env_name = env_name
-        self.env_type = 'mg'  # CHANGED
-        self.env = gym.make(env_name)  # CHANGED
-        self.env.seed(args.seed)  # this should be args.seed
+        self.env_type = er.get_env_type(env_name)
+        self.env = er.get_env_constructor(env_name)()
+        self.env.seed(args.seed)
         self.initialize()
 
     def initialize(self):
