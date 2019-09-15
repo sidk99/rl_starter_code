@@ -12,6 +12,7 @@ class Agent(nn.Module):
         self.policy = policy
         self.valuefn = valuefn
         self.args = args
+        self.discrete = self.policy.discrete
 
         self.initalize_memory()
         self.initialize_optimizer()

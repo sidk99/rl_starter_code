@@ -21,9 +21,9 @@ class Experiment():
         self.epoch = 0
         self.run_avg = RunningAverage()
 
-    def get_bids_for_episode(self, episode_data):
+    def get_bids_for_episode(self, episode_info):
         episode_bids = defaultdict(lambda: [])
-        for step in episode_data:
+        for step in episode_info['organism_episode_data']:
             probs = list(step['action_dist'].probs.detach()[0].cpu().numpy())
             for index, prob in enumerate(probs):
                 episode_bids[index].append(prob)
@@ -68,7 +68,7 @@ class Experiment():
                  'actions': [e['action'] for e in episode_data]}
 
         episode_info = {
-            'episode_data': episode_data,
+            'organism_episode_data': episode_data,
             'episode_stats': stats
         }
         return episode_info
@@ -135,9 +135,9 @@ class Experiment():
             with torch.no_grad():
                 episode_info = self.sample_episode(env=env_manager.env, deterministic=False, render=visualize)
                 ret = episode_info['episode_stats']['return']
-                if i == 0 and visualize and self.organism.policy.discrete:
-                    bids = self.get_bids_for_episode(episode_info['episode_data'])
-                    env_manager.save_video(epoch, i, bids, ret, episode_info['episode_data'])
+                if i == 0 and visualize and self.organism.discrete:
+                    bids = self.get_bids_for_episode(episode_info)
+                    env_manager.save_video(epoch, i, bids, ret, episode_info['organism_episode_data'])
             returns.append(ret)
         returns = np.array(returns)
         stats = {'returns': returns,
