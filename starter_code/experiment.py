@@ -112,8 +112,7 @@ class Experiment():
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
 
-            if epoch % self.args.update_every == 0:
-                self.organism.update(self.rl_alg)
+            self.organism.update(self.rl_alg)
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)

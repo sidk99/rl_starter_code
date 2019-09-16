@@ -11,6 +11,14 @@ import starter_code.utils as u
 
 eps = np.finfo(np.float32).eps.item()
 
+def rlalg_switch(alg_name):
+    rlalgs = {
+        'ppo': PPO,
+        'a2c': A2C,
+        'vpg': VPG
+    }
+    return rlalgs[alg_name]
+
 
 class VPG():
     def __init__(self, device, args):

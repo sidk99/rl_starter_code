@@ -50,9 +50,9 @@ def normal_log_density(x, mean, log_std, std):
 def visualize_parameters(model, pfunc):
     for n, p in model.named_parameters():
         if p.grad is None:
-            pfunc(n, p.data.norm(), None)
+            pfunc('{}\t{}\t{}'.format(n, p.data.norm(), None))
         else:
-            pfunc(n, p.data.norm(), p.grad.data.norm())
+            pfunc('{}\t{}\t{}'.format(n, p.data.norm(), p.grad.data.norm()))
 
 def visualize_params(dict_of_models, pfunc):
     for k, v in dict_of_models.items():

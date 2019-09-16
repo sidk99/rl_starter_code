@@ -21,13 +21,26 @@ from env_config import EnvRegistry
 
 er = EnvRegistry()
 
+def mkdirp(logdir):
+    try:
+        os.makedirs(logdir)
+    except FileExistsError:
+        overwrite = 'o'
+        while overwrite not in ['y', 'n']:
+            overwrite = input('{} exists. Overwrite? [y/n] '.format(logdir))
+        if overwrite == 'y':
+            shutil.rmtree(logdir)
+            os.mkdir(logdir)
+        else:
+            raise FileExistsError
+
 def create_logdir(root, dirname, setdate):
     logdir = os.path.join(root, dirname)
     if setdate:
-        if not dirname == '': logdir += '-'
+        if not dirname == '': logdir += '__'
         logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
         date=datetime.datetime.now())
-    os.mkdir(logdir)
+    mkdirp(logdir)
     return logdir
 
 class RunningAverage(object):
@@ -106,9 +119,9 @@ class Saver(object):
 class MultiBaseLogger(object):
     def __init__(self, args):
         self.args = args
-        self.root = args.root
+        self.subroot = os.path.join('runs', args.subroot)
         self.expname = args.expname
-        self.logdir = create_logdir(root=self.root, dirname=self.expname, setdate=True)
+        self.logdir = create_logdir(root=self.subroot, dirname=self.expname, setdate=True)
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
 
