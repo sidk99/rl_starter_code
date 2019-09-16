@@ -3,6 +3,8 @@ from collections import namedtuple
 import gym
 import gym_minigrid
 
+import pprint
+
 def dict_transpose(d):
     """
         input: {
@@ -25,6 +27,9 @@ def dict_transpose(d):
             count += 1
     assert len(tranposed_dict.keys()) == count
     return tranposed_dict
+
+def simplify_name(name):
+    return ''.join(x for  x in name if not x.islower())
 
 class EnvRegistry():
     def __init__(self):
