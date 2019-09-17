@@ -11,6 +11,8 @@ from starter_code.multitask import construct_task_progression, default_task_prog
 from starter_code.rl_algs import rlalg_switch
 from value_function import ValueFn, CNNValueFn
 
+from launcher import BaseLauncher
+
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
     parser.add_argument('--subroot', type=str, default='debug')
@@ -61,3 +63,7 @@ if __name__ == '__main__':
 
     # python starter_code/run.py --env-name MiniGrid-Empty-Random-5x5-v0 --seed 1
 
+
+# if __name__ == '__main__':
+#     launcher = BaseLauncher()
+#     launcher.main(parse_args)
