@@ -218,6 +218,25 @@ class EnvManager(EnvLogger):
     def initialize(self):
         self.add_variable('epoch')
 
+class TabularEnvManager(EnvManager):
+    def __init__(self, env_name, args):
+        super(TabularEnvManager, self).__init__(env_name, args)
+        self.state_dim = self.env.state_dim
+        self.action_dim = len(self.env.actions)
+        self.starting_states = self.env.starting_states
+
+    def initialize(self):
+        super(TabularEnvManager, self).initialize()
+        for state in self.env.starting_states:
+            self.add_variable('min_return_s{}'.format(state), incl_run_avg=True, 
+                metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('max_return_s{}'.format(state), incl_run_avg=True, 
+                metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('mean_return_s{}'.format(state), incl_run_avg=True, 
+                metric={'value': -np.inf, 'cmp': operator.ge})
+            self.add_variable('std_return_s{}'.format(state), incl_run_avg=True, 
+                metric={'value': np.inf, 'cmp': operator.le})
+
 class VisualEnvManager(EnvManager):
     def __init__(self, env_name, args):
         super(VisualEnvManager, self).__init__(env_name, args)
@@ -292,3 +311,4 @@ class MinigridEnvManager(VisualEnvManager):
         self.state_dim = full_state_dim[:-1]  # (H, W)
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
+

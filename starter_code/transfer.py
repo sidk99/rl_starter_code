@@ -5,7 +5,7 @@ import torch
 from experiment import Experiment
 from log import MultiBaseLogger
 from rl_algs import rlalg_switch
-from run import initialize, create_agent, create_task_progression
+from run import initialize, create_organism, create_task_progression
 import utils as u
 
 def parse_args():
@@ -38,10 +38,11 @@ def main():
     ##########################################
     ckpt = torch.load(os.path.join(args.model_dir, 'checkpoints', 'ckpt_batch{}.pth.tar'.format(args.ckpt_id)))
     args = update_dirs(args, ckpt['args'].subroot, ckpt['args'].expname)
+    # here assign the task parent here; perhaps have a task-tree object
     ##########################################
     logger = MultiBaseLogger(args=args)
     task_progression = create_task_progression(logger, args)
-    agent = create_agent(device, task_progression, args)
+    agent = create_organism(device, task_progression, args)
     ##########################################
     agent = load_agent_weights(agent, ckpt, logger.printf)
     ##########################################

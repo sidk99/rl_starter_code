@@ -1,6 +1,13 @@
 import numpy as np
 from starter_code.log import create_logdir
 
+class TaskNode(object):
+    def __init__(self, task_name, parents=None):
+        self.task_name 
+        self.parents = parents  # a list of TaskNodes
+
+# you will save this task node in the checkpoint
+
 class TaskDistribution(object):
     """
         Contains a set of K environment managers

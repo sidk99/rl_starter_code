@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from rl_algs import PPO, A2C, VPG, rlalg_switch
+from starter_code.rl_algs import PPO, A2C, VPG, rlalg_switch
 from agent import Agent
 from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from value_function import ValueFn, CNNValueFn
@@ -21,9 +21,10 @@ from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, create_logdi
 
 import ipdb
 
-from configs import process_config
+from configs import process_config, env_manager_switch
 
 from starter_code.multitask import construct_task_progression, default_task_prog_spec
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
@@ -45,23 +46,18 @@ def initialize(args):
     return args, device
 
 def create_task_progression(logger, args):
-    if 'MiniGrid' in args.env_name:
-        task_progression = construct_task_progression(
+    task_progression = construct_task_progression(
             default_task_prog_spec(args.env_name),
-            MinigridEnvManager, logger, args)
-    else:
-        task_progression = construct_task_progression(
-            default_task_prog_spec(args.env_name),
-            GymEnvManager, logger, args)
+            env_manager_switch(args.env_name), logger, args)
     return task_progression
 
-def create_agent(device, task_progression, args):
+def create_organism(device, task_progression, args):
     if 'MiniGrid' in args.env_name:
         policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
         critic = CNNValueFn(state_dim=task_progression.state_dim)
     else:
         policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
-        policy = policy_builder(state_dim=task_progression.state_dim, hdim=[128, 128], action_dim=task_progression.action_dim)
+        policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
         critic = ValueFn(state_dim=task_progression.state_dim)
     agent = Agent(policy, critic, args).to(device)
     return agent
@@ -71,10 +67,10 @@ def main():
     args, device = initialize(args)
     logger = MultiBaseLogger(args=args)
     task_progression = create_task_progression(logger, args)
-    agent = create_agent(device, task_progression, args)
+    agent = create_organism(device, task_progression, args)
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
     experiment = Experiment(agent, task_progression, rl_alg, logger, device, args)
-    experiment.train(max_epochs=100001)
+    experiment.train(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':
     main()
