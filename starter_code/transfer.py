@@ -10,8 +10,6 @@ import utils as u
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Transfer')
-    # parser.add_argument('--model-dir', type=str, required=True)
-    # parser.add_argument('--ckpt-id', type=int, required=True)
     parser.add_argument('--ckpt', type=str, required=True)
 
     parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
@@ -36,8 +34,7 @@ def update_dirs(args, ckpt_subroot, ckpt_expname):
 def main():
     args, device = initialize(parse_args())
     ##########################################
-    # ckpt = torch.load(os.path.join(args.model_dir, 'checkpoints', 'ckpt_batch{}.pth.tar'.format(args.ckpt_id)))
-    ckpt = torch.load(args.ckpt)#os.path.join(args.model_dir, 'checkpoints', 'ckpt_batch{}.pth.tar'.format(args.ckpt_id)))
+    ckpt = torch.load(args.ckpt)
     args = update_dirs(args, ckpt['args'].subroot, ckpt['args'].expname)
     # here assign the task parent here; perhaps have a task-tree object
     ##########################################
