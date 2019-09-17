@@ -85,10 +85,3 @@ def env_manager_switch(env_name):
         'tab': TabularEnvManager
     }
     return env_manager[envtype]
-
-
-        # args.max_episodes = 30
-        # args.update_every = 5
-        # args.eval_every = 10
-        # args.log_every = 1
-        # args.curr_every = 15

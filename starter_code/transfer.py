@@ -33,8 +33,7 @@ def update_dirs(args, ckpt_subroot, ckpt_expname):
     return args
 
 def main():
-    args = parse_args()
-    args, device = initialize(args)
+    args, device = initialize(parse_args())
     ##########################################
     ckpt = torch.load(os.path.join(args.model_dir, 'checkpoints', 'ckpt_batch{}.pth.tar'.format(args.ckpt_id)))
     args = update_dirs(args, ckpt['args'].subroot, ckpt['args'].expname)

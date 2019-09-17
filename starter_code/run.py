@@ -1,30 +1,15 @@
 import argparse
-import gym
 import numpy as np
-from itertools import count
-from collections import namedtuple
-
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-from starter_code.rl_algs import PPO, A2C, VPG, rlalg_switch
 from agent import Agent
-from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
-from value_function import ValueFn, CNNValueFn
-import utils
-from experiment import Experiment
-import gym_minigrid
-
-from log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, create_logdir
-
-import ipdb
-
 from configs import process_config, env_manager_switch
-
+from experiment import Experiment
+from log import MultiBaseLogger
+from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from starter_code.multitask import construct_task_progression, default_task_prog_spec
-
+from starter_code.rl_algs import rlalg_switch
+from value_function import ValueFn, CNNValueFn
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
@@ -63,13 +48,12 @@ def create_organism(device, task_progression, args):
     return agent
 
 def main():
-    args = parse_args()
-    args, device = initialize(args)
+    args, device = initialize(parse_args())
     logger = MultiBaseLogger(args=args)
     task_progression = create_task_progression(logger, args)
-    agent = create_organism(device, task_progression, args)
+    organism = create_organism(device, task_progression, args)
     rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-    experiment = Experiment(agent, task_progression, rl_alg, logger, device, args)
+    experiment = Experiment(organism, task_progression, rl_alg, logger, device, args)
     experiment.train(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':
