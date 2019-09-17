@@ -23,46 +23,45 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def initialize(args):
-    args = process_config(args)
-    device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    return args, device
+class BaseLauncher:
 
-def create_task_progression(logger, args):
-    task_progression = construct_task_progression(
-            default_task_prog_spec(args.env_name),
-            env_manager_switch(args.env_name), logger, args)
-    return task_progression
+    @classmethod
+    def initialize(cls, args):
+        args = process_config(args)
+        device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        return args, device
 
-def create_organism(device, task_progression, args):
-    if 'MiniGrid' in args.env_name:
-        policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
-        critic = CNNValueFn(state_dim=task_progression.state_dim)
-    else:
-        policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
-        policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
-        critic = ValueFn(state_dim=task_progression.state_dim)
-    agent = Agent(policy, critic, args).to(device)
-    return agent
+    @classmethod
+    def create_task_progression(cls, logger, args):
+        task_progression = construct_task_progression(
+                default_task_prog_spec(args.env_name),
+                env_manager_switch(args.env_name), logger, args)
+        return task_progression
 
-def main():
-    args, device = initialize(parse_args())
-    logger = MultiBaseLogger(args=args)
-    task_progression = create_task_progression(logger, args)
-    organism = create_organism(device, task_progression, args)
-    rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-    experiment = Experiment(organism, task_progression, rl_alg, logger, device, args)
-    experiment.train(max_epochs=args.max_epochs)
+    @classmethod
+    def create_organism(cls, device, task_progression, args):
+        if 'MiniGrid' in args.env_name:
+            policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
+            critic = CNNValueFn(state_dim=task_progression.state_dim)
+        else:
+            policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
+            policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
+            critic = ValueFn(state_dim=task_progression.state_dim)
+        agent = Agent(policy, critic, args).to(device)
+        return agent
+
+    @classmethod
+    def main(cls, parse_args):
+        args, device = cls.initialize(parse_args())
+        logger = MultiBaseLogger(args=args)
+        task_progression = cls.create_task_progression(logger, args)
+        organism = cls.create_organism(device, task_progression, args)
+        rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
+        experiment = Experiment(organism, task_progression, rl_alg, logger, device, args)
+        experiment.train(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':
-    main()
-
-    # python starter_code/run.py --env-name MiniGrid-Empty-Random-5x5-v0 --seed 1
-
-
-# if __name__ == '__main__':
-#     from launcher import BaseLauncher
-#     launcher = BaseLauncher()
-#     launcher.main(parse_args)
+    launcher = BaseLauncher()
+    launcher.main(parse_args)
