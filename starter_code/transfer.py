@@ -52,3 +52,9 @@ def main():
 if __name__ == '__main__':
     main()
     # python starter_code/transfer.py --env-name MiniGrid-Empty-Random-6x6-v0 --model-dir runs/debug/MG-E-R-55-0_s1__2019-09-16_15-19-09 --ckpt-id 300
+
+
+# if __name__ == '__main__':
+#     from launcher import TransferLauncher
+#     launcher = TransferLauncher()
+#     launcher.main(parse_args)

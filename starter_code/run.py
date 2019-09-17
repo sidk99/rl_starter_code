@@ -11,8 +11,6 @@ from starter_code.multitask import construct_task_progression, default_task_prog
 from starter_code.rl_algs import rlalg_switch
 from value_function import ValueFn, CNNValueFn
 
-from launcher import BaseLauncher
-
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
     parser.add_argument('--subroot', type=str, default='debug')
@@ -65,5 +63,6 @@ if __name__ == '__main__':
 
 
 # if __name__ == '__main__':
+#     from launcher import BaseLauncher
 #     launcher = BaseLauncher()
 #     launcher.main(parse_args)
