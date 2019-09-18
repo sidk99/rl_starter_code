@@ -124,6 +124,8 @@ class MultiBaseLogger(object):
         self.logdir = create_logdir(root=self.subroot, dirname=self.expname, setdate=True)
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
+        print('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
+            self.subroot, self.expname, self.logdir, self.checkpoint_dir))
 
     def get_state_dict(self):
         return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}
@@ -167,6 +169,8 @@ class EnvLogger(object):
         self.logdir = logdir
         self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
         self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
+        print('Qualitative Directory: {}\nQuantitative Directory: {}'.format(
+            self.qualitative_dir, self.quantitative_dir))
 
     def add_variable(self, name, incl_run_avg=False, metric=None):
         self.data[name] = []
@@ -247,6 +251,11 @@ class VisualEnvManager(EnvManager):
         self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
+        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
     def save_image(self, fname, i, ret, frame, bids_t):
         fig = plt.figure()

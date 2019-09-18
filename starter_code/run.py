@@ -2,14 +2,14 @@ import argparse
 import numpy as np
 import torch
 
-from agent import Agent
-from configs import process_config, env_manager_switch
-from experiment import Experiment
-from log import MultiBaseLogger
-from policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
+from starter_code.agent import Agent
+from starter_code.configs import process_config, env_manager_switch
+from starter_code.experiment import Experiment
+from starter_code.log import MultiBaseLogger
+from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from starter_code.multitask import construct_task_progression, default_task_prog_spec
 from starter_code.rl_algs import rlalg_switch
-from value_function import ValueFn, CNNValueFn
+from starter_code.value_function import ValueFn, CNNValueFn
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')

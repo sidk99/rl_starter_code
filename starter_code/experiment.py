@@ -130,6 +130,7 @@ class Experiment():
 
     def test(self, epoch, env_manager, num_test, visualize):
         returns = []
+        moves = []
         for i in tqdm(range(num_test)):
             with torch.no_grad():
                 episode_info = self.sample_episode(env=env_manager.env, deterministic=False, render=visualize)
@@ -138,24 +139,33 @@ class Experiment():
                     bids = self.get_bids_for_episode(episode_info)
                     env_manager.save_video(epoch, i, bids, ret, episode_info['organism_episode_data'])
             returns.append(ret)
+            moves.append(episode_info['episode_stats']['steps'])
         returns = np.array(returns)
+        moves = np.array(moves)
         stats = {'returns': returns,
                  'mean_return': np.mean(returns),
                  'std_return': np.std(returns),
                  'min_return': np.min(returns),
-                 'max_return': np.max(returns)}
+                 'max_return': np.max(returns),
+                 'moves': moves,
+                 'mean_moves': np.mean(moves),
+                 'std_moves': np.std(moves),
+                 'min_moves': np.min(moves),
+                 'max_moves': np.max(moves),}
         return stats
 
     def eval(self, epoch):
+        metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
+                   'min_moves', 'max_moves', 'mean_moves', 'std_moves']
         for mode in ['train']:
             for env_manager in self.task_progression[self.epoch][mode]:  # epoch=0 is hardcoded!!
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-                for metric in ['min_return', 'max_return', 'mean_return', 'std_return']:
+                for metric in metrics:
                     env_manager.update_variable(
                         name=metric, index=epoch, value=stats[metric], include_running_avg=True)
                 env_manager.plot(
-                    var_pairs=[(('epoch', k)) for k in ['min_return', 'max_return', 'mean_return', 'std_return']],
+                    var_pairs=[(('epoch', k)) for k in metrics],
                     expname=self.logger.expname)
                 self.logger.pprintf(stats)
                 return stats

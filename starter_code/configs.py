@@ -45,6 +45,10 @@ def experiment_config(args):
         args.log_every = 1
     return args
 
+def lifelong_config(args):
+    args.parents = ['root']
+    return args
+
 def network_config(args):
     args.hdim = [128, 128]
     if args.debug:
@@ -73,6 +77,7 @@ def process_config(args):
     args = training_config(args)
     args = rlalg_config_switch(args.alg_name)(args)
     args = network_config(args)
+    args = lifelong_config(args)
     args = build_expname(args)
     return args
 
