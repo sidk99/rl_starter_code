@@ -1,8 +1,6 @@
 from collections import namedtuple
-
 import gym
 import gym_minigrid
-
 import pprint
 
 def dict_transpose(d):
@@ -36,6 +34,7 @@ class EnvRegistry():
         self.envs_type_name = {
             'gym': {
                 'CartPole-v0',
+                'InvertedPendulum-v2',
             },
             'mg': {
                 'MiniGrid-MultiRoom-N6-v0',

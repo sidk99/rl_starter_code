@@ -4,6 +4,7 @@ import torch
 
 from starter_code.agent import Agent
 from starter_code.configs import process_config, env_manager_switch
+from starter_code.env_config import EnvRegistry as ER
 from starter_code.experiment import Experiment
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
@@ -24,6 +25,7 @@ def parse_args():
     return args
 
 class BaseLauncher:
+    env_registry = ER()  # may be mutable?
 
     @classmethod
     def initialize(cls, args):
@@ -37,7 +39,10 @@ class BaseLauncher:
     def create_task_progression(cls, logger, args):
         task_progression = construct_task_progression(
                 default_task_prog_spec(args.env_name),
-                env_manager_switch(args.env_name), logger, args)
+                env_manager_switch(args.env_name, cls.env_registry), 
+                logger,
+                cls.env_registry,
+                args)
         return task_progression
 
     @classmethod

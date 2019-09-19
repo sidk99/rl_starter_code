@@ -1,5 +1,6 @@
 # Starter Code for Deep RL projects
 
-`python starter_code/run.py --algname <ppo/a2c/vpg> --env-name <env_name>`
+Step 1: Put your environment in the EnvRegistry() in `starter_code/env_config.py`
 
-`python starter_code/run.py --env-name MiniGrid-Empty-Random-5x5-v0 --seed 1 --expname empty_mg_test `
+Step 2: `python starter_code/run.py --alg-name <alg-name> --env-name <env_name>`
+    where `<alg-name>` can be `ppo`, `a2c`, or `vpg`

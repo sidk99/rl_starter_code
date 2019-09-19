@@ -81,9 +81,8 @@ def process_config(args):
     args = build_expname(args)
     return args
 
-def env_manager_switch(env_name):
-    er = EnvRegistry()
-    envtype = er.get_env_type(env_name)
+def env_manager_switch(env_name, env_registry):
+    envtype = env_registry.get_env_type(env_name)
     env_manager = {
         'gym': GymEnvManager,
         'mg': MinigridEnvManager,

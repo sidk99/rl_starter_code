@@ -211,11 +211,11 @@ class EnvLogger(object):
             plt.close()
 
 class EnvManager(EnvLogger):
-    def __init__(self, env_name, args):
+    def __init__(self, env_name, env_registry, args):
         super(EnvManager, self).__init__(args)
         self.env_name = env_name
-        self.env_type = er.get_env_type(env_name)
-        self.env = er.get_env_constructor(env_name)()
+        self.env_type = env_registry.get_env_type(env_name)
+        self.env = env_registry.get_env_constructor(env_name)()
         self.env.seed(args.seed)
         self.initialize()
 
@@ -223,8 +223,8 @@ class EnvManager(EnvLogger):
         self.add_variable('epoch')
 
 class TabularEnvManager(EnvManager):
-    def __init__(self, env_name, args):
-        super(TabularEnvManager, self).__init__(env_name, args)
+    def __init__(self, env_name, env_registry, args):
+        super(TabularEnvManager, self).__init__(env_name, env_registry, args)
         self.state_dim = self.env.state_dim
         self.action_dim = len(self.env.actions)
         self.starting_states = self.env.starting_states
@@ -242,8 +242,8 @@ class TabularEnvManager(EnvManager):
                 metric={'value': np.inf, 'cmp': operator.le})
 
 class VisualEnvManager(EnvManager):
-    def __init__(self, env_name, args):
-        super(VisualEnvManager, self).__init__(env_name, args)
+    def __init__(self, env_name, env_registry, args):
+        super(VisualEnvManager, self).__init__(env_name, env_registry, args)
 
     def initialize(self):
         super(VisualEnvManager, self).initialize()
@@ -307,15 +307,15 @@ class VisualEnvManager(EnvManager):
         self.save_gif(self.env_name, gifname, epoch, test_example, remove_images=True)
 
 class GymEnvManager(VisualEnvManager):
-    def __init__(self, env_name, args):
-        super(GymEnvManager, self).__init__(env_name, args)
+    def __init__(self, env_name, env_registry, args):
+        super(GymEnvManager, self).__init__(env_name, env_registry, args)
         self.state_dim = self.env.observation_space.shape[0]
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
 
 class MinigridEnvManager(VisualEnvManager):
-    def __init__(self, env_name, args):
-        super(MinigridEnvManager, self).__init__(env_name, args)
+    def __init__(self, env_name, env_registry, args):
+        super(MinigridEnvManager, self).__init__(env_name, env_registry, args)
         full_state_dim = self.env.observation_space.spaces['image'].shape  # (H, W, C)
         self.state_dim = full_state_dim[:-1]  # (H, W)
         self.is_disc_action = len(self.env.action_space.shape) == 0

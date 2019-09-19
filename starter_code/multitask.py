@@ -139,7 +139,7 @@ def default_task_prog_spec(env_name):
     spec = {0: dict(train=[env_name])}
     return spec
 
-def construct_task_progression(task_prog_spec, env_manager_builder, logger, args):
+def construct_task_progression(task_prog_spec, env_manager_builder, logger, env_registry, args):
     """
     should be able to convert:
     {
@@ -175,7 +175,7 @@ def construct_task_progression(task_prog_spec, env_manager_builder, logger, args
         for mode, envs in group.items():
             task_distribution = TaskDistribution()
             for env_name in envs:
-                env_manager = env_manager_builder(env_name, args)
+                env_manager = env_manager_builder(env_name, env_registry, args)
                 env_manager.set_logdir(create_logdir(
                     root=group_dir, 
                     dirname='{}_{}_{}'.format(env_name, i, mode), 
