@@ -70,6 +70,8 @@ def build_expname(args):
     args.expname += '_s{}'.format(args.seed)
     if args.debug:
         args.expname += '_db'
+    if hasattr(args, 'auctiontype'):
+        args.expname += '_auc{}'.format(args.auctiontype)
     return args
 
 def process_config(args):
