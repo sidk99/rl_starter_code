@@ -8,3 +8,5 @@ Step 2:
 ```
 
 where `<alg-name>` can be `ppo`, `a2c`, or `vpg`
+
+For example, you can run `python starter_code/run.py --alg-name ppo --env-name CartPole-v0`
