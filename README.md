@@ -1,6 +1,6 @@
 # Starter Code for Deep RL projects
 
-Step 1: Put your environment in the EnvRegistry() in `starter_code/env_config.py`
+Step 1: Put your environment in the `EnvRegistry()` in `starter_code/env_config.py`
 
 Step 2:
 ```
