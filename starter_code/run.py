@@ -15,6 +15,7 @@ from starter_code.value_function import ValueFn, CNNValueFn
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Train')
     parser.add_argument('--subroot', type=str, default='debug')
+    parser.add_argument('--cpu', action='store_true')
 
     parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
     parser.add_argument('--seed', type=int, default=543)
@@ -30,7 +31,7 @@ class BaseLauncher:
     @classmethod
     def initialize(cls, args):
         args = process_config(args)
-        device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
+        device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() and not args.cpu else torch.device('cpu')
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         return args, device

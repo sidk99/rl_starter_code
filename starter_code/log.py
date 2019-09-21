@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 import csv
 import datetime
 import imageio
@@ -10,8 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import operator
 import os
-import shutil
+import pandas as pd
 import pprint
+import shutil
 import torch
 from tqdm import tqdm
 from matplotlib.ticker import MaxNLocator
@@ -199,16 +201,58 @@ class EnvLogger(object):
     def add_metric(self, name, initial_val, comparator):
         self.metrics[name] = {'value': initial_val, 'cmp': comparator}
 
-    def plot(self, var_pairs, expname):
+    def plot(self, var_pairs, expname, pfunc):
+        # for var1_name, var2_name in var_pairs:
+        #     x_indices, x_values = zip(*self.data[var1_name])
+        #     y_indices, y_values = zip(*self.data[var2_name])
+        #     fname = '{}_{}'.format(expname, var2_name)
+        #     plt.plot(x_values,y_values)
+        #     plt.xlabel(var1_name)
+        #     plt.ylabel(var2_name)
+        #     plt.savefig(os.path.join(self.quantitative_dir, '{}.png'.format(fname)))
+        #     plt.close()
+        self.save_csv(expname, pfunc)
+        self.plot_from_csv(
+            var_pairs=var_pairs,
+            expname=expname)
+        self.clear_data()  # note that this may destroy the running average?
+
+    def save_csv(self, expname, pfunc):
+        csv_dict = defaultdict(dict)
+        for key, value in self.data.items():
+            for index, e in value:
+                csv_dict[index][key] = e
+        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))
+        pfunc('Saving to {}'.format(filename))
+        file_exists = os.path.isfile(filename)
+        with open(filename, 'a+') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=self.data.keys())
+            if not file_exists:
+                writer.writeheader()
+            for i in sorted(csv_dict.keys()):
+                writer.writerow(csv_dict[i])
+
+    def load_csv(self, expname):
+        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))
+        df = pd.read_csv(filename)
+        return df
+
+    def plot_from_csv(self, var_pairs, expname):
+        df = self.load_csv(expname)
         for var1_name, var2_name in var_pairs:
-            x_indices, x_values = zip(*self.data[var1_name])
-            y_indices, y_values = zip(*self.data[var2_name])
+            data = df[[var1_name, var2_name]].dropna()
+            x = data[var1_name].tolist()
+            y = data[var2_name].tolist()
             fname = '{}_{}'.format(expname, var2_name)
-            plt.plot(x_values,y_values)
+            plt.plot(x,y)
             plt.xlabel(var1_name)
             plt.ylabel(var2_name)
-            plt.savefig(os.path.join(self.quantitative_dir, '{}.png'.format(fname)))
+            plt.savefig(os.path.join(self.quantitative_dir,'_csv{}.png'.format(fname)))
             plt.close()
+
+    def clear_data(self):
+        for key in self.data:
+            self.data[key] = []
 
 class EnvManager(EnvLogger):
     def __init__(self, env_name, env_registry, args):

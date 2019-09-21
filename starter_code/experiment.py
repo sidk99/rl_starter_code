@@ -117,12 +117,14 @@ class Experiment():
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
+                if epoch == 30: break
 
         self.finish_training()
 
     def finish_training(self):
         # env.close()
-        plt.close()
+        # plt.close()
+        pass
 
     def log(self, epoch, epoch_info):
         stats = epoch_info['epoch_stats']
@@ -167,7 +169,8 @@ class Experiment():
                         name=metric, index=epoch, value=stats[metric], include_running_avg=True)
                 env_manager.plot(
                     var_pairs=[(('epoch', k)) for k in metrics],
-                    expname=self.logger.expname)
+                    expname=self.logger.expname,
+                    pfunc=self.logger.pfunc)
                 self.logger.pprintf(stats)
                 return stats
 
