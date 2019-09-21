@@ -72,6 +72,11 @@ def build_expname(args):
         args.expname += '_db'
     if hasattr(args, 'auctiontype'):
         args.expname += '_auc{}'.format(args.auctiontype)
+    if hasattr(args, 'ado'):
+        if args.ado:
+            args.expname += '_ado'
+    if hasattr(args, 'redundancy'):
+        args.expname += '_red{}'.format(args.redundancy)
     return args
 
 def process_config(args):

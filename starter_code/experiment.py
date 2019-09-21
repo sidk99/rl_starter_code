@@ -105,7 +105,8 @@ class Experiment():
                      'epoch': epoch,
                      'logger': self.logger.get_state_dict(),
                      'experiment': stats,
-                     'organism': self.organism.get_state_dict()})
+                     'organism': self.organism.get_state_dict()},
+                     self.logger.printf)
 
             epoch_info = self.collect_samples(deterministic=False)
 
@@ -158,7 +159,7 @@ class Experiment():
         metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                    'min_moves', 'max_moves', 'mean_moves', 'std_moves']
         for mode in ['train']:
-            for env_manager in self.task_progression[self.epoch][mode]:  # epoch=0 is hardcoded!!
+            for env_manager in self.task_progression[self.epoch][mode]:
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
                 for metric in metrics:
