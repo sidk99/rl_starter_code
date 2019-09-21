@@ -202,15 +202,6 @@ class EnvLogger(object):
         self.metrics[name] = {'value': initial_val, 'cmp': comparator}
 
     def plot(self, var_pairs, expname, pfunc):
-        # for var1_name, var2_name in var_pairs:
-        #     x_indices, x_values = zip(*self.data[var1_name])
-        #     y_indices, y_values = zip(*self.data[var2_name])
-        #     fname = '{}_{}'.format(expname, var2_name)
-        #     plt.plot(x_values,y_values)
-        #     plt.xlabel(var1_name)
-        #     plt.ylabel(var2_name)
-        #     plt.savefig(os.path.join(self.quantitative_dir, '{}.png'.format(fname)))
-        #     plt.close()
         self.save_csv(expname, pfunc)
         self.plot_from_csv(
             var_pairs=var_pairs,
