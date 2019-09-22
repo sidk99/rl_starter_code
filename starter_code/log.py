@@ -5,6 +5,7 @@ import datetime
 import imageio
 import glob
 import gym
+import json
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -128,6 +129,7 @@ class MultiBaseLogger(object):
         self.saver = Saver(self.checkpoint_dir)
         self.printf('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
             self.subroot, self.expname, self.logdir, self.checkpoint_dir))
+        json.dump(vars(args), open(os.path.join(self.logdir, 'params.json'), 'w'))
 
     def get_state_dict(self):
         return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}

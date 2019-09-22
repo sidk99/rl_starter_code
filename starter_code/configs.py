@@ -14,9 +14,12 @@ def rlalg_config_switch(alg_name):
 
 def ppo_config(args):
     args.gamma = 0.99
-    args.plr = 4e-5
-    args.vlr = 5e-3
-    args.opt = 'sgd'
+    if not hasattr(args, 'plr'):
+        args.plr = 4e-5
+    if not hasattr(args, 'vlr'):
+        args.vlr = 5e-3
+    if not hasattr(args, 'opt'):
+        args.opt = 'sgd'
     args.entropy_coeff = 0
     return args
 
@@ -68,6 +71,8 @@ def training_config(args):
 def build_expname(args):
     args.expname = simplify_name(args.env_name)
     args.expname += '_s{}'.format(args.seed)
+    args.expname += '_plr{}'.format(args.plr)
+    args.expname += '_opt{}'.format(args.opt)
     if args.debug:
         args.expname += '_db'
     if hasattr(args, 'auctiontype'):
