@@ -117,7 +117,7 @@ class Experiment():
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
-                if epoch == 30: break
+                # if epoch == 30: break
 
         self.finish_training()
 
@@ -170,7 +170,7 @@ class Experiment():
                 env_manager.plot(
                     var_pairs=[(('epoch', k)) for k in metrics],
                     expname=self.logger.expname,
-                    pfunc=self.logger.pfunc)
+                    pfunc=self.logger.printf)
                 self.logger.pprintf(stats)
                 return stats
 

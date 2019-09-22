@@ -126,7 +126,7 @@ class MultiBaseLogger(object):
         self.logdir = create_logdir(root=self.subroot, dirname=self.expname, setdate=True)
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
-        print('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
+        self.printf('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
             self.subroot, self.expname, self.logdir, self.checkpoint_dir))
 
     def get_state_dict(self):
