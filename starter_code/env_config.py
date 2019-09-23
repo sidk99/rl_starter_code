@@ -53,6 +53,12 @@ class EnvRegistry():
                 'MiniGrid-SimpleCrossingS9N2-v0',
                 'MiniGrid-SimpleCrossingS9N3-v0',
                 'MiniGrid-SimpleCrossingS11N5-v0',
+
+                'MiniGrid-Unlock-v0',
+                'MiniGrid-Empty-Random-5x5-v0',
+                'MiniGrid-MultiRoom-N2-S4-v0',
+
+
             }
         }
         self.typecheck(self.envs_type_name)
