@@ -85,13 +85,12 @@ class Saver(object):
             csv_writer.writeheader()
 
     def save(self, epoch, state_dict, pfunc):
-        ckpt_id = epoch#int(state_dict['experiment']['epoch'])
+        ckpt_id = epoch
         ckpt_return = float(state_dict['experiment']['mean_return'])
         ckpt_name = self.create_save_file(epoch)
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
         torch.save(state_dict, ckpt_name)
-        # self.evict()
         self.save_summary()
         pfunc('Saved to {}.'.format(ckpt_name))
 
@@ -173,8 +172,10 @@ class EnvLogger(object):
         self.logdir = logdir
         self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
         self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
-        print('Qualitative Directory: {}\nQuantitative Directory: {}'.format(
-            self.qualitative_dir, self.quantitative_dir))
+
+        self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
+        self.saver = Saver(self.checkpoint_dir)
+        print('Qualitative Directory: {}\nQuantitative Directory: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(self.qualitative_dir, self.quantitative_dir, self.logdir, self.checkpoint_dir))
 
     def add_variable(self, name, incl_run_avg=False, metric=None):
         self.data[name] = []
@@ -187,6 +188,7 @@ class EnvLogger(object):
                 comparator=metric['cmp'])
 
     def update_variable(self, name, index, value, include_running_avg=False):
+        print('name: {} index: {} value: {}'.format(name, index, value))
         if include_running_avg:
             running_name = 'running_{}'.format(name)
             self.run_avg.update_variable(name, value)

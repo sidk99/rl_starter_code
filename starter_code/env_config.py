@@ -26,8 +26,8 @@ def dict_transpose(d):
     assert len(tranposed_dict.keys()) == count
     return tranposed_dict
 
-def simplify_name(name):
-    return ''.join(x for  x in name if not x.islower())
+def simplify_name(names):
+    return '_'.join(''.join(x for  x in name if not x.islower()) for name in names)
 
 class EnvRegistry():
     def __init__(self):

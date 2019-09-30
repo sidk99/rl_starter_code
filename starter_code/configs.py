@@ -39,12 +39,12 @@ def vpg_config(args):
 
 def experiment_config(args):
     args.gpu_index = 0
-    args.eval_every = 100  # debug
-    args.log_every = 10
+    args.eval_every = 1000
+    args.log_every = 100
     args.max_epochs = int(1e7)
     if args.debug:
         args.max_epochs = 30
-        args.eval_every = 3
+        args.eval_every = 1
         args.log_every = 1
     return args
 

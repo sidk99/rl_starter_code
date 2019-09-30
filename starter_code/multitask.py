@@ -136,7 +136,11 @@ class TaskProgression(object):
         return self.task_dist_group_series[prog_group_id].sample(mode)
 
 def default_task_prog_spec(env_name):
-    spec = {0: dict(train=[env_name])}
+    spec = {0: dict(train=[env_name], test=[env_name])}
+    return spec
+
+def task_prog_spec_multi(env_names):
+    spec = {0: dict(train=env_names, test=env_names)}
     return spec
 
 def construct_task_progression(task_prog_spec, env_manager_builder, logger, env_registry, args):

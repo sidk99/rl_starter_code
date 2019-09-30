@@ -8,7 +8,7 @@ from starter_code.env_config import EnvRegistry as ER
 from starter_code.experiment import Experiment
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
-from starter_code.multitask import construct_task_progression, default_task_prog_spec
+from starter_code.multitask import construct_task_progression, default_task_prog_spec, task_prog_spec_multi
 from starter_code.rl_algs import rlalg_switch
 from starter_code.value_function import ValueFn, CNNValueFn
 
@@ -39,8 +39,9 @@ class BaseLauncher:
     @classmethod
     def create_task_progression(cls, logger, args):
         task_progression = construct_task_progression(
-                default_task_prog_spec(args.env_name),
-                env_manager_switch(args.env_name, cls.env_registry), 
+                # default_task_prog_spec(args.env_name),
+                task_prog_spec_multi(args.env_name),
+                env_manager_switch(args.env_name[0], cls.env_registry), # first environment of the envs
                 logger,
                 cls.env_registry,
                 args)

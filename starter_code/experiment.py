@@ -85,30 +85,50 @@ class Experiment():
             num_steps += (episode_info['episode_stats']['steps'])
             num_episodes += 1
         stats = {
-            'avg_return': np.mean(all_returns),
+            'mean_return': np.mean(all_returns),
             'min_return': np.min(all_returns),
             'max_return': np.max(all_returns),
             'total_return': np.sum(all_returns),
             'num_episodes': num_episodes
         }
-        self.run_avg.update_variable('reward', stats['avg_return'])
+        self.run_avg.update_variable('reward', stats['mean_return'])
 
         episode_info['epoch_stats'] = stats
         return episode_info
 
+
+
+
+
     def train(self, max_epochs):
         for epoch in range(max_epochs):
             if epoch % self.args.eval_every == 0:
-                stats = self.eval(epoch=epoch)
-                self.logger.saver.save(epoch, 
-                    {'args': self.args,
-                     'epoch': epoch,
-                     'logger': self.logger.get_state_dict(),
-                     'experiment': stats,
-                     'organism': self.organism.get_state_dict()},
-                     self.logger.printf)
+                stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
+
+
+                for mode in ['train', 'test']:
+                    for env_manager in self.task_progression[self.epoch][mode]:
+                        env_manager.saver.save(epoch, 
+                            {'args': self.args,
+                             'epoch': epoch,
+                             'logger': self.logger.get_state_dict(),
+                             'experiment': stats[env_manager.env_name],
+                             'organism': self.organism.get_state_dict()},
+                             self.logger.printf)
+
+
+
 
             epoch_info = self.collect_samples(deterministic=False)
+
+            self.logger.saver.save(epoch, 
+                {'args': self.args,
+                 'epoch': epoch,
+                 'logger': self.logger.get_state_dict(),
+                 'experiment': epoch_info['epoch_stats'],
+                 'organism': self.organism.get_state_dict()},
+                 self.logger.printf)
+
 
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
@@ -117,7 +137,6 @@ class Experiment():
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
-                # if epoch == 30: break
 
         self.finish_training()
 
@@ -129,7 +148,7 @@ class Experiment():
     def log(self, epoch, epoch_info):
         stats = epoch_info['epoch_stats']
         self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
-            epoch, stats['avg_return'], stats['min_return'], stats['max_return'], self.run_avg.get_value('reward')))
+            epoch, stats['mean_return'], stats['min_return'], stats['max_return'], self.run_avg.get_value('reward')))
 
     def test(self, epoch, env_manager, num_test, visualize):
         returns = []
@@ -160,7 +179,8 @@ class Experiment():
     def eval(self, epoch):
         metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                    'min_moves', 'max_moves', 'mean_moves', 'std_moves']
-        for mode in ['train']:
+        multi_task_stats = {} 
+        for mode in ['train', 'test']:
             for env_manager in self.task_progression[self.epoch][mode]:
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
@@ -169,9 +189,11 @@ class Experiment():
                         name=metric, index=epoch, value=stats[metric], include_running_avg=True)
                 env_manager.plot(
                     var_pairs=[(('epoch', k)) for k in metrics],
-                    expname=self.logger.expname,
+                    expname=env_manager.env_name,
                     pfunc=self.logger.printf)
                 self.logger.pprintf(stats)
-                return stats
+                multi_task_stats[env_manager.env_name] = stats
+        return multi_task_stats  # need to fix this!
+        # return stats  # for now
 
 
