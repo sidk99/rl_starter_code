@@ -17,7 +17,10 @@ def parse_args():
     parser.add_argument('--subroot', type=str, default='debug')
     parser.add_argument('--cpu', action='store_true')
 
-    parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
+    # parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
+
+    parser.add_argument('--env-name', nargs='+', type=str, default='InvertedPendulum-v2')
+
     parser.add_argument('--seed', type=int, default=543)
     parser.add_argument('--alg-name', type=str, default='ppo')
     parser.add_argument('--printf', action='store_true')
@@ -49,7 +52,7 @@ class BaseLauncher:
 
     @classmethod
     def create_organism(cls, device, task_progression, args):
-        if 'MiniGrid' in args.env_name:
+        if 'MiniGrid' in args.env_name[0]:
             policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
             critic = CNNValueFn(state_dim=task_progression.state_dim)
         else:

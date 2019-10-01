@@ -117,18 +117,117 @@ class Saver(object):
             if lowest_return not in most_recents and os.path.exists(lowest_return):
                 os.remove(lowest_return)
 
-
-class MultiBaseLogger(object):
+class BaseLogger(object):
     def __init__(self, args):
+        super(BaseLogger, self).__init__()
+        self.data = {}
+        self.metrics = {}
+        self.run_avg = RunningAverage()
+
+    def add_variable(self, name, incl_run_avg=False, metric=None):
+        self.data[name] = []
+        if incl_run_avg:
+            self.data['running_{}'.format(name)] = []
+        if metric is not None:
+            self.add_metric(
+                name='running_{}'.format(name), 
+                initial_val=metric['value'], 
+                comparator=metric['cmp'])
+
+    def update_variable(self, name, index, value, include_running_avg=False):
+        # print('name: {} index: {} value: {}'.format(name, index, value))
+        if include_running_avg:
+            running_name = 'running_{}'.format(name)
+            self.run_avg.update_variable(name, value)
+            self.data[running_name].append((index, self.run_avg.get_value(name)))
+        self.data[name].append((index, value))
+
+    def get_recent_variable_value(self, name):
+        index, recent_value = copy.deepcopy(self.data[name][-1])
+        return recent_value
+
+    def has_running_avg(self, name):
+        return self.run_avg.exists(name)
+
+    def add_metric(self, name, initial_val, comparator):
+        self.metrics[name] = {'value': initial_val, 'cmp': comparator}
+
+    def plot(self, var_pairs, expname, pfunc):  # EXPNAME
+        self.save_csv(expname, pfunc)
+        self.plot_from_csv(
+            var_pairs=var_pairs,
+            expname=expname)
+        self.clear_data()  # note that this may destroy the running average?
+
+    def save_csv(self, expname, pfunc):
+        csv_dict = defaultdict(dict)
+        for key, value in self.data.items():
+            for index, e in value:
+                csv_dict[index][key] = e
+        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))  # DIR
+        pfunc('Saving to {}'.format(filename))
+        file_exists = os.path.isfile(filename)
+        with open(filename, 'a+') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=self.data.keys())
+            if not file_exists:
+                writer.writeheader()
+            for i in sorted(csv_dict.keys()):
+                writer.writerow(csv_dict[i])
+
+    def load_csv(self, expname):
+        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))  # DIR
+        df = pd.read_csv(filename)
+        return df
+
+    def plot_from_csv(self, var_pairs, expname):
+        df = self.load_csv(expname)
+        for var1_name, var2_name in var_pairs:
+            data = df[[var1_name, var2_name]].dropna()
+            x = data[var1_name].tolist()
+            y = data[var2_name].tolist()
+            fname = '{}_{}'.format(expname, var2_name)
+            plt.plot(x,y)
+            plt.xlabel(var1_name)
+            plt.ylabel(var2_name)
+            plt.savefig(os.path.join(self.quantitative_dir,'_csv{}.png'.format(fname)))  # DIR
+            plt.close()
+
+    def clear_data(self):
+        for key in self.data:
+            self.data[key] = []
+
+# class MultiBaseLogger(object):
+class MultiBaseLogger(BaseLogger):
+    def __init__(self, args):
+        super(MultiBaseLogger, self).__init__(args)
         self.args = args
         self.subroot = os.path.join('runs', args.subroot)
         self.expname = args.expname
         self.logdir = create_logdir(root=self.subroot, dirname=self.expname, setdate=True)
+
+        self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
+        self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
+
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
         self.printf('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
             self.subroot, self.expname, self.logdir, self.checkpoint_dir))
         json.dump(vars(args), open(os.path.join(self.logdir, 'params.json'), 'w'))
+
+        self.initialize()
+
+    def initialize(self):
+        self.add_variable('epoch')
+        
+        self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
+        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
     def get_state_dict(self):
         return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}
@@ -155,12 +254,9 @@ class MultiBaseLogger(object):
         else:
             print('Did not remove {}'.format(self.logdir))
 
-class EnvLogger(object):
+class EnvLogger(BaseLogger):
     def __init__(self, args):
-        super(EnvLogger, self).__init__()
-        self.data = {}
-        self.metrics = {}
-        self.run_avg = RunningAverage()
+        super(EnvLogger, self).__init__(args)
 
     def get_state_dict(self):
         state_dict = {
@@ -176,78 +272,6 @@ class EnvLogger(object):
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
         print('Qualitative Directory: {}\nQuantitative Directory: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(self.qualitative_dir, self.quantitative_dir, self.logdir, self.checkpoint_dir))
-
-    def add_variable(self, name, incl_run_avg=False, metric=None):
-        self.data[name] = []
-        if incl_run_avg:
-            self.data['running_{}'.format(name)] = []
-        if metric is not None:
-            self.add_metric(
-                name='running_{}'.format(name), 
-                initial_val=metric['value'], 
-                comparator=metric['cmp'])
-
-    def update_variable(self, name, index, value, include_running_avg=False):
-        print('name: {} index: {} value: {}'.format(name, index, value))
-        if include_running_avg:
-            running_name = 'running_{}'.format(name)
-            self.run_avg.update_variable(name, value)
-            self.data[running_name].append((index, self.run_avg.get_value(name)))
-        self.data[name].append((index, value))
-
-    def get_recent_variable_value(self, name):
-        index, recent_value = copy.deepcopy(self.data[name][-1])
-        return recent_value
-
-    def has_running_avg(self, name):
-        return self.run_avg.exists(name)
-
-    def add_metric(self, name, initial_val, comparator):
-        self.metrics[name] = {'value': initial_val, 'cmp': comparator}
-
-    def plot(self, var_pairs, expname, pfunc):
-        self.save_csv(expname, pfunc)
-        self.plot_from_csv(
-            var_pairs=var_pairs,
-            expname=expname)
-        self.clear_data()  # note that this may destroy the running average?
-
-    def save_csv(self, expname, pfunc):
-        csv_dict = defaultdict(dict)
-        for key, value in self.data.items():
-            for index, e in value:
-                csv_dict[index][key] = e
-        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))
-        pfunc('Saving to {}'.format(filename))
-        file_exists = os.path.isfile(filename)
-        with open(filename, 'a+') as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=self.data.keys())
-            if not file_exists:
-                writer.writeheader()
-            for i in sorted(csv_dict.keys()):
-                writer.writerow(csv_dict[i])
-
-    def load_csv(self, expname):
-        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))
-        df = pd.read_csv(filename)
-        return df
-
-    def plot_from_csv(self, var_pairs, expname):
-        df = self.load_csv(expname)
-        for var1_name, var2_name in var_pairs:
-            data = df[[var1_name, var2_name]].dropna()
-            x = data[var1_name].tolist()
-            y = data[var2_name].tolist()
-            fname = '{}_{}'.format(expname, var2_name)
-            plt.plot(x,y)
-            plt.xlabel(var1_name)
-            plt.ylabel(var2_name)
-            plt.savefig(os.path.join(self.quantitative_dir,'_csv{}.png'.format(fname)))
-            plt.close()
-
-    def clear_data(self):
-        for key in self.data:
-            self.data[key] = []
 
 class EnvManager(EnvLogger):
     def __init__(self, env_name, env_registry, args):
@@ -288,6 +312,17 @@ class TabularEnvManager(EnvManager):
                 metric={'value': np.inf, 'cmp': operator.le})
             self.add_variable('std_moves_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
+
+        self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
+        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
 
 class VisualEnvManager(EnvManager):
     def __init__(self, env_name, env_registry, args):

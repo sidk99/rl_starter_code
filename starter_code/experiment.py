@@ -77,18 +77,25 @@ class Experiment():
         num_steps = 0
         num_episodes = 0
         all_returns = []
+        all_moves = []
 
         while num_steps < self.rl_alg.max_buffer_size:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
             episode_info = self.sample_episode(env=train_env_manager.env, deterministic=deterministic, render=False)
             all_returns.append(episode_info['episode_stats']['return'])
+            all_moves.append(episode_info['episode_stats']['steps'])
             num_steps += (episode_info['episode_stats']['steps'])
             num_episodes += 1
         stats = {
             'mean_return': np.mean(all_returns),
             'min_return': np.min(all_returns),
             'max_return': np.max(all_returns),
+            'std_return': np.std(all_returns),
             'total_return': np.sum(all_returns),
+            'mean_moves': np.mean(all_moves),
+            'std_moves': np.std(all_moves),
+            'min_moves': np.min(all_moves),
+            'max_moves': np.max(all_moves),
             'num_episodes': num_episodes
         }
         self.run_avg.update_variable('reward', stats['mean_return'])
@@ -120,6 +127,27 @@ class Experiment():
 
 
             epoch_info = self.collect_samples(deterministic=False)
+
+
+
+
+
+            metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
+                   'min_moves', 'max_moves', 'mean_moves', 'std_moves']
+
+            # print(self.logger.data)
+            # assert  False
+
+            self.logger.update_variable(name='epoch', index=epoch, value=epoch)
+            for metric in metrics:
+                self.logger.update_variable(
+                    name=metric, index=epoch, value=epoch_info['epoch_stats'][metric], include_running_avg=True)
+            self.logger.plot(
+                var_pairs=[(('epoch', k)) for k in metrics],
+                expname=self.logger.expname,
+                pfunc=self.logger.printf)
+
+
 
             self.logger.saver.save(epoch, 
                 {'args': self.args,
@@ -183,6 +211,8 @@ class Experiment():
         for mode in ['train', 'test']:
             for env_manager in self.task_progression[self.epoch][mode]:
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
+
+
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
                 for metric in metrics:
                     env_manager.update_variable(
@@ -191,6 +221,9 @@ class Experiment():
                     var_pairs=[(('epoch', k)) for k in metrics],
                     expname=env_manager.env_name,
                     pfunc=self.logger.printf)
+
+
+
                 self.logger.pprintf(stats)
                 multi_task_stats[env_manager.env_name] = stats
         return multi_task_stats  # need to fix this!
