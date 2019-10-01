@@ -121,18 +121,12 @@ class Experiment():
 
             epoch_info = self.collect_samples(deterministic=False)
 
-
-            metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
-                   'min_moves', 'max_moves', 'mean_moves', 'std_moves']
-
-            self.logger.update_variable(name='epoch', index=epoch, value=epoch)
-            for metric in metrics:
-                self.logger.update_variable(
-                    name=metric, index=epoch, value=epoch_info['epoch_stats'][metric], include_running_avg=True)
-            self.logger.plot(
-                var_pairs=[(('epoch', k)) for k in metrics],
-                expname=self.logger.expname,
-                pfunc=self.logger.printf)
+            if epoch % self.args.eval_every == 0:
+                metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
+                       'min_moves', 'max_moves', 'mean_moves', 'std_moves']
+                self.logger.update_variable(name='epoch', index=epoch, value=epoch)
+                self.update_metrics(self.logger, metrics, epoch, epoch_info['epoch_stats'])
+                self.plot_metrics(self.logger, metrics, self.logger.expname)
 
             self.logger.saver.save(epoch, 
                 {'args': self.args,
@@ -141,7 +135,6 @@ class Experiment():
                  'experiment': epoch_info['epoch_stats'],
                  'organism': self.organism.get_state_dict()},
                  self.logger.printf)
-
 
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
@@ -189,6 +182,17 @@ class Experiment():
                  'max_moves': np.max(moves),}
         return stats
 
+    def update_metrics(self, env_manager, metrics, epoch, stats):
+        for metric in metrics:
+            env_manager.update_variable(
+                name=metric, index=epoch, value=stats[metric], include_running_avg=True)
+
+    def plot_metrics(self, env_manager, metrics, name):
+        env_manager.plot(
+            var_pairs=[(('epoch', k)) for k in metrics],
+            expname=name,
+            pfunc=self.logger.printf)
+
     def eval(self, epoch):
         metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                    'min_moves', 'max_moves', 'mean_moves', 'std_moves']
@@ -198,17 +202,11 @@ class Experiment():
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
 
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-                for metric in metrics:
-                    env_manager.update_variable(
-                        name=metric, index=epoch, value=stats[metric], include_running_avg=True)
-                env_manager.plot(
-                    var_pairs=[(('epoch', k)) for k in metrics],
-                    expname=env_manager.env_name,
-                    pfunc=self.logger.printf)
+                self.update_metrics(env_manager, metrics, epoch, stats)
+                self.plot_metrics(env_manager, metrics, env_manager.env_name)
 
                 self.logger.pprintf(stats)
                 multi_task_stats[env_manager.env_name] = stats
-        return multi_task_stats  # need to fix this!
-        # return stats  # for now
+        return multi_task_stats
 
 
