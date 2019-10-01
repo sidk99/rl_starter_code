@@ -196,7 +196,6 @@ class BaseLogger(object):
         for key in self.data:
             self.data[key] = []
 
-# class MultiBaseLogger(object):
 class MultiBaseLogger(BaseLogger):
     def __init__(self, args):
         super(MultiBaseLogger, self).__init__(args)
@@ -218,7 +217,7 @@ class MultiBaseLogger(BaseLogger):
 
     def initialize(self):
         self.add_variable('epoch')
-        
+
         self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})

@@ -104,14 +104,10 @@ class Experiment():
         return episode_info
 
 
-
-
-
     def train(self, max_epochs):
         for epoch in range(max_epochs):
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
-
 
                 for mode in ['train', 'test']:
                     for env_manager in self.task_progression[self.epoch][mode]:
@@ -123,20 +119,11 @@ class Experiment():
                              'organism': self.organism.get_state_dict()},
                              self.logger.printf)
 
-
-
-
             epoch_info = self.collect_samples(deterministic=False)
-
-
-
 
 
             metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                    'min_moves', 'max_moves', 'mean_moves', 'std_moves']
-
-            # print(self.logger.data)
-            # assert  False
 
             self.logger.update_variable(name='epoch', index=epoch, value=epoch)
             for metric in metrics:
@@ -146,8 +133,6 @@ class Experiment():
                 var_pairs=[(('epoch', k)) for k in metrics],
                 expname=self.logger.expname,
                 pfunc=self.logger.printf)
-
-
 
             self.logger.saver.save(epoch, 
                 {'args': self.args,
@@ -212,7 +197,6 @@ class Experiment():
             for env_manager in self.task_progression[self.epoch][mode]:
                 stats = self.test(epoch, env_manager, num_test=10, visualize=True)
 
-
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
                 for metric in metrics:
                     env_manager.update_variable(
@@ -221,8 +205,6 @@ class Experiment():
                     var_pairs=[(('epoch', k)) for k in metrics],
                     expname=env_manager.env_name,
                     pfunc=self.logger.printf)
-
-
 
                 self.logger.pprintf(stats)
                 multi_task_stats[env_manager.env_name] = stats

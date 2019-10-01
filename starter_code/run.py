@@ -17,10 +17,7 @@ def parse_args():
     parser.add_argument('--subroot', type=str, default='debug')
     parser.add_argument('--cpu', action='store_true')
 
-    # parser.add_argument('--env-name', type=str, default='InvertedPendulum-v2')
-
     parser.add_argument('--env-name', nargs='+', type=str, default='InvertedPendulum-v2')
-
     parser.add_argument('--seed', type=int, default=543)
     parser.add_argument('--alg-name', type=str, default='ppo')
     parser.add_argument('--printf', action='store_true')
@@ -42,7 +39,6 @@ class BaseLauncher:
     @classmethod
     def create_task_progression(cls, logger, args):
         task_progression = construct_task_progression(
-                # default_task_prog_spec(args.env_name),
                 task_prog_spec_multi(args.env_name),
                 env_manager_switch(args.env_name[0], cls.env_registry), # first environment of the envs
                 logger,
