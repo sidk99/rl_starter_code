@@ -63,8 +63,8 @@ class Experiment():
             if done:
                 break
             state = next_state
-        stats = {'return': sum([e['reward'] for e in episode_data]),
-                 'steps': t+1,
+        stats = {'returns': sum([e['reward'] for e in episode_data]),
+                 'moves': t+1,
                  'actions': [e['action'] for e in episode_data]}
 
         episode_info = {
@@ -82,9 +82,9 @@ class Experiment():
         while num_steps < self.rl_alg.max_buffer_size:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
             episode_info = self.sample_episode(env=train_env_manager.env, deterministic=deterministic, render=False)
-            all_returns.append(episode_info['episode_stats']['return'])
-            all_moves.append(episode_info['episode_stats']['steps'])
-            num_steps += (episode_info['episode_stats']['steps'])
+            all_returns.append(episode_info['episode_stats']['returns'])
+            all_moves.append(episode_info['episode_stats']['moves'])
+            num_steps += (episode_info['episode_stats']['moves'])
             num_episodes += 1
         stats = {
             'mean_return': np.mean(all_returns),
@@ -170,12 +170,12 @@ class Experiment():
             moves.append(episode_info['episode_stats']['steps'])
         returns = np.array(returns)
         moves = np.array(moves)
-        stats = {'returns': returns,
+        stats = {'returns': np.array(returns),
                  'mean_return': np.mean(returns),
                  'std_return': np.std(returns),
                  'min_return': np.min(returns),
                  'max_return': np.max(returns),
-                 'moves': moves,
+                 'moves': np.array(moves),
                  'mean_moves': np.mean(moves),
                  'std_moves': np.std(moves),
                  'min_moves': np.min(moves),
@@ -199,7 +199,7 @@ class Experiment():
         multi_task_stats = {} 
         for mode in ['train', 'test']:
             for env_manager in self.task_progression[self.epoch][mode]:
-                stats = self.test(epoch, env_manager, num_test=10, visualize=True)
+                stats = self.test(epoch, env_manager, num_test=self.args.num_test, visualize=True)
 
                 env_manager.update_variable(name='epoch', index=epoch, value=epoch)
                 self.update_metrics(env_manager, metrics, epoch, stats)
