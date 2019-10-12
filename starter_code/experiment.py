@@ -170,7 +170,7 @@ class Experiment():
             moves.append(episode_info['episode_stats']['steps'])
         returns = np.array(returns)
         moves = np.array(moves)
-        stats = {'returns': np.array(returns),
+        stats = {'return': np.array(returns),
                  'mean_return': np.mean(returns),
                  'std_return': np.std(returns),
                  'min_return': np.min(returns),
@@ -180,6 +180,24 @@ class Experiment():
                  'std_moves': np.std(moves),
                  'min_moves': np.min(moves),
                  'max_moves': np.max(moves),}
+        return stats
+
+    def log_metrics(self, data, label):
+        """
+            input
+                data would be a numpy array
+                label would be the name for the data
+            output
+                {'label': data, 
+                 'mean_label': , 'std_label': , 'min_labe': , 'max_label'}
+        """
+        labeler = lambda cmp: '{}_{}'.format(cmp, label)
+        stats = {}
+        stats[label] = data
+        stats[labeler('mean')] = np.mean(data)
+        stats[labeler('std')] = np.std(data)
+        stats[labeler('min')] = np.min(data)
+        stats[labeler('max')] = np.max(data)
         return stats
 
     def update_metrics(self, env_manager, metrics, epoch, stats):
