@@ -128,13 +128,13 @@ class Experiment():
                 self.update_metrics(self.logger, metrics, epoch, epoch_info['epoch_stats'])
                 self.plot_metrics(self.logger, metrics, self.logger.expname)
 
-            self.logger.saver.save(epoch, 
-                {'args': self.args,
-                 'epoch': epoch,
-                 'logger': self.logger.get_state_dict(),
-                 'experiment': epoch_info['epoch_stats'],
-                 'organism': self.organism.get_state_dict()},
-                 self.logger.printf)
+                self.logger.saver.save(epoch, 
+                    {'args': self.args,
+                     'epoch': epoch,
+                     'logger': self.logger.get_state_dict(),
+                     'experiment': epoch_info['epoch_stats'],
+                     'organism': self.organism.get_state_dict()},
+                     self.logger.printf)
 
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
@@ -162,24 +162,18 @@ class Experiment():
         for i in tqdm(range(num_test)):
             with torch.no_grad():
                 episode_info = self.sample_episode(env=env_manager.env, deterministic=False, render=visualize)
-                ret = episode_info['episode_stats']['return']
+                ret = episode_info['episode_stats']['returns']
+                mov = episode_info['episode_stats']['moves']
                 if i == 0 and visualize and self.organism.discrete:
                     bids = self.get_bids_for_episode(episode_info)
                     env_manager.save_video(epoch, i, bids, ret, episode_info['organism_episode_data'])
             returns.append(ret)
-            moves.append(episode_info['episode_stats']['steps'])
+            moves.append(mov)
         returns = np.array(returns)
         moves = np.array(moves)
-        stats = {'return': np.array(returns),
-                 'mean_return': np.mean(returns),
-                 'std_return': np.std(returns),
-                 'min_return': np.min(returns),
-                 'max_return': np.max(returns),
-                 'moves': np.array(moves),
-                 'mean_moves': np.mean(moves),
-                 'std_moves': np.std(moves),
-                 'min_moves': np.min(moves),
-                 'max_moves': np.max(moves),}
+        stats = {}
+        stats = {**stats, **self.log_metrics(np.array(returns), 'return')}
+        stats = {**stats, **self.log_metrics(np.array(moves), 'moves')}
         return stats
 
     def log_metrics(self, data, label):

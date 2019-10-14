@@ -124,3 +124,14 @@ def from_onehot(state, state_dim):
 
 def all_same(items):
     return all(x == items[0] for x in items)
+
+def flatten_dictionary_values_by_key(list_of_dicts):
+    """
+        assume all dicts list_of_dicts have the same keys
+    """
+    assert all_same(sorted(d.keys()) for d in list_of_dicts)
+    
+    pass
+
+
+

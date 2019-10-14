@@ -36,3 +36,4 @@ def plot_3d_totem_scatter(data, labels, figname):
     ax.set_zlim(bottom=min_z)
 
     plt.savefig(figname)
+    plt.close()
