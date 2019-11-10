@@ -39,7 +39,7 @@ def vpg_config(args):
 
 def experiment_config(args):
     args.gpu_index = 0
-    args.eval_every = 1000
+    args.eval_every = 5000
     args.log_every = 100
     args.max_epochs = int(1e7)
     args.num_test = 100

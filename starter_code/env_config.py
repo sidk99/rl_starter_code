@@ -1,6 +1,7 @@
 from collections import namedtuple
 import gym
 import gym_minigrid
+import babyai
 import pprint
 
 def dict_transpose(d):
@@ -58,7 +59,9 @@ class EnvRegistry():
                 'MiniGrid-Empty-Random-5x5-v0',
                 'MiniGrid-MultiRoom-N2-S4-v0',
 
-
+                # Expanding Action Set
+                'BabyAI-PickupKey-v0',
+                'BabyAI-OpenOneDoor-v0',
             }
         }
         self.typecheck(self.envs_type_name)

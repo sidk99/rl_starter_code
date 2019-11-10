@@ -48,7 +48,7 @@ class BaseLauncher:
 
     @classmethod
     def create_organism(cls, device, task_progression, args):
-        if 'MiniGrid' in args.env_name[0]:
+        if 'MiniGrid' in args.env_name[0] or 'BabyAI' in args.env_name[0]:
             policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
             critic = CNNValueFn(state_dim=task_progression.state_dim)
         else:
