@@ -1,5 +1,7 @@
 # Starter Code for Deep RL projects
 
+Step 0: Make sure that `starter_code` is in your `PYTHONPATH`.
+
 Step 1: Put your environment in the `EnvRegistry()` in `starter_code/env_config.py`
 
 Step 2:
