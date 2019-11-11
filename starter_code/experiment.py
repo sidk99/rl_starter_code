@@ -109,7 +109,7 @@ class Experiment():
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
 
-                for mode in ['train', 'test']:
+                for mode in ['train']:#, 'test']:
                     for env_manager in self.task_progression[self.epoch][mode]:
                         env_manager.saver.save(epoch, 
                             {'args': self.args,
