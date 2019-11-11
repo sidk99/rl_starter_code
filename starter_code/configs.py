@@ -85,6 +85,8 @@ def build_expname(args):
             args.expname += '_ado'
     if hasattr(args, 'redundancy'):
         args.expname += '_red{}'.format(args.redundancy)
+    if hasattr(args, 'entropy_coeff'):
+        args.expname += '_ec{}'.format(args.entropy_coeff)
     return args
 
 def process_config(args):
