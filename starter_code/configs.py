@@ -20,7 +20,8 @@ def ppo_config(args):
         args.vlr = 5e-3
     if not hasattr(args, 'opt'):
         args.opt = 'sgd'
-    args.entropy_coeff = 0
+    if not hasattr(args, 'entropy_coeff'):
+        args.entropy_coeff = 0
     return args
 
 def a2c_config(args):

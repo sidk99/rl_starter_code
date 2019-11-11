@@ -180,10 +180,15 @@ class PPO():
         agent.buffer.clear_buffer()
 
     def ppo_step(self, agent, states, actions, returns, advantages, fixed_log_probs):
+        """
+            states: (minibatch_size, H, W, C)
+            actions: 
+            returns:
+            advantages: 
+            fixed_log_probs:
 
-        # print('before')
-        # u.visualize_parameters(agent.policy)
-
+            entropy: (minibatch_size, 1)
+        """
         """update critic"""
         for _ in range(self.optim_value_iternum):
             values_pred = agent.valuefn(states)
@@ -207,9 +212,6 @@ class PPO():
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 40)
         agent.policy_optimizer.step()
-
-        # print('after')
-        # u.visualize_parameters(agent.policy)
 
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
