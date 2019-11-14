@@ -48,13 +48,12 @@ class Experiment():
                 next_state = next_state['image']
             #################################################
             mask = 0 if done else 1
-            e = {
-                 'state': state,
-                 'action': action_dict['stored_action'],
-                 'action_dist': action_dict['action_dist'],
-                 'mask': mask,
-                 'reward': reward,
-                 }
+            e = dict(
+                state=state,
+                action=action_dict['stored_action'],
+                action_dist=action_dict['action_dist'],
+                mask=mask,
+                reward=reward)
             if render:
                 frame = eu.render(env=env, scale=0.25)
                 e['frame'] = frame
@@ -63,14 +62,13 @@ class Experiment():
             if done:
                 break
             state = next_state
-        stats = {'returns': sum([e['reward'] for e in episode_data]),
-                 'moves': t+1,
-                 'actions': [e['action'] for e in episode_data]}
-
-        episode_info = {
-            'organism_episode_data': episode_data,
-            'episode_stats': stats
-        }
+        stats = dict(
+            returns=sum([e['reward'] for e in episode_data]),
+            moves=t+1,
+            actions=[e['action'] for e in episode_data])
+        episode_info = dict(
+            organism_episode_data=episode_data,
+            episode_stats=stats)
         return episode_info
 
     def collect_samples(self, deterministic):
@@ -86,18 +84,18 @@ class Experiment():
             all_moves.append(episode_info['episode_stats']['moves'])
             num_steps += (episode_info['episode_stats']['moves'])
             num_episodes += 1
-        stats = {
-            'mean_return': np.mean(all_returns),
-            'min_return': np.min(all_returns),
-            'max_return': np.max(all_returns),
-            'std_return': np.std(all_returns),
-            'total_return': np.sum(all_returns),
-            'mean_moves': np.mean(all_moves),
-            'std_moves': np.std(all_moves),
-            'min_moves': np.min(all_moves),
-            'max_moves': np.max(all_moves),
-            'num_episodes': num_episodes
-        }
+        stats = dict(
+            mean_return=np.mean(all_returns),
+            min_return=np.min(all_returns),
+            max_return=np.max(all_returns),
+            std_return=np.std(all_returns),
+            total_return=np.sum(all_returns),
+            mean_moves=np.mean(all_moves),
+            std_moves=np.std(all_moves),
+            min_moves=np.min(all_moves),
+            max_moves=np.max(all_moves),
+            num_episodes=num_episodes
+            )
         self.run_avg.update_variable('reward', stats['mean_return'])
 
         episode_info['epoch_stats'] = stats

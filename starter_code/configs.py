@@ -3,13 +3,14 @@ from starter_code.env_config import simplify_name
 from starter_code.log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, TabularEnvManager
 
 from env_config import EnvRegistry
+from starter_code.utils import AttrDict
 
 def rlalg_config_switch(alg_name):
-    rlalg_configs = {
-        'ppo': ppo_config,
-        'a2c': a2c_config,
-        'vpg': vpg_config
-    }
+    rlalg_configs = dict(
+        ppo = ppo_config,
+        a2c = a2c_config,
+        vpg = vpg_config,
+    )
     return rlalg_configs[alg_name]
 
 def ppo_config(args):
@@ -100,9 +101,9 @@ def process_config(args):
 
 def env_manager_switch(env_name, env_registry):
     envtype = env_registry.get_env_type(env_name)
-    env_manager = {
-        'gym': GymEnvManager,
-        'mg': MinigridEnvManager,
-        'tab': TabularEnvManager
-    }
+    env_manager = dict(
+        gym = GymEnvManager,
+        mg = MinigridEnvManager,
+        tab = TabularEnvManager,
+    )
     return env_manager[envtype]
