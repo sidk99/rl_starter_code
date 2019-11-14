@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
-from rb import Memory
+from starter_code.rb import OnPolicyMemory
 
 class Agent(nn.Module):
     def __init__(self, policy, valuefn, args):
@@ -21,7 +21,7 @@ class Agent(nn.Module):
         print(self)
 
     def initalize_memory(self):
-        self.buffer = Memory(element='simplertransition')
+        self.buffer = OnPolicyMemory(element='simplertransition')
 
     def initialize_optimizer(self):
         if self.args.opt == 'adam':
@@ -68,7 +68,6 @@ class Agent(nn.Module):
             scheduler=self.vo_scheduler,
             name='value')
 
-
     def forward(self, state, deterministic):
         action, dist = self.policy.select_action(state, deterministic)
         action = action.detach()[0].cpu().numpy()  # (adim)
@@ -78,7 +77,7 @@ class Agent(nn.Module):
         else:
             stored_action = action
         action_dict = {
-            'action': action, 
+            'action': action,
             'stored_action': stored_action, 
             'action_dist': dist}
         return action_dict
@@ -110,5 +109,8 @@ class Agent(nn.Module):
             self.policy_optimizer.load_state_dict(agent_state_dict['policy_optimizer'])
             self.value_optimizerl.load_state_dict(agent_state_dict['value_optimizerl'])
 
+
+class SACAgent(nn.Module):
+    pass
 
 

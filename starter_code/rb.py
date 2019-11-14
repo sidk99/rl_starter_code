@@ -34,7 +34,7 @@ class Memory(object):
             assert False
 
     def push(self, *args):
-        """Saves a transition."""
+        """Saves a transition.""" 
         self.memory.append(self.element(*args))
 
     def sample(self, batch_size=None):
@@ -52,3 +52,24 @@ class Memory(object):
 
     def clear_buffer(self):
         del self.memory[:]
+
+
+"""
+    The big difference between OffPolicyMemory and OnPolicyMemory is that
+    OnPolicyMemory clears out the data after it has been used
+"""
+
+class OffPolicyMemory(Memory):
+    def __init__(self, max_replay_buffer_size, element):
+        super(OffPolicyMemory, self).__init__(element)
+        self.max_replay_buffer_size = max_replay_buffer_size
+
+
+    def _advance(self):
+        pass
+
+
+
+class OnPolicyMemory(Memory):
+    def __init__(self, element):
+        super(OnPolicyMemory, self).__init__(element)
