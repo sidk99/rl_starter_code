@@ -6,7 +6,6 @@ from torch.distributions import Categorical
 
 import rlkit.torch.pytorch_util as ptu 
 from rlkit.core.serializable import Serializable
-# import ray
 
 class Agent(nn.Module):
     def __init__(self, policy, valuefn, replay_buffer, args):
@@ -20,40 +19,6 @@ class Agent(nn.Module):
         self.initialize_optimizer()
         self.initialize_optimizer_schedulers(args)
         print(self)
-
-        """
-            What do I want to put in the state?
-                - basically things I would need when doing the rl update.
-                    - self.policy
-                    - self.valuefn
-                    - self.replay_buffer
-                        - this also has to be Serializable
-                    - self.args
-                    - self.discrete
-                    - self.policy_optimizer
-                    - self.value_optimizer
-
-            What I do not need
-                    - self.po_scheduler
-                    - self.vo_scheduler
-        """
-
-
-
-    # def __getstate__(self):
-    #     state = dict()
-    #     state['init_args'] = Serializable.__getstate__(self)
-    #     # state['normalization'] = self.normalization
-    #     # state['networks'] = [nn.__getstate__() for nn in self._networks]
-    #     print(state)
-    #     assert False
-    #     return state
-
-    # def __setstate__(self, state):
-    #     Serializable.__setstate__(self, state['init_args'])
-    #     # self.normalization = state['normalization']
-    #     # for i in range(len(self._networks)):
-    #     #     self._networks[i].__setstate__(state['networks'][i])
 
     def initialize_optimizer(self):
         if self.args.opt == 'adam':
@@ -116,19 +81,6 @@ class Agent(nn.Module):
 
     def update(self, rl_alg):
         rl_alg.improve(self)
-
-    # def __getstate__(self):
-    #     state = dict()
-    #     state['init_args'] = Serializable.__getstate__(self)
-    #     state['normalization'] = self.normalization
-    #     state['networks'] = [nn.__getstate__() for nn in self._networks]
-    #     return state
-
-    # def __setstate__(self, state):
-    #     Serializable.__setstate__(self, state['init_args'])
-    #     self.normalization = state['normalization']
-    #     for i in range(len(self._networks)):
-    #         self._networks[i].__setstate__(state['networks'][i])
 
     def store_transition(self, transition):
         self.replay_buffer.push(

@@ -153,42 +153,7 @@ class Experiment():
             if epoch >= self.args.anneal_policy_lr_after:
                 self.organism.step_optimizer_schedulers(self.logger.printf)
 
-            # #################################################################
-            # import sys
-            # import pickle
-            # for a_id, agent in enumerate([a for a in self.organism.get_active_agents() if a.learnable]):
-            #     # print('Size of RB of agent {}: {}'.format(a_id, sys.getsizeof(agent.replay_buffer.memory)))
-            #     # print(len(agent.replay_buffer))
-            #     analyze_size(agent, 'agent {}'.format(a_id))
-            #     analyze_size(agent.policy, 'agent {} policy'.format(a_id))
-            #     analyze_size(agent.valuefn, 'agent {} valuefn'.format(a_id))
-            #     analyze_size(agent.replay_buffer, 'agent {} replay_buffer'.format(a_id))
-            #     analyze_size(agent.run_avg, 'agent {} run_avg'.format(a_id))
-
-
-            #     # agent_pickle = pickle.dumps(agent)
-            #     # print('Size of agent {}: {}'.format(a_id, sys.getsizeof(agent_pickle)))
-
-
-            # # before update you should clear the state so you don't have to pickle them
-
-
-            # # clear everything
-            # for agent in self.organism.get_active_agents():
-            #     agent.value_optimizer.zero_grad()
-            #     agent.policy_optimizer.zero_grad()
-
-            # #################################################################
             gt.stamp('Epoch {}: Before Update'.format(epoch))
-
-            # for a_id, agent in enumerate([a for a in self.organism.get_active_agents() if a.learnable]):
-            # print('parameters before update for agent 0')
-            # for agent in [a for a in self.organism.get_active_agents() if a.learnable]:
-            #     u.visualize_parameters(agent, print)
-            #     break
-
-
-
             t0 = time.time()
             self.organism.update(self.rl_alg)
             print('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
@@ -196,18 +161,9 @@ class Experiment():
 
             #################################################################
             for a_id, agent in enumerate([a for a in self.organism.get_active_agents() if a.learnable]):
-                # analyze_size(agent.replay_buffer, 'before outside clearing: agent {} replay_buffer'.format(a_id))
                 agent.replay_buffer.clear_buffer()
-                # analyze_size(agent.replay_buffer, 'after outside clearing: agent {} replay_buffer'.format(a_id))
-                # print('Agent {} just cleared buffer outside'.format(agent.id))
-
-
-            # print('parameters after update for agent 0')
-            # for agent in [a for a in self.organism.get_active_agents() if a.learnable]:
-            #     u.visualize_parameters(agent, print)
-            #     break
-
             #################################################################
+            
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
