@@ -51,7 +51,8 @@ class Memory(object):
         return len(self.memory)
 
     def clear_buffer(self):
-        del self.memory[:]
+        # del self.memory[:]
+        self.memory = []
 
 
 """
@@ -64,10 +65,10 @@ class OffPolicyMemory(Memory):
         super(OffPolicyMemory, self).__init__(element)
         self.max_replay_buffer_size = max_replay_buffer_size
 
-
-    def _advance(self):
-        pass
-
+    def push(self, *args):
+        if len(self.memory) > max_replay_buffer_size:
+            self.memory = self.memory[1:]  # pop front
+        super(OffPolicyMemory, self).push(*args)
 
 
 class OnPolicyMemory(Memory):

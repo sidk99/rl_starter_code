@@ -49,7 +49,7 @@ def experiment_config(args):
         args.max_epochs = 12
         args.eval_every = 4
         args.log_every = 4
-        args.num_test = 100
+        args.num_test = 10
     return args
 
 def lifelong_config(args):

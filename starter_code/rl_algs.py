@@ -1,6 +1,8 @@
 import copy
 import math
 import numpy as np
+import pickle
+import sys
 import torch
 import torch.nn.functional as F
 
@@ -10,6 +12,10 @@ from starter_code.common import estimate_advantages
 import starter_code.utils as u
 
 eps = np.finfo(np.float32).eps.item()
+
+def analyze_size(obj, obj_name):
+    obj_pickle = pickle.dumps(obj)
+    print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
 
 def rlalg_switch(alg_name):
     rlalgs = {
@@ -33,7 +39,7 @@ class VPG():
         return states, actions
 
     def improve(self, agent):
-        batch = agent.buffer.sample()
+        batch = agent.replay_replay_buffer.sample()
         states, actions = self.unpack_batch(batch)
         log_probs = agent.policy.get_log_prob(states, actions)
         assert log_probs.dim() == 2
@@ -53,7 +59,7 @@ class VPG():
         loss = torch.stack(policy_losses).sum()
         loss.backward()
         agent.policy_optimizer.step()
-        agent.buffer.clear_buffer()
+        agent.replay_buffer.clear_buffer()
 
 
 class A2C():
@@ -69,7 +75,7 @@ class A2C():
         return states, actions
 
     def improve(self, agent):
-        batch = agent.buffer.sample()
+        batch = agent.replay_replay_buffer.sample()
         states, actions = self.unpack_batch(batch)
         values = agent.valuefn(states)
         log_probs = agent.policy.get_log_prob(states, actions)
@@ -95,7 +101,7 @@ class A2C():
         loss.backward()
         agent.policy_optimizer.step()
         agent.value_optimizer.step()
-        agent.buffer.clear_buffer()
+        agent.replay_replay_buffer.clear_buffer()
 
 
 class PPO():
@@ -149,8 +155,14 @@ class PPO():
         return states, actions, masks, rewards
 
     def improve(self, agent):
+
+        # if agent.id == 0:
+        #     print('parameters before update for agent 0 (inside)')
+        #     u.visualize_parameters(agent, print)
+
+
         self.reset_record()
-        batch = agent.buffer.sample()
+        batch = agent.replay_buffer.sample()
         states, actions, masks, rewards = self.unpack_batch(batch)
         with torch.no_grad():
             values = agent.valuefn(states)  # (bsize, 1)
@@ -177,7 +189,18 @@ class PPO():
 
                 minibatch_log = self.ppo_step(agent, states_b, actions_b, returns_b, advantages_b, fixed_log_probs_b)
                 self.record(minibatch_log=minibatch_log, epoch=j, iter=i)
-        agent.buffer.clear_buffer()
+
+        agent.replay_buffer.clear_buffer()
+
+        # analyze_size(agent.replay_buffer, 'before inside clearing: agent {} replay_buffer'.format(agent.id))
+        # agent.replay_buffer.clear_buffer()
+        # analyze_size(agent.replay_buffer, 'after inside clearing: agent {} replay_buffer'.format(agent.id))
+
+        # if agent.id == 0:
+        #     print('parameters after update for agent 0 (inside)')
+        #     u.visualize_parameters(agent, print)
+
+        # print('Agent {} just cleared buffer in improve'.format(agent.id))
 
     def ppo_step(self, agent, states, actions, returns, advantages, fixed_log_probs):
         """
@@ -189,6 +212,9 @@ class PPO():
 
             entropy: (minibatch_size, 1)
         """
+
+
+
         """update critic"""
         for _ in range(self.optim_value_iternum):
             values_pred = agent.valuefn(states)
@@ -213,6 +239,8 @@ class PPO():
         torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 40)
         agent.policy_optimizer.step()
 
+
+
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
         ratio_clipped = num_clipped / states.size(0)
@@ -228,72 +256,73 @@ class PPO():
         return log
 
 
-class SAC():
-    def __init__(self, device, args):
-        self.device = device
-        self.args = args
+# class SAC():
+#     def __init__(self, device, args):
+#         self.device = device
+#         self.args = args
 
+        
         
 
 
 
 
-        """
-        self.max_buffer_size = 4096
+#         """
+#         self.max_buffer_size = 4096
 
-        self.gamma = 0.99
-        self.tau = 0.95 
-        self.l2_reg = 1e-3
-        self.clip_epsilon = 0.2
-        self.entropy_coeff = args.entropy_coeff
+#         self.gamma = 0.99
+#         self.tau = 0.95 
+#         self.l2_reg = 1e-3
+#         self.clip_epsilon = 0.2
+#         self.entropy_coeff = args.entropy_coeff
 
-        self.optim_epochs = 10
-        self.optim_batch_size = 256
-        self.optim_value_iternum = 1
+#         self.optim_epochs = 10
+#         self.optim_batch_size = 256
+#         self.optim_value_iternum = 1
 
-        self.max_buffer_size = 100
-        self.optim_batch_size = 10
-        """
+#         self.max_buffer_size = 100
+#         self.optim_batch_size = 10
+#         """
 
 
-    def unpack_batch(self, batch):
-        states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
-        actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
-        masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
-        rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
-        assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
-        assert masks.dim() == rewards.dim() == 1
-        return states, actions, masks, rewards
+#     def unpack_batch(self, batch):
+#         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
+#         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
+#         masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
+#         rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
+#         assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
+#         assert masks.dim() == rewards.dim() == 1
+#         return states, actions, masks, rewards
 
-    def improve(self, agent):
-        self.reset_record()
-        batch = agent.buffer.sample()
-        states, actions, masks, rewards = self.unpack_batch(batch)
-        with torch.no_grad():
-            values = agent.valuefn(states)  # (bsize, 1)
-            fixed_log_probs = agent.policy.get_log_prob(states, actions)  # (bsize, 1)
-            assert values.dim() == fixed_log_probs.dim() == 2
+#     def improve(self, agent):
+#         self.reset_record()
+#         batch = agent.replay_buffer.sample()
+#         states, actions, masks, rewards = self.unpack_batch(batch)
+#         with torch.no_grad():
+#             values = agent.valuefn(states)  # (bsize, 1)
+#             fixed_log_probs = agent.policy.get_log_prob(states, actions)  # (bsize, 1)
+#             assert values.dim() == fixed_log_probs.dim() == 2
 
-        """get advantage estimation from the trajectories"""
-        advantages, returns = estimate_advantages(rewards, masks, values, self.gamma, self.tau, self.device)  # (bsize, 1) (bsize, 1)
+#         """get advantage estimation from the trajectories"""
+#         advantages, returns = estimate_advantages(rewards, masks, values, self.gamma, self.tau, self.device)  # (bsize, 1) (bsize, 1)
 
-        """perform mini-batch PPO update"""
-        optim_iter_num = int(math.ceil(states.shape[0] / self.optim_batch_size))
-        for j in range(self.optim_epochs):
-            perm = np.arange(states.shape[0])
-            np.random.shuffle(perm)
-            perm = torch.LongTensor(perm).to(self.device)
+#         """perform mini-batch PPO update"""
+#         optim_iter_num = int(math.ceil(states.shape[0] / self.optim_batch_size))
+#         for j in range(self.optim_epochs):
+#             perm = np.arange(states.shape[0])
+#             np.random.shuffle(perm)
+#             perm = torch.LongTensor(perm).to(self.device)
 
-            states, actions, returns, advantages, fixed_log_probs = \
-                states[perm].clone(), actions[perm].clone(), returns[perm].clone(), advantages[perm].clone(), fixed_log_probs[perm].clone()
+#             states, actions, returns, advantages, fixed_log_probs = \
+#                 states[perm].clone(), actions[perm].clone(), returns[perm].clone(), advantages[perm].clone(), fixed_log_probs[perm].clone()
 
-            for i in range(optim_iter_num):
-                ind = slice(i * self.optim_batch_size, min((i + 1) * self.optim_batch_size, states.shape[0]))
-                states_b, actions_b, advantages_b, returns_b, fixed_log_probs_b = \
-                    states[ind], actions[ind], advantages[ind], returns[ind], fixed_log_probs[ind]
+#             for i in range(optim_iter_num):
+#                 ind = slice(i * self.optim_batch_size, min((i + 1) * self.optim_batch_size, states.shape[0]))
+#                 states_b, actions_b, advantages_b, returns_b, fixed_log_probs_b = \
+#                     states[ind], actions[ind], advantages[ind], returns[ind], fixed_log_probs[ind]
 
-                minibatch_log = self.ppo_step(agent, states_b, actions_b, returns_b, advantages_b, fixed_log_probs_b)
-                self.record(minibatch_log=minibatch_log, epoch=j, iter=i)
-        agent.buffer.clear_buffer()
+#                 minibatch_log = self.ppo_step(agent, states_b, actions_b, returns_b, advantages_b, fixed_log_probs_b)
+#                 self.record(minibatch_log=minibatch_log, epoch=j, iter=i)
+#         agent.replay_buffer.clear_buffer()
 
 
