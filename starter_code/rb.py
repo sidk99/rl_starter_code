@@ -65,6 +65,7 @@ class OffPolicyMemory(Memory):
         super(OffPolicyMemory, self).__init__(element)
         self.max_replay_buffer_size = max_replay_buffer_size
 
+    # probably this could be a LOT faster
     def push(self, *args):
         if len(self.memory) > max_replay_buffer_size:
             self.memory = self.memory[1:]  # pop front
