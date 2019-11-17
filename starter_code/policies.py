@@ -20,13 +20,16 @@ class BidPolicyLN(nn.Module):
         logstd = self.bid_logstd(x)
         return mu, torch.exp(logstd)
 
-    def select_action(self, state, deterministic=False):
+    def select_action(self, state, deterministic=False, reparameterize=False):
         mu, std = self.forward(state)
         dist = LogNormal(mu, std)
         if deterministic:
             bid = torch.exp(mu-std*std)  # e^(mu-sigma^2)
         else:
-            bid = dist.sample()
+            if reparameterize:
+                action = dist.rsample()
+            else:
+                action = dist.sample()
         return bid, dist
 
     def get_log_prob(self, state, action):
@@ -135,13 +138,16 @@ class SimpleGaussianPolicy(nn.Module):
         mu, logstd = self.decoder(x)
         return mu, torch.exp(logstd)
 
-    def select_action(self, state, deterministic):
+    def select_action(self, state, deterministic, reparameterize=False):
         mu, std = self.forward(state)
         dist = MultivariateNormal(loc=mu, scale_tril=torch.diag_embed(std))
         if deterministic:
             action = mu  # (bsize, action_dim)
         else:
-            action = dist.sample()  # (bsize, action_dim)
+            if reparameterize:
+                action = dist.rsample()  # (bsize, action_dim)
+            else:
+                action = dist.sample()  # (bsize, action_dim)
         return action, dist
 
     def get_log_prob(self, state, action):
@@ -170,10 +176,13 @@ class BetaCNNPolicy(nn.Module):
         alpha, beta = self.decoder(x)
         return alpha, beta
 
-    def select_action(self, state, deterministic):
+    def select_action(self, state, deterministic, reparameterize=False):
         alpha, beta = self.forward(state)
         dist = Beta(concentration1=alpha, concentration0=beta)
-        action = dist.sample()  # (bsize, action_dim)
+        if reparameterize:
+            action = dist.rsample()  # (bsize, action_dim)
+        else:
+            action = dist.sample()  # (bsize, action_dim)
         return action, dist
 
     def get_log_prob(self, state, action):
@@ -202,10 +211,13 @@ class SimpleBetaSoftPlusPolicy(nn.Module):
         alpha, beta = self.decoder(x)
         return alpha, beta
 
-    def select_action(self, state, deterministic):
+    def select_action(self, state, deterministic, reparameterize=False):
         alpha, beta = self.forward(state)
         dist = Beta(concentration1=alpha, concentration0=beta)
-        action = dist.sample()  # (bsize, action_dim)
+        if reparameterize:
+            action = dist.rsample()  # (bsize, action_dim)
+        else:
+            action = dist.sample()  # (bsize, action_dim)
         return action, dist
 
     def get_log_prob(self, state, action):
@@ -234,10 +246,13 @@ class SimpleBetaReluPolicy(nn.Module):
         alpha, beta = self.decoder(x)
         return alpha, beta
 
-    def select_action(self, state, deterministic):
+    def select_action(self, state, deterministic, reparameterize=False):
         alpha, beta = self.forward(state)
         dist = Beta(concentration1=alpha, concentration0=beta)
-        action = dist.sample()  # (bsize, action_dim)
+        if reparameterize:
+            action = dist.rsample()  # (bsize, action_dim)
+        else:
+            action = dist.sample()  # (bsize, action_dim)
         return action, dist
 
     def get_log_prob(self, state, action):
