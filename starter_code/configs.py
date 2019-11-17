@@ -47,8 +47,8 @@ def experiment_config(args):
     args.num_test = 100
     if args.debug:
         args.max_epochs = 12
-        args.eval_every = 4
-        args.log_every = 4
+        args.eval_every = 3
+        args.log_every = 3
         args.num_test = 10
     return args
 
