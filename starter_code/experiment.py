@@ -116,7 +116,6 @@ class Experiment():
 
         import time
 
-        # for epoch in range(max_epochs):
         for epoch in gt.timed_for(range(max_epochs)):
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
@@ -139,6 +138,7 @@ class Experiment():
                 metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_moves', 'max_moves', 'mean_moves', 'std_moves']
                 self.logger.update_variable(name='epoch', index=epoch, value=epoch)
+                # this should also be based on the running reward.
                 self.update_metrics(self.logger, metrics, epoch, epoch_info['epoch_stats'])
                 self.plot_metrics(self.logger, metrics, self.logger.expname)
 
@@ -156,7 +156,7 @@ class Experiment():
             gt.stamp('Epoch {}: Before Update'.format(epoch))
             t0 = time.time()
             self.organism.update(self.rl_alg)
-            print('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
+            self.logger.printf('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
             gt.stamp('Epoch {}: After Update'.format(epoch))
 
             #################################################################
