@@ -73,10 +73,10 @@ class Agent(nn.Module):
             stored_action = [action]
         else:
             stored_action = action
-        action_dict = {
-            'action': action,
-            'stored_action': stored_action, 
-            'action_dist': dist}
+        action_dict = dict(
+            action=action,
+            stored_action=stored_action,
+            action_dist=dist)
         return action_dict
 
     def update(self, rl_alg):
@@ -91,12 +91,12 @@ class Agent(nn.Module):
             )
 
     def get_state_dict(self):
-        state_dict = {
-            'policy': self.policy.state_dict(),
-            'valuefn': self.valuefn.state_dict(),
-            'policy_optimizer': self.policy_optimizer.state_dict(),
-            'value_optimizer': self.value_optimizer.state_dict(),
-            }
+        state_dict = dict(
+            policy=self.policy.state_dict(),
+            valuefn=self.valuefn.state_dict(),
+            policy_optimizer=self.policy_optimizer.state_dict(),
+            value_optimizer=self.value_optimizer.state_dict(),
+            )
         return state_dict
 
     def load_state_dict(self, agent_state_dict, reset_optimizer=True):
