@@ -82,6 +82,9 @@ class Agent(nn.Module):
     def update(self, rl_alg):
         rl_alg.improve(self)
 
+    def clear_buffer(self):
+        self.replay_buffer.clear_buffer()
+
     def store_transition(self, transition):
         self.replay_buffer.push(
             transition['state'],

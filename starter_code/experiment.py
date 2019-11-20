@@ -159,11 +159,7 @@ class Experiment():
             self.logger.printf('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
             gt.stamp('Epoch {}: After Update'.format(epoch))
 
-            #################################################################
-            for a_id, agent in enumerate([a for a in self.organism.get_active_agents() if a.learnable]):
-                agent.replay_buffer.clear_buffer()
-            #################################################################
-            
+            self.organism.clear_buffer()
 
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
