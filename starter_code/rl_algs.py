@@ -277,7 +277,7 @@ class SAC():
             self.log_alpha = ptu.zeros(1, requires_grad=True)
             self.alpha_optimizer = optim.Adam(
                 [self.log_alpha],
-                lr=policy_lr,
+                lr=args.plr,
             )
 
 

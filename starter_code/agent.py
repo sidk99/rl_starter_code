@@ -104,34 +104,123 @@ class Agent(nn.Module):
         self.valuefn.load_state_dict(agent_state_dict['valuefn'])
         if not reset_optimizer:
             self.policy_optimizer.load_state_dict(agent_state_dict['policy_optimizer'])
-            self.value_optimizerl.load_state_dict(agent_state_dict['value_optimizerl'])
+            self.value_optimizerl.load_state_dict(agent_state_dict['value_optimizer'])
 
 
 class SACAgent(nn.Module):
     def __init__(self, policy, qf1, qf2, target_qf1, target_qf2, replay_buffer, args):
         super(SACAgent, self).__init__()
 
-        discount=0.99
-        reward_scale=1.0
-        policy_lr=3E-4
-        qf_lr=3E-4
-        optimizer_class = optim.Adam
-        soft_target_tau=5e-3
-        target_update_period=1
-        use_automatic_entropy_tuning=True
+        # discount=0.99
+        # reward_scale=1.0
+        # policy_lr=3E-4
+        # qf_lr=3E-4
+        # optimizer_class = optim.Adam
+        # soft_target_tau=5e-3
+        # target_update_period=1
+        # use_automatic_entropy_tuning=True
 
         self.policy = policy
         self.qf1 = qf1
         self.qf2 = qf2
         self.target_qf1 = target_qf1
         self.target_qf2 = target_qf2
+        # TODO: log_alpha
 
-        self.soft_target_tau = soft_target_tau
-        self.target_update_period = target_update_period
-        self.discount = discount
-        self.reward_scale = reward_scale
-        self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
-        self._n_train_steps_total = 0
+        self.replay_buffer = replay_buffer
+        self.args = args
+        assert self.policy.discrete == False
+        self.discrete = False
+
+        self.initialize_optimizer()
+        self.initialize_optimizer_schedulers(args)
+        print(self)
+
+    def initialize_optimizer(self):
+        """
+            Note that there is an asymmetry here: 
+                the alpha optimizer is not listed here.
+            TODO: log_alpha
+        """
+        if self.args.opt == 'adam':
+            self.policy_optimizer = optim.Adam(
+                self.policy.parameters(), lr=self.args.plr)
+            self.qf1_optimizer = optimizer_class(
+                self.qf1.parameters(), lr=self.args.vlr)
+            self.qf2_optimizer = optimizer_class(
+                self.qf2.parameters(), lr=self.args.vlr)
+        elif self.args.opt == 'sgd':
+            self.policy_optimizer = optim.SGD(
+                self.policy.parameters(), lr=self.args.plr, momentum=0.9)
+            self.qf1_optimizer = optim.SGD(
+                self.qf1.parameters(), lr=self.args.vlr, momentum=0.9)
+            self.qf2_optimizer = optim.SGD(
+                self.qf2.parameters(), lr=self.args.vlr, momentum=0.9)
+        else:
+            assert False
+
+    def initialize_optimizer_schedulers(self, args):
+        """
+            Perhaps you should just anneal everything at the same rate
+        """
+        if not self.args.anneal_policy_lr: assert self.args.anneal_policy_lr_gamma == 1
+        self.po_scheduler = optim.lr_scheduler.StepLR(
+            self.policy_optimizer, 
+            step_size=args.anneal_policy_lr_step, 
+            gamma=args.anneal_policy_lr_gamma, 
+            last_epoch=-1)
+        self.qf1_scheduler = optim.lr_scheduler.StepLR(
+            self.qf1_optimizer, 
+            step_size=args.anneal_policy_lr_step, 
+            gamma=args.anneal_policy_lr_gamma, 
+            last_epoch=-1)
+        self.qf2_scheduler = optim.lr_scheduler.StepLR(
+            self.qf2_optimizer, 
+            step_size=args.anneal_policy_lr_step, 
+            gamma=args.anneal_policy_lr_gamma, 
+            last_epoch=-1)
+
+    def forward(self, state, deterministic):
+        pass
+
+    def update(self, rl_alg):
+        rl_alg.improve(self)
+
+    def store_transition(self, transition):
+        self.replay_buffer.push(
+            transition['state'],
+            transition['action'],
+            transition['mask'],
+            transition['next_state'],
+            transition['reward'],
+            )
+
+    def get_state_dict(self):
+        """
+            TODO: need to add in the log_alpha paramter here
+        """
+        state_dict = dict(
+            policy=self.policy.state_dict(),
+            qf1=self.qf1.state_dict(),
+            qf2=self.qf2.state_dict(),
+            policy_optimizer=self.policy_optimizer.state_dict(),
+            qf1_optimizer=self.qf1_optimizer.state_dict(),
+            qf2_optimizer=self.qf2_optimizer.state_dict(),
+            )
+        raise NotImplementedError('alpha optimizer')
+        return state_dict
+
+    def load_state_dict(self, agent_state_dict, reset_optimizer=True):
+        self.policy.load_state_dict(agent_state_dict['policy'])
+        self.qf1.load_state_dict(agent_state_dict['qf1'])
+        self.qf2.load_state_dict(agent_state_dict['qf2'])
+        if not reset_optimizer:
+            self.policy_optimizer.load_state_dict(agent_state_dict['policy_optimizer'])
+            self.qf1_optimizer.load_state_dict(agent_state_dict['qf1_optimizer'])
+            self.qf2_optimizer.load_state_dict(agent_state_dict['qf2_optimizer'])
+
+################################################################################
+
 
         if self.use_automatic_entropy_tuning:
             if target_entropy:

@@ -4,7 +4,8 @@ from collections import namedtuple
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
 Transition = namedtuple('Transition', ('state', 'action', 'logprob', 'mask', 'next_state', 'reward', 'value'))
 SimpleTransition = namedtuple('SimpleTransition', ('state', 'action', 'logprob', 'mask','reward', 'value'))
-SimplerTransition = namedtuple('SimplerTransition', ('state', 'action', 'mask','reward'))
+SimplerTransition = namedtuple('SimplerTransition', ('state', 'action', 'mask', 'reward'))
+SimplerQTransition = namedtuple('SimplerQTransition', ('state', 'action', 'mask', 'next_state', 'reward'))
 InputOutput = namedtuple('InputOutput', ('loss'))
 RNTransition = namedtuple('StepTransition', ('state', 'action', 'logprob', 'mask', 'reward', 'value', 'step', 'task'))
 BanditTransition = namedtuple('BanditTransition', ('state', 'action', 'logprob', 'reward'))
@@ -20,6 +21,8 @@ class Memory(object):
             self.element = SimpleTransition
         elif element == 'simplertransition':
             self.element = SimplerTransition
+        elif element == 'simplerqtransition':
+            self.element = SimplerQTransition
         elif element == 'inputoutput':
             self.element = InputOutput
         elif element == 'rntransition':
