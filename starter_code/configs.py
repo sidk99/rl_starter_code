@@ -5,6 +5,12 @@ from starter_code.log import MultiBaseLogger, MinigridEnvManager, GymEnvManager,
 from env_config import EnvRegistry
 from starter_code.utils import AttrDict
 
+
+"""
+    global args
+    local args
+"""
+
 def rlalg_config_switch(alg_name):
     rlalg_configs = dict(
         ppo = ppo_config,
@@ -54,8 +60,9 @@ def experiment_config(args):
     args.gpu_index = 0
     # args.eval_every = 5000
     # args.log_every = 100
-    args.eval_every = 500#5000
-    args.log_every = 10#100
+    args.eval_every = 500
+    args.log_every = 10
+    args.visualize_every = 50
     args.max_epochs = int(1e7)
     args.num_test = 100
     if args.debug:

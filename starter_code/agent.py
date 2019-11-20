@@ -8,6 +8,14 @@ import rlkit.torch.pytorch_util as ptu
 from rlkit.core.serializable import Serializable
 
 class Agent(nn.Module):
+    """
+        args.opt
+        args.plr
+        args.vlr
+        args.anneal_policy_lr
+        args.anneal_policy_lr_gamma
+        
+    """
     def __init__(self, policy, valuefn, replay_buffer, args):
         super(Agent, self).__init__()
         self.policy = policy

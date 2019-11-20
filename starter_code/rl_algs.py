@@ -28,6 +28,9 @@ def rlalg_switch(alg_name):
 
 
 class VPG():
+    """
+        args
+    """
     def __init__(self, device, args):
         self.device = device
         self.gamma = 0.99
@@ -64,6 +67,9 @@ class VPG():
 
 
 class A2C():
+    """
+        args
+    """
     def __init__(self, device, args):
         self.device = device
         self.gamma = 0.99
@@ -106,6 +112,10 @@ class A2C():
 
 
 class PPO():
+    """
+        args.entropy_coeff
+        args.plr (will remove)
+    """
     def __init__(self, device, args):
         self.device = device
         self.args = args

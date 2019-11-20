@@ -157,7 +157,7 @@ class BaseLogger(object):
         self.plot_from_csv(
             var_pairs=var_pairs,
             expname=expname)
-        self.clear_data()  # note that this may destroy the running average?
+        self.clear_data()
 
     def save_csv(self, expname, pfunc):
         csv_dict = defaultdict(dict)

@@ -20,6 +20,12 @@ def analyze_size(obj, obj_name):
     print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
 
 class Experiment():
+    """
+        args.eval_every
+        args.anneal_policy_lr_after
+        args.log_every
+        args.num_test
+    """
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         self.organism = agent
         self.task_progression = task_progression
@@ -88,7 +94,10 @@ class Experiment():
 
         while num_steps < self.rl_alg.max_buffer_size:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
-            episode_info = self.sample_episode(env=train_env_manager.env, deterministic=deterministic, render=False)
+            episode_info = self.sample_episode(
+                env=train_env_manager.env, 
+                deterministic=deterministic, 
+                render=False)
             all_returns.append(episode_info['episode_stats']['returns'])
             all_moves.append(episode_info['episode_stats']['moves'])
             num_steps += (episode_info['episode_stats']['moves'])
@@ -112,12 +121,20 @@ class Experiment():
 
     # @gt.wrap
     def train(self, max_epochs):
+        """
+            
+
+        """
+
         # populate replay buffer before training
 
         import time
 
         for epoch in gt.timed_for(range(max_epochs)):
             if epoch % self.args.eval_every == 0:
+                """
+                What is happening here?
+                """
                 stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
 
                 for mode in ['train']:
@@ -135,6 +152,9 @@ class Experiment():
             gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
 
             if epoch % self.args.eval_every == 0:
+                """
+                What is happening here?
+                """
                 metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_moves', 'max_moves', 'mean_moves', 'std_moves']
                 self.logger.update_variable(name='epoch', index=epoch, value=epoch)
