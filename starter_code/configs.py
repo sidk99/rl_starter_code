@@ -13,6 +13,17 @@ def rlalg_config_switch(alg_name):
     )
     return rlalg_configs[alg_name]
 
+def rlalg_config(args):
+    rlalg_configs = dict(
+        ppo = ppo_config,
+        a2c = a2c_config,
+        vpg = vpg_config,
+    )
+    args = rlalg_configs[args.alg_name](args)
+    if not hasattr(args, 'parallel_update'):
+        args.parallel_update = False
+    return args
+
 def ppo_config(args):
     args.gamma = 0.99
     if not hasattr(args, 'plr'):
@@ -95,7 +106,8 @@ def build_expname(args):
 def process_config(args):
     args = experiment_config(args)
     args = training_config(args)
-    args = rlalg_config_switch(args.alg_name)(args)
+    # args = rlalg_config_switch(args.alg_name)(args)
+    args = rlalg_config(args)
     args = network_config(args)
     args = lifelong_config(args)
     args = build_expname(args)
