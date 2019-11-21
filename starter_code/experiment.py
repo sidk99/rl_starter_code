@@ -10,6 +10,7 @@ from log import RunningAverage
 
 import ipdb
 from tqdm import tqdm
+import time
 
 import starter_code.env_utils as eu
 
@@ -18,6 +19,15 @@ import starter_code.utils as u
 def analyze_size(obj, obj_name):
     obj_pickle = pickle.dumps(obj)
     print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
+
+class Sampler():
+    def __init__(self, deterministic, render):
+        self.deterministic = deterministic
+        self.render = render
+
+    # def 
+
+
 
 class Experiment():
     """
@@ -35,6 +45,8 @@ class Experiment():
         self.args = args
         self.epoch = 0
         self.run_avg = RunningAverage()
+        self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
+                       'min_moves', 'max_moves', 'mean_moves', 'std_moves']
 
     def get_bids_for_episode(self, episode_info):
         episode_bids = defaultdict(lambda: [])
@@ -44,15 +56,24 @@ class Experiment():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_episode(self, env, deterministic, render):
+    def sample_episode(self, env, max_timesteps_this_episode, deterministic, render):
         episode_data = []
         state = env.reset()
+
         #################################################
         # Debugging MiniGrid
         if type(state) == dict:
             state = state['image']
         #################################################
-        for t in range(self.rl_alg.max_buffer_size):  # Don't infinite loop while learning
+
+
+
+
+        # for t in range(self.rl_alg.num_samples_before_update):  # Don't infinite loop while learning
+        done = False
+        for t in range(max_timesteps_this_episode):
+
+            print('t: {}'.format(t))
             state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             with torch.no_grad():
                 action_dict = self.organism(state_var, deterministic=deterministic)
@@ -74,9 +95,26 @@ class Experiment():
                 e['frame'] = frame
             episode_data.append(e)
             self.organism.store_transition(e)
+
+            # if done or t >= max_timesteps_this_episode-1:
+            #     if done: print('done')
+            #     if t >= max_timesteps_this_episode:
+            #     pass
+
+                # the question is whether this should go before or after
+
+
+            # somehow need to indicate whether you are done and save state here
             if done:
+                print('done')
                 break
             state = next_state
+
+        if not done:
+            assert t == max_timesteps_this_episode-1 # the only reason why broke the loop
+            # save the environment state here
+
+
         stats = dict(
             returns=sum([e['reward'] for e in episode_data]),
             moves=t+1,
@@ -86,22 +124,39 @@ class Experiment():
             episode_stats=stats)
         return episode_info
 
-    def collect_samples(self, deterministic):
+    def collect_samples(self, epoch, deterministic):
+        """
+            Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
+        """
+        gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         num_steps = 0
         num_episodes = 0
         all_returns = []
         all_moves = []
 
-        while num_steps < self.rl_alg.max_buffer_size:
+        while num_steps < self.rl_alg.num_samples_before_update:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
+
+            # if it makes it up here, that means max_timesteps_this_episode >= 
+            max_timesteps_this_episode = min(
+                self.rl_alg.num_samples_before_update - num_steps,
+                train_env_manager.max_episode_length)
+
+            print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, num_episodes, max_timesteps_this_episode, train_env_manager.max_episode_length))
+
             episode_info = self.sample_episode(
                 env=train_env_manager.env, 
+                max_timesteps_this_episode=max_timesteps_this_episode,
                 deterministic=deterministic, 
                 render=False)
+
             all_returns.append(episode_info['episode_stats']['returns'])
             all_moves.append(episode_info['episode_stats']['moves'])
             num_steps += (episode_info['episode_stats']['moves'])
             num_episodes += 1
+        print('num_steps collected: {}'.format(num_steps))
+
+
         stats = dict(
             mean_return=np.mean(all_returns),
             min_return=np.min(all_returns),
@@ -112,85 +167,60 @@ class Experiment():
             std_moves=np.std(all_moves),
             min_moves=np.min(all_moves),
             max_moves=np.max(all_moves),
-            num_episodes=num_episodes
+            num_episodes=num_episodes,
+            total_moves=num_steps,
             )
         self.run_avg.update_variable('reward', stats['mean_return'])
 
         episode_info['epoch_stats'] = stats
+        print('num_steps: {} num_episodes: {}'.format(num_steps, num_episodes))
+        gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
         return episode_info
 
-    # @gt.wrap
     def train(self, max_epochs):
-        """
-            
-
-        """
-
         # populate replay buffer before training
-
-        import time
-
         for epoch in gt.timed_for(range(max_epochs)):
+            print('epoch: {}'.format(epoch))
             if epoch % self.args.eval_every == 0:
-                """
-                What is happening here?
-                """
-                stats = self.eval(epoch=epoch)  # this needs to be done for multiple environments.
+                stats = self.eval(epoch=epoch)
 
-                for mode in ['train']:
-                    for env_manager in self.task_progression[self.epoch][mode]:
-                        env_manager.saver.save(epoch, 
-                            {'args': self.args,
-                             'epoch': epoch,
-                             'logger': self.logger.get_state_dict(),
-                             'experiment': stats[env_manager.env_name],
-                             'organism': self.organism.get_state_dict()},
-                             self.logger.printf)
-
-            gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
-            epoch_info = self.collect_samples(deterministic=False)
-            gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
-
-            if epoch % self.args.eval_every == 0:
-                """
-                What is happening here?
-                """
-                metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
-                       'min_moves', 'max_moves', 'mean_moves', 'std_moves']
-                self.logger.update_variable(name='epoch', index=epoch, value=epoch)
-                # this should also be based on the running reward.
-                self.update_metrics(self.logger, metrics, epoch, epoch_info['epoch_stats'])
-                self.plot_metrics(self.logger, metrics, self.logger.expname)
-
-                self.logger.saver.save(epoch, 
-                    {'args': self.args,
-                     'epoch': epoch,
-                     'logger': self.logger.get_state_dict(),
-                     'experiment': epoch_info['epoch_stats'],
-                     'organism': self.organism.get_state_dict()},
-                     self.logger.printf)
-
-            if epoch >= self.args.anneal_policy_lr_after:
-                self.organism.step_optimizer_schedulers(self.logger.printf)
-
-            gt.stamp('Epoch {}: Before Update'.format(epoch))
-            t0 = time.time()
-            self.organism.update(self.rl_alg)
-            self.logger.printf('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
-            gt.stamp('Epoch {}: After Update'.format(epoch))
-
-            self.organism.clear_buffer()
-
+            epoch_info = self.collect_samples(epoch, deterministic=False)
+            
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
 
+            if epoch % self.args.visualize_every == 0:
+                self.visualize(self.logger, epoch, epoch_info['epoch_stats'], self.logger.expname)
+            
+            if epoch % self.args.save_every == 0:
+                self.save(self.logger, epoch, epoch_info['epoch_stats'])
+
+            self.update(epoch)
+
         self.finish_training()
+
+
+
+
+
 
     def finish_training(self):
         # env.close()
         # plt.close()
-        print(gt.report())
+        # print(gt.report())
         pass
+
+
+    def update(self, epoch):
+        if epoch >= self.args.anneal_policy_lr_after:
+            self.organism.step_optimizer_schedulers(self.logger.printf)
+
+        gt.stamp('Epoch {}: Before Update'.format(epoch))
+        t0 = time.time()
+        self.organism.update(self.rl_alg)
+        self.logger.printf('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
+        gt.stamp('Epoch {}: After Update'.format(epoch))
+        self.organism.clear_buffer()
 
     def log(self, epoch, epoch_info):
         stats = epoch_info['epoch_stats']
@@ -202,7 +232,11 @@ class Experiment():
         moves = []
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_info = self.sample_episode(env=env_manager.env, deterministic=False, render=visualize)
+                episode_info = self.sample_episode(
+                    env=env_manager.env, 
+                    max_timesteps_this_episode=env_manager.max_episode_length,
+                    deterministic=False, 
+                    render=visualize)
                 ret = episode_info['episode_stats']['returns']
                 mov = episode_info['episode_stats']['moves']
                 if i == 0 and visualize and self.organism.discrete:
@@ -235,31 +269,42 @@ class Experiment():
         stats[labeler('max')] = np.max(data)
         return stats
 
-    def update_metrics(self, env_manager, metrics, epoch, stats):
-        for metric in metrics:
+    def update_metrics(self, env_manager, epoch, stats):
+        for metric in self.metrics:
             env_manager.update_variable(
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
 
-    def plot_metrics(self, env_manager, metrics, name):
+    def plot_metrics(self, env_manager, name):
         env_manager.plot(
-            var_pairs=[(('epoch', k)) for k in metrics],
+            var_pairs=[(('epoch', k)) for k in self.metrics],
             expname=name,
             pfunc=self.logger.printf)
 
+    def save(self, env_manager, epoch, stats):
+        # this should also be based on the running reward.
+        env_manager.saver.save(epoch, 
+            {'args': self.args,
+             'epoch': epoch,
+             'logger': self.logger.get_state_dict(),
+             'experiment': stats,
+             'organism': self.organism.get_state_dict()},
+             self.logger.printf)
+
+    def visualize(self, env_manager, epoch, stats, name):
+        env_manager.update_variable(name='epoch', index=epoch, value=epoch)
+        self.update_metrics(env_manager, epoch, stats)
+        self.plot_metrics(env_manager, name)
+
     def eval(self, epoch):
-        metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
-                   'min_moves', 'max_moves', 'mean_moves', 'std_moves']
         multi_task_stats = {} 
-        for mode in ['train']:
-            for env_manager in self.task_progression[self.epoch][mode]:
-                stats = self.test(epoch, env_manager, num_test=self.args.num_test, visualize=True)
-
-                env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-                self.update_metrics(env_manager, metrics, epoch, stats)
-                self.plot_metrics(env_manager, metrics, env_manager.env_name)
-
-                self.logger.pprintf(stats)
-                multi_task_stats[env_manager.env_name] = stats
+        for env_manager in self.task_progression[self.epoch]['test']:
+            stats = self.test(epoch, env_manager, num_test=self.args.num_test, visualize=True)
+            self.logger.pprintf(stats)
+            if epoch % self.args.visualize_every == 0:
+                self.visualize(env_manager, epoch, stats, env_manager.env_name)
+            if epoch % self.args.save_every == 0:
+                self.save(env_manager, epoch, stats)
         return multi_task_stats
+
 
 
