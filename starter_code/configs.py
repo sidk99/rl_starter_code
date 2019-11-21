@@ -62,12 +62,15 @@ def experiment_config(args):
     # args.log_every = 100
     args.eval_every = 500
     args.log_every = 10
+    args.save_every = 500
     args.visualize_every = 50
     args.max_epochs = int(1e7)
     args.num_test = 100
     if args.debug:
         args.max_epochs = 12
         args.eval_every = 3
+        args.save_every = 3
+        args.visualize_every = 3
         args.log_every = 3
         args.num_test = 10
     return args
