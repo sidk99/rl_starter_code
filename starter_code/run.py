@@ -18,11 +18,17 @@ def parse_args():
     parser.add_argument('--subroot', type=str, default='debug')
     parser.add_argument('--cpu', action='store_true')
 
-    parser.add_argument('--env-name', nargs='+', type=str, default='InvertedPendulum-v2')
+    parser.add_argument('--env-name', nargs='+', type=str, default=['InvertedPendulum-v2'])
     parser.add_argument('--seed', type=int, default=543)
     parser.add_argument('--alg-name', type=str, default='ppo')
     parser.add_argument('--printf', action='store_true')
     parser.add_argument('--debug', action='store_true')
+
+    # debugging
+    parser.add_argument('--max_buffer_size', type=int, default=4096)
+    parser.add_argument('--optim_batch_size', type=int, default=256)
+
+
     args = parser.parse_args()
     return args
 
