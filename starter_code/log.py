@@ -135,6 +135,9 @@ class BaseLogger(object):
                 comparator=metric['cmp'])
 
     def update_variable(self, name, index, value, include_running_avg=False):
+        """
+            Appends to the log
+        """
         # print('name: {} index: {} value: {}'.format(name, index, value))
         if include_running_avg:
             running_name = 'running_{}'.format(name)
@@ -290,6 +293,7 @@ class TabularEnvManager(EnvManager):
         self.state_dim = self.env.state_dim
         self.action_dim = len(self.env.actions)
         self.starting_states = self.env.starting_states
+        self.max_episode_length = self.env.eplen
 
     def initialize(self):
         super(TabularEnvManager, self).initialize()
@@ -394,6 +398,7 @@ class GymEnvManager(VisualEnvManager):
         self.state_dim = self.env.observation_space.shape[0]
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
+        self.max_episode_length = self.env._max_episode_steps
 
 class MinigridEnvManager(VisualEnvManager):
     def __init__(self, env_name, env_registry, args):
@@ -402,4 +407,5 @@ class MinigridEnvManager(VisualEnvManager):
         self.state_dim = full_state_dim[:-1]  # (H, W)
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
+        self.max_episode_length = self.env.max_steps
 
