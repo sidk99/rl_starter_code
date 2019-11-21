@@ -26,15 +26,27 @@ def rlalg_switch(alg_name):
     }
     return rlalgs[alg_name]
 
+class OnPolicyRLAlg():
+    def __init__(self, device, max_buffer_size):
+        self.device = device
+        self.max_buffer_size = max_buffer_size
+        self.num_samples_before_update = max_buffer_size
 
-class VPG():
+class OffPolicyRlAlg():
+    def __init__(self, device, max_buffer_size, num_samples_before_update):
+        self.device = device
+        self.max_buffer_size = max_buffer_size
+        self.num_samples_before_update = num_samples_before_update
+        assert self.num_samples_before_update <= self.max_buffer_size
+
+
+class VPG(OnPolicyRLAlg):
     """
         args
     """
     def __init__(self, device, args):
-        self.device = device
+        super(VPG, self).__init__(device=device, max_buffer_size=100)
         self.gamma = 0.99
-        self.max_buffer_size = 100
 
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
@@ -66,14 +78,13 @@ class VPG():
         agent.replay_buffer.clear_buffer()
 
 
-class A2C():
+class A2C(OnPolicyRLAlg):
     """
         args
     """
     def __init__(self, device, args):
-        self.device = device
+        super(A2C, self).__init__(device=device, max_buffer_size=100)
         self.gamma = 0.99
-        self.max_buffer_size = 100
 
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
@@ -111,15 +122,15 @@ class A2C():
         agent.replay_replay_buffer.clear_buffer()
 
 
-class PPO():
+class PPO(OnPolicyRLAlg):
     """
         args.entropy_coeff
         args.plr (will remove)
     """
     def __init__(self, device, args):
+        super(PPO, self).__init__(device=device, max_buffer_size=args.max_buffer_size)
         self.device = device
         self.args = args
-        self.max_buffer_size = 4096
 
         self.gamma = 0.99
         self.tau = 0.95 
@@ -128,12 +139,9 @@ class PPO():
         self.entropy_coeff = args.entropy_coeff
 
         self.optim_epochs = 10
-        self.optim_batch_size = 256
+        self.optim_batch_size = args.optim_batch_size
         self.optim_value_iternum = 1
 
-        # Ohp...this is a source of bug I think
-        # self.max_buffer_size = 100
-        # self.optim_batch_size = 10
 
         self.reset_record()
 
@@ -251,7 +259,8 @@ class PPO():
         log['policy_loss'] = policy_loss.item()
         return log
 
-class SAC():
+
+class SAC(OffPolicyRlAlg):
     """
         TODO:
             * self.alpha_optimizer
@@ -260,11 +269,12 @@ class SAC():
             * make sure select_action can be done in batch
     """
     def __init__(self, device, args):
-        self.device = device
+        super(SAC, self).__init__(device, max_buffer_size=int(1e6), num_samples_before_update=1000)
+        # self.device = device
         self.args = args
 
-        # the purpose of this is to tell how many samples to collect before updating
-        self.max_buffer_size = 4096  
+        # # the purpose of this is to tell how many samples to collect before updating
+        # self.max_buffer_size = 4096  
 
         # SAC hyperparameters
         self.soft_target_tau = 5e-3
