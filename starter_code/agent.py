@@ -7,6 +7,8 @@ from torch.distributions import Categorical
 import rlkit.torch.pytorch_util as ptu 
 from rlkit.core.serializable import Serializable
 
+from starter_code.utils import AttrDict
+
 class Agent(nn.Module):
     """
         args.opt
@@ -81,7 +83,7 @@ class Agent(nn.Module):
             stored_action = [action]
         else:
             stored_action = action
-        action_dict = dict(
+        action_dict = AttrDict(
             action=action,
             stored_action=stored_action,
             action_dist=dist)
@@ -95,10 +97,10 @@ class Agent(nn.Module):
 
     def store_transition(self, transition):
         self.replay_buffer.push(
-            transition['state'],
-            transition['action'],
-            transition['mask'],
-            transition['reward'],
+            transition.state,
+            transition.action,
+            transition.mask,
+            transition.reward,
             )
 
     def get_state_dict(self):
