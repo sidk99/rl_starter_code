@@ -1,6 +1,7 @@
 from collections import namedtuple
 import gym
 import gym_minigrid
+from gym_minigrid.wrappers import ImgObsWrapper
 import babyai
 import pprint
 
@@ -73,7 +74,10 @@ class EnvRegistry():
             assert type(value) == dict or type(value) == set
 
     def get_env_constructor(self, env_name):
-        return lambda: gym.make(env_name)
+        if self.envs_name_type[env_name] == 'mg':
+            return lambda: ImgObsWrapper(gym.make(env_name))
+        else:
+            return lambda: gym.make(env_name)
 
     def get_env_type(self, env_name):
         return self.envs_name_type[env_name]
