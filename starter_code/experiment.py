@@ -21,12 +21,76 @@ def analyze_size(obj, obj_name):
     print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
 
 class Sampler():
-    def __init__(self, deterministic, render):
+    """
+        one sampler for exploration
+        one sampler for evaluation
+    """
+    def __init__(self, deterministic, render, device):
         self.deterministic = deterministic
         self.render = render
+        self.device = device
 
-    # def 
+        # you need something to accumulate the stats
 
+
+    # def reset_episode_info(self):
+    #     self.episode_info = dict()
+
+    def sample_timestep(self, env, organism, state):
+        state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            action_dict = organism.forward(state_var, deterministic=self.deterministic)
+        next_state, reward, done, _ = env.step(action_dict['action'])
+        mask = 0 if done else 1
+        e = dict(
+            state=state,
+            action=action_dict['stored_action'],
+            action_dist=action_dict['action_dist'],
+            next_state=next_state,
+            mask=mask,
+            reward=reward)
+        if self.render:
+            frame = eu.render(env=env, scale=0.25)
+            e['frame'] = frame
+        return next_state, done, e
+
+    def sample_episode(self, env, organism, max_timesteps_this_episode):
+        episode_data = []
+        state = env.reset()
+        done = False
+
+        for t in range(max_timesteps_this_episode):
+            print('t: {}'.format(t))
+            state, done, e = self.sample_timestep(
+                env, organism, state)
+            episode_data.append(e)
+            organism.store_transition(e)
+            if done:
+                print('done')
+                break
+        if not done:
+            # the only reason why broke the loop
+            assert t == max_timesteps_this_episode-1 
+            # save the environment state here
+
+        stats = dict(
+            returns=sum([e['reward'] for e in episode_data]),
+            moves=t+1,
+            actions=[e['action'] for e in episode_data])
+        episode_info = dict(
+            organism_episode_data=episode_data,
+            episode_stats=stats)
+
+        return episode_info
+
+    def sample_many_episodes(self, env_manager):
+        pass
+
+    def save_env_state(self, env_manager):
+        pass
+
+    def load_env_state(self, env_manager):
+        pass
 
 
 class Experiment():
@@ -47,6 +111,10 @@ class Experiment():
         self.run_avg = RunningAverage()
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_moves', 'max_moves', 'mean_moves', 'std_moves']
+        self.exploration_sampler = Sampler(
+            deterministic=False, render=False, device=device)
+        self.evaluation_sampler = Sampler(
+            deterministic=False, render=True, device=device)
 
     def get_bids_for_episode(self, episode_info):
         episode_bids = defaultdict(lambda: [])
@@ -56,75 +124,13 @@ class Experiment():
                 episode_bids[index].append(prob)
         return episode_bids
 
+    ################################################################
     def sample_episode(self, env, max_timesteps_this_episode, deterministic, render):
-        episode_data = []
-        state = env.reset()
-
-        #################################################
-        # Debugging MiniGrid
-        if type(state) == dict:
-            state = state['image']
-        #################################################
+        raise NotImplementedError
+    ################################################################
 
 
-
-
-        # for t in range(self.rl_alg.num_samples_before_update):  # Don't infinite loop while learning
-        done = False
-        for t in range(max_timesteps_this_episode):
-
-            print('t: {}'.format(t))
-            state_var = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                action_dict = self.organism(state_var, deterministic=deterministic)
-            next_state, reward, done, _ = env.step(action_dict['action'])
-            #################################################
-            # Debugging MiniGrid
-            if type(next_state) == dict:
-                next_state = next_state['image']
-            #################################################
-            mask = 0 if done else 1
-            e = dict(
-                state=state,
-                action=action_dict['stored_action'],
-                action_dist=action_dict['action_dist'],
-                mask=mask,
-                reward=reward)
-            if render:
-                frame = eu.render(env=env, scale=0.25)
-                e['frame'] = frame
-            episode_data.append(e)
-            self.organism.store_transition(e)
-
-            # if done or t >= max_timesteps_this_episode-1:
-            #     if done: print('done')
-            #     if t >= max_timesteps_this_episode:
-            #     pass
-
-                # the question is whether this should go before or after
-
-
-            # somehow need to indicate whether you are done and save state here
-            if done:
-                print('done')
-                break
-            state = next_state
-
-        if not done:
-            assert t == max_timesteps_this_episode-1 # the only reason why broke the loop
-            # save the environment state here
-
-
-        stats = dict(
-            returns=sum([e['reward'] for e in episode_data]),
-            moves=t+1,
-            actions=[e['action'] for e in episode_data])
-        episode_info = dict(
-            organism_episode_data=episode_data,
-            episode_stats=stats)
-        return episode_info
-
-    def collect_samples(self, epoch, deterministic):
+    def collect_samples(self, epoch):
         """
             Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
         """
@@ -144,18 +150,28 @@ class Experiment():
 
             print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, num_episodes, max_timesteps_this_episode, train_env_manager.max_episode_length))
 
-            episode_info = self.sample_episode(
+
+            ################################################################
+            episode_info = self.exploration_sampler.sample_episode(
                 env=train_env_manager.env, 
-                max_timesteps_this_episode=max_timesteps_this_episode,
-                deterministic=deterministic, 
-                render=False)
+                organism=self.organism,
+                max_timesteps_this_episode=max_timesteps_this_episode)
+
+            # episode_info = self.sample_episode(train_env_manager.env, max_timesteps_this_episode, deterministic=False, render=False)
+
+
+    # def sample_episode(self, env, max_timesteps_this_episode, deterministic, render, record_payoffs=True, record_bids=False):  # record_bids will be informed by the env_manager based on the env_type
+    #     episode_info = self.exploration_sampler.sample_episode(env, self.organism, max_timesteps_this_episode, deterministic, render, record_payoffs, record_bids)
+    #     return episode_info
+
+            
+            ################################################################
 
             all_returns.append(episode_info['episode_stats']['returns'])
             all_moves.append(episode_info['episode_stats']['moves'])
             num_steps += (episode_info['episode_stats']['moves'])
             num_episodes += 1
         print('num_steps collected: {}'.format(num_steps))
-
 
         stats = dict(
             mean_return=np.mean(all_returns),
@@ -184,7 +200,7 @@ class Experiment():
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)
 
-            epoch_info = self.collect_samples(epoch, deterministic=False)
+            epoch_info = self.collect_samples(epoch)
             
             if epoch % self.args.log_every == 0:
                 self.log(epoch, epoch_info)
@@ -198,10 +214,6 @@ class Experiment():
             self.update(epoch)
 
         self.finish_training()
-
-
-
-
 
 
     def finish_training(self):
@@ -227,23 +239,31 @@ class Experiment():
         self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
             epoch, stats['mean_return'], stats['min_return'], stats['max_return'], self.run_avg.get_value('reward')))
 
-    def test(self, epoch, env_manager, num_test, visualize):
+    def test(self, epoch, env_manager, num_test):
         returns = []
         moves = []
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_info = self.sample_episode(
+
+                ################################################################
+                episode_info = self.evaluation_sampler.sample_episode(
                     env=env_manager.env, 
-                    max_timesteps_this_episode=env_manager.max_episode_length,
-                    deterministic=False, 
-                    render=visualize)
+                    organism=self.organism,
+                    max_timesteps_this_episode=env_manager.max_episode_length)
+
+                # episode_info = self.sample_episode(env_manager.env, env_manager.max_episode_length, deterministic=False, render=True)
+                ################################################################
+
                 ret = episode_info['episode_stats']['returns']
                 mov = episode_info['episode_stats']['moves']
-                if i == 0 and visualize and self.organism.discrete:
+
+                if i == 0 and self.organism.discrete:
                     bids = self.get_bids_for_episode(episode_info)
                     env_manager.save_video(epoch, i, bids, ret, episode_info['organism_episode_data'])
             returns.append(ret)
             moves.append(mov)
+
+
         returns = np.array(returns)
         moves = np.array(moves)
         stats = {}
@@ -298,7 +318,7 @@ class Experiment():
     def eval(self, epoch):
         multi_task_stats = {} 
         for env_manager in self.task_progression[self.epoch]['test']:
-            stats = self.test(epoch, env_manager, num_test=self.args.num_test, visualize=True)
+            stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             self.logger.pprintf(stats)
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)
