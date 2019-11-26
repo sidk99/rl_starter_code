@@ -5,7 +5,7 @@ import torch
 from starter_code.agent import Agent
 from starter_code.configs import process_config, env_manager_switch
 from starter_code.env_config import EnvRegistry as ER
-from starter_code.experiment import Experiment
+from starter_code.experiment import Experiment, Sampler
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from starter_code.multitask import construct_task_progression, default_task_prog_spec, task_prog_spec_multi
@@ -73,7 +73,19 @@ class BaseLauncher:
         task_progression = cls.create_task_progression(logger, args)
         organism = cls.create_organism(device, task_progression, args)
         rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-        experiment = Experiment(organism, task_progression, rl_alg, logger, device, args)
+        exploration_sampler = Sampler(
+            deterministic=False, render=False, device=device)
+        evaluation_sampler = Sampler(
+            deterministic=False, render=True, device=device)
+        experiment = Experiment(
+            organism, 
+            task_progression, 
+            rl_alg, 
+            exploration_sampler, 
+            evaluation_sampler, 
+            logger, 
+            device, 
+            args)
         experiment.train(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':

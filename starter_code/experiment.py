@@ -100,7 +100,7 @@ class Experiment():
         args.log_every
         args.num_test
     """
-    def __init__(self, agent, task_progression, rl_alg, logger, device, args):
+    def __init__(self, agent, task_progression, rl_alg, exploration_sampler, evaluation_sampler, logger, device, args):
         self.organism = agent
         self.task_progression = task_progression
         self.rl_alg = rl_alg
@@ -111,10 +111,8 @@ class Experiment():
         self.run_avg = RunningAverage()
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_moves', 'max_moves', 'mean_moves', 'std_moves']
-        self.exploration_sampler = Sampler(
-            deterministic=False, render=False, device=device)
-        self.evaluation_sampler = Sampler(
-            deterministic=False, render=True, device=device)
+        self.exploration_sampler = exploration_sampler
+        self.evaluation_sampler = evaluation_sampler
 
     def get_bids_for_episode(self, episode_info):
         episode_bids = defaultdict(lambda: [])
@@ -124,10 +122,10 @@ class Experiment():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    ################################################################
-    def sample_episode(self, env, max_timesteps_this_episode, deterministic, render):
-        raise NotImplementedError
-    ################################################################
+    # ################################################################
+    # def sample_episode(self, env, max_timesteps_this_episode, deterministic, render):
+    #     raise NotImplementedError
+    # ################################################################
 
 
     def collect_samples(self, epoch):
@@ -150,21 +148,11 @@ class Experiment():
 
             print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, num_episodes, max_timesteps_this_episode, train_env_manager.max_episode_length))
 
-
             ################################################################
             episode_info = self.exploration_sampler.sample_episode(
                 env=train_env_manager.env, 
                 organism=self.organism,
                 max_timesteps_this_episode=max_timesteps_this_episode)
-
-            # episode_info = self.sample_episode(train_env_manager.env, max_timesteps_this_episode, deterministic=False, render=False)
-
-
-    # def sample_episode(self, env, max_timesteps_this_episode, deterministic, render, record_payoffs=True, record_bids=False):  # record_bids will be informed by the env_manager based on the env_type
-    #     episode_info = self.exploration_sampler.sample_episode(env, self.organism, max_timesteps_this_episode, deterministic, render, record_payoffs, record_bids)
-    #     return episode_info
-
-            
             ################################################################
 
             all_returns.append(episode_info['episode_stats']['returns'])
@@ -250,8 +238,6 @@ class Experiment():
                     env=env_manager.env, 
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
-
-                # episode_info = self.sample_episode(env_manager.env, env_manager.max_episode_length, deterministic=False, render=True)
                 ################################################################
 
                 ret = episode_info['episode_stats']['returns']
