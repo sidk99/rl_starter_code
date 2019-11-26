@@ -11,13 +11,13 @@ from starter_code.utils import AttrDict
     local args
 """
 
-def rlalg_config_switch(alg_name):
-    rlalg_configs = dict(
-        ppo = ppo_config,
-        a2c = a2c_config,
-        vpg = vpg_config,
-    )
-    return rlalg_configs[alg_name]
+# def rlalg_config_switch(alg_name):
+#     rlalg_configs = dict(
+#         ppo = ppo_config,
+#         a2c = a2c_config,
+#         vpg = vpg_config,
+#     )
+#     return rlalg_configs[alg_name]
 
 def rlalg_config(args):
     rlalg_configs = dict(
