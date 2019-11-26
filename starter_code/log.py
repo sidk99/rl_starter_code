@@ -382,8 +382,7 @@ class VisualEnvManager(EnvManager):
             for fname in fnames:
                 os.remove(fname)
 
-    def save_video(self, epoch, test_example, bids, ret, society_episode_data):
-        frames = [e['frame'] for e in society_episode_data]
+    def save_video(self, epoch, test_example, bids, ret, frames):
         for i, frame in tqdm(enumerate(frames)):
             fname = '{}_e{}_n{}_t{}.png'.format(self.env_name, epoch, test_example, i)
             agent_ids = sorted(bids.keys())

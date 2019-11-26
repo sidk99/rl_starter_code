@@ -1,6 +1,7 @@
 import copy
 import math
 import numpy as np
+import torch
 from operator import itemgetter
 
 def to_device(device, *args):
@@ -134,8 +135,15 @@ def flatten_dictionary_values_by_key(list_of_dicts):
     pass
 
 
+
 class AttrDict(dict):
   __getattr__ = dict.__getitem__
   __setattr__ = dict.__setitem__    
 
+
+def from_np(np_array, device):
+    return torch.tensor([np_array]).float().to(device)
+
+def to_np(tensor):
+    return tensor.detach().cpu().numpy()
 
