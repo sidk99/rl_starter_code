@@ -1,6 +1,9 @@
 import cv2
 from collections import defaultdict
 import gtimer as gt
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import sys
@@ -208,7 +211,13 @@ class Experiment():
         # env.close()
         # plt.close()
         # print(gt.report())
-        pass
+        self.logger.printf(self.organism.get_summary())
+        self.clean()
+
+    def clean(self):
+        plt.close()
+        if self.args.debug:
+            self.logger.remove_logdir()
 
 
     def update(self, epoch):

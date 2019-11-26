@@ -117,6 +117,9 @@ class Agent(nn.Module):
             self.policy_optimizer.load_state_dict(agent_state_dict['policy_optimizer'])
             self.value_optimizerl.load_state_dict(agent_state_dict['value_optimizer'])
 
+    def get_summary(self):
+        return None
+
 
 class SACAgent(nn.Module):
     def __init__(self, policy, qf1, qf2, target_qf1, target_qf2, replay_buffer, args):
