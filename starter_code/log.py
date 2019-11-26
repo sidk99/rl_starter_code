@@ -403,7 +403,7 @@ class GymEnvManager(VisualEnvManager):
 class MinigridEnvManager(VisualEnvManager):
     def __init__(self, env_name, env_registry, args):
         super(MinigridEnvManager, self).__init__(env_name, env_registry, args)
-        full_state_dim = self.env.observation_space.spaces['image'].shape  # (H, W, C)
+        full_state_dim = self.env.observation_space.shape  # (H, W, C)
         self.state_dim = full_state_dim[:-1]  # (H, W)
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
