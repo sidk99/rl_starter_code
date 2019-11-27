@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import gtimer as gt
 import ipdb
 import matplotlib
@@ -14,11 +14,21 @@ from tqdm import tqdm
 from log import RunningAverage
 from starter_code.sampler import Sampler
 import starter_code.utils as u
-from starter_code.utils import AttrDict
+from starter_code.utils import AttrDict, is_float
 
 def analyze_size(obj, obj_name):
     obj_pickle = pickle.dumps(obj)
     print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
+
+def log_string(ordered_dict):
+    s = ''
+    for i, (k, v) in enumerate(ordered_dict.items()):
+        delim = '' if i == 0 else ' | '
+        if is_float(v):
+            s += delim + '{}: {:.2f}'.format(k, v)
+        else:
+            s += delim + '{}: {}'.format(k, v)
+    return s
 
 class Experiment():
     """
@@ -36,8 +46,9 @@ class Experiment():
         self.args = args
         self.epoch = 0
         self.run_avg = RunningAverage()
+        self.run_avg.update_variable('steps', 0)
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
-                       'min_moves', 'max_moves', 'mean_moves', 'std_moves']
+                       'min_steps', 'max_steps', 'mean_steps', 'std_steps']
         self.exploration_sampler = exploration_sampler
         self.evaluation_sampler = evaluation_sampler
 
@@ -79,15 +90,16 @@ class Experiment():
             all_returns.append(episode_info.returns)
             all_moves.append(episode_info.moves)
             num_steps += (episode_info.moves)
-
             num_episodes += 1
+
         assert np.sum(all_moves) == num_steps
         print('num_steps collected: {}'.format(np.sum(all_moves)))
 
         stats = self.bundle_batch_stats(num_episodes, all_returns, all_moves)
 
-        self.run_avg.update_variable('reward', stats['mean_return'])
-
+        self.run_avg.update_variable('mean_return', stats['mean_return'])
+        self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
+        
         print('num_steps: {} num_episodes: {}'.format(np.sum(all_moves), num_episodes))
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
         return stats
@@ -140,8 +152,15 @@ class Experiment():
         self.organism.clear_buffer()
 
     def log(self, epoch, epoch_stats):
-        self.logger.printf('Epoch {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
-            epoch, epoch_stats['mean_return'], epoch_stats['min_return'], epoch_stats['max_return'], self.run_avg.get_value('reward')))
+        self.logger.printf(log_string(OrderedDict({
+            'epoch': epoch,
+            'env steps this batch': epoch_stats['total_steps'],
+            'env steps taken': self.run_avg.get_last_value('steps'),
+            'avg return': epoch_stats['mean_return'],
+            'min return': epoch_stats['min_return'],
+            'max return': epoch_stats['max_return'],
+            'running mean return': self.run_avg.get_value('mean_return')
+            })))
 
     def test(self, epoch, env_manager, num_test):
         returns = []
@@ -168,7 +187,7 @@ class Experiment():
     def bundle_batch_stats(self, num_episodes, returns, moves):
         stats = dict(num_episodes=num_episodes)
         stats = dict({**stats, **self.log_metrics(np.array(returns), 'return')})
-        stats = dict({**stats, **self.log_metrics(np.array(moves), 'moves')})
+        stats = dict({**stats, **self.log_metrics(np.array(moves), 'steps')})
         return stats
 
     def log_metrics(self, data, label):
@@ -196,8 +215,12 @@ class Experiment():
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
 
     def plot_metrics(self, env_manager, name):
+        # env_manager.plot(
+        #     var_pairs=[(('epoch', k)) for k in self.metrics],
+        #     expname=name,
+        #     pfunc=self.logger.printf)
         env_manager.plot(
-            var_pairs=[(('epoch', k)) for k in self.metrics],
+            var_pairs=[(('steps', k)) for k in self.metrics],
             expname=name,
             pfunc=self.logger.printf)
 
@@ -213,6 +236,9 @@ class Experiment():
 
     def visualize(self, env_manager, epoch, stats, name):
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
+        # this assumes that you save every whole number of epochs
+        env_manager.update_variable(
+            name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
         self.update_metrics(env_manager, epoch, stats)
         self.plot_metrics(env_manager, name)
 

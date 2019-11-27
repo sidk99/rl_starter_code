@@ -220,16 +220,17 @@ class MultiBaseLogger(BaseLogger):
 
     def initialize(self):
         self.add_variable('epoch')
+        self.add_variable('steps')
 
         self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('max_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
-        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('min_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
     def get_state_dict(self):
         return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}
@@ -286,6 +287,7 @@ class EnvManager(EnvLogger):
 
     def initialize(self):
         self.add_variable('epoch')
+        self.add_variable('steps')
 
 class TabularEnvManager(EnvManager):
     def __init__(self, env_name, env_registry, args):
@@ -307,13 +309,13 @@ class TabularEnvManager(EnvManager):
             self.add_variable('std_return_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
 
-            self.add_variable('min_moves_s{}'.format(state), incl_run_avg=True, 
+            self.add_variable('min_steps_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
-            self.add_variable('max_moves_s{}'.format(state), incl_run_avg=True, 
+            self.add_variable('max_steps_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
-            self.add_variable('mean_moves_s{}'.format(state), incl_run_avg=True, 
+            self.add_variable('mean_steps_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
-            self.add_variable('std_moves_s{}'.format(state), incl_run_avg=True, 
+            self.add_variable('std_steps_s{}'.format(state), incl_run_avg=True, 
                 metric={'value': np.inf, 'cmp': operator.le})
 
         self.add_variable('min_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
@@ -321,10 +323,10 @@ class TabularEnvManager(EnvManager):
         self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
-        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('min_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
 
 class VisualEnvManager(EnvManager):
@@ -338,10 +340,10 @@ class VisualEnvManager(EnvManager):
         self.add_variable('mean_return', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
         self.add_variable('std_return', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
-        self.add_variable('min_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('max_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('mean_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
-        self.add_variable('std_moves', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('min_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('max_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('mean_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('std_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
     def save_image(self, fname, i, ret, frame, bids_t):
         fig = plt.figure()

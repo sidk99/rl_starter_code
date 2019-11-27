@@ -147,3 +147,6 @@ def from_np(np_array, device):
 def to_np(tensor):
     return tensor.detach().cpu().numpy()
 
+def is_float(n):
+    return isinstance(n, float) or isinstance(n, np.float64) or isinstance(n, np.float32)
+
