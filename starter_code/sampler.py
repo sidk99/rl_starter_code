@@ -27,8 +27,6 @@ class AgentStepInfo(BasicStepInfo):
         self.action = self.action_dict.stored_action
         self.action_dist = self.action_dict.action_dist
 
-
-
 class Sampler():
     """
         one sampler for exploration
@@ -58,21 +56,15 @@ class Sampler():
             e.frame = eu.render(env=env, scale=0.25)
         return next_state, done, e
 
-    def begin_episode(self, env):
+    def begin_episode(self):
         self.episode_data = []
-        state = env.reset()
+        state = self.env.reset()
         return state
 
-    def run_episode(self):
-        pass
-
-    def finish_episode(self, organism):
-        # 1. organism record_episode_data
-        # 2. bundle stats (I'm not even sure we need this)
-
+    def finish_episode(self):
         for e in self.episode_data:
-            organism.store_transition(e)
-
+            self.organism.store_transition(e)
+        ##########################################
         episode_info = AttrDict(
             returns=sum([e.reward for e in self.episode_data]),
             moves=len(self.episode_data),
@@ -91,21 +83,27 @@ class Sampler():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_episode(self, env, organism, max_timesteps_this_episode):
-        state = self.begin_episode(env)
+    def record_episode_data(self, e):
+        self.episode_data.append(e)
 
+    def sample_episode(self, env, organism, max_timesteps_this_episode):
+        # or can set self.env and self.organism here
+        ###################################
+        # Dangerous? only if you modify them in begin_episode or finish_episode
+        self.env = env
+        self.organism = organism
+        ###################################
+        state = self.begin_episode()
         for t in range(max_timesteps_this_episode):
-            state, done, e = self.sample_timestep(
-                env, organism, state)
-            self.episode_data.append(e)
+            state, done, e = self.sample_timestep(env, organism, state)
+            self.record_episode_data(e)
             if done:
                 print('done')
                 break
         if not done:
             assert t == max_timesteps_this_episode-1 
             # save the environment state here
-
-        episode_info = self.finish_episode(organism)
+        episode_info = self.finish_episode()
         return episode_info
 
     def sample_many_episodes(self, env_manager):

@@ -66,11 +66,6 @@ class Experiment():
                 organism=self.organism,
                 max_timesteps_this_episode=max_timesteps_this_episode)
             ################################################################
-
-            # all_returns.append(episode_info.episode_stats.returns)
-            # all_moves.append(episode_info.episode_stats.moves)
-            # num_steps += (episode_info.episode_stats.moves)
-
             all_returns.append(episode_info.returns)
             all_moves.append(episode_info.moves)
             num_steps += (episode_info.moves)
