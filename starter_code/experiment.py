@@ -215,10 +215,6 @@ class Experiment():
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
 
     def plot_metrics(self, env_manager, name):
-        # env_manager.plot(
-        #     var_pairs=[(('epoch', k)) for k in self.metrics],
-        #     expname=name,
-        #     pfunc=self.logger.printf)
         env_manager.plot(
             var_pairs=[(('steps', k)) for k in self.metrics],
             expname=name,
