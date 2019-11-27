@@ -3,19 +3,6 @@ from collections import namedtuple
 # Taken from
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
 
-# Transition = namedtuple('Transition', ('state', 'action', 'logprob', 'mask', 'next_state', 'reward', 'value'))
-# SimpleTransition = namedtuple('SimpleTransition', ('state', 'action', 'logprob', 'mask','reward', 'value'))
-# SimplerTransition = namedtuple('SimplerTransition', ('state', 'action', 'mask', 'reward'))
-# InputOutput = namedtuple('InputOutput', ('loss'))
-# RNTransition = namedtuple('StepTransition', ('state', 'action', 'logprob', 'mask', 'reward', 'value', 'step', 'task'))
-# BanditTransition = namedtuple('BanditTransition', ('state', 'action', 'logprob', 'reward'))
-# SimpleBanditTransition = namedtuple('SimpleBanditTransition', ('state', 'action', 'reward'))
-
-# # probably what we need
-# SimpleMaskedBanditTransition = namedtuple('SimpleMaskedBanditTransition', ('state', 'action', 'mask', 'reward'))
-# SimplerQTransition = namedtuple('SimplerQTransition', ('state', 'action', 'mask', 'next_state', 'reward'))
-
-
 class Memory(object):
     def __init__(self, element):
         self.memory = []
@@ -25,27 +12,6 @@ class Memory(object):
             self.element = namedtuple('OnPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
         else:
             assert False
-
-        # if element == 'transition':
-        #     self.element = Transition
-        # elif element == 'simpletransition':
-        #     self.element = SimpleTransition
-        # elif element == 'simplertransition':
-        #     self.element = SimplerTransition
-        # elif element == 'simplerqtransition':
-        #     self.element = SimplerQTransition
-        # elif element == 'inputoutput':
-        #     self.element = InputOutput
-        # elif element == 'rntransition':
-        #     self.element = RNTransition
-        # elif element == 'bandittransition':
-        #     self.element = BanditTransition
-        # elif element == 'simplebandittransition':
-        #     self.element = SimpleBanditTransition
-        # elif element == 'simplemaskedbandittransition':
-        #     self.element = SimpleMaskedBanditTransition
-        # else:
-        #     assert False
 
     def push(self, **kwargs):
         """Saves a transition.""" 
