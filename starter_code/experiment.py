@@ -11,8 +11,8 @@ import time
 import torch
 from tqdm import tqdm
 
-from log import RunningAverage
-from starter_code.sampler import Sampler
+from starter_code.log import RunningAverage
+from starter_code.sampler import Sampler, AgentStepInfo
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
 
@@ -30,6 +30,72 @@ def log_string(ordered_dict):
             s += delim + '{}: {}'.format(k, v)
     return s
 
+# def foo(self):
+#     my_array = []
+#     for i in range(loop):
+#         x = bar()
+#         my_array.append(x)
+#     stats = compute_stats(my_array)
+#     return stats
+
+# the purpose is that this is just a big fat datastructure that you can subclass for your needs
+class Compound_RL_Stats:
+    def __init__(self):
+        self.reset()
+
+    # initialize
+    def reset(self):
+        self.data = AttrDict(
+            returns=[],
+            steps=[],
+            episode_infos=[])
+
+    # update
+    def append(self, episode_info):
+        self.data.returns.append(episode_info.returns)
+        self.data.steps.append(episode_info.moves)
+        self.data.episode_infos.append(episode_info)
+
+    # query
+    def bundle_batch_stats(self):
+        stats = dict(num_episodes=len(self.data.steps))
+        stats = dict({**stats, **self.log_metrics(np.array(self.data.returns), 'return')})
+        stats = dict({**stats, **self.log_metrics(np.array(self.data.steps), 'steps')})
+        # stats['agent_episode_data'] = self.data.episode_infos[-1].agent_episode_data
+        # stats['organism_episode_data'] = self.data.episode_infos[-1].organism_episode_data
+        return stats
+
+    def __len__(self):
+        return len(self.data.steps)
+
+    def log_metrics(self, data, label):
+        """
+            input
+                data would be a numpy array
+                label would be the name for the data
+            output
+                {'label': data, 
+                 'mean_label': , 'std_label': , 'min_labe': , 'max_label'}
+        """
+        labeler = lambda cmp: '{}_{}'.format(cmp, label)
+        stats = {}
+        stats[label] = data
+        stats[labeler('mean')] = np.mean(data)
+        stats[labeler('std')] = np.std(data)
+        stats[labeler('min')] = np.min(data)
+        stats[labeler('max')] = np.max(data)
+        stats[labeler('total')] = np.sum(data)
+        return stats
+
+
+
+# what's the purpose? what's the scope?
+# the purpose: for data collection during training (what about testing?)
+# the scope is a single batch of collected samples. You overwrite the data every time you collect a new batch
+class Centralized_RL_Stats(Compound_RL_Stats):
+    def __init__(self):
+        super(Centralized_RL_Stats, self).__init__()
+
 class Experiment():
     """
         args.eval_every
@@ -37,7 +103,7 @@ class Experiment():
         args.log_every
         args.num_test
     """
-    def __init__(self, agent, task_progression, rl_alg, exploration_sampler, evaluation_sampler, logger, device, args):
+    def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         self.organism = agent
         self.task_progression = task_progression
         self.rl_alg = rl_alg
@@ -49,18 +115,6 @@ class Experiment():
         self.run_avg.update_variable('steps', 0)
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_steps', 'max_steps', 'mean_steps', 'std_steps']
-        self.exploration_sampler = exploration_sampler
-        self.evaluation_sampler = evaluation_sampler
-
-
-    # def foo(self):
-    #     my_array = []
-    #     for i in range(loop):
-    #         x = bar()
-    #         my_array.append(x)
-    #     stats = compute_stats(my_array)
-    #     return stats
-
 
     def collect_samples(self, epoch):
         """
@@ -68,9 +122,9 @@ class Experiment():
         """
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         num_steps = 0
-        num_episodes = 0
-        all_returns = []
-        all_moves = []
+        stats_collector = self.stats_collector_builder()#Centralized_RL_Stats()
+        # reset the data structure here? At least this is how things have been going anyways
+        # yeeah this would just contain data from the current batch
 
         while num_steps < self.rl_alg.num_samples_before_update:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
@@ -79,28 +133,26 @@ class Experiment():
                 self.rl_alg.num_samples_before_update - num_steps,
                 train_env_manager.max_episode_length)
 
-            print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, num_episodes, max_timesteps_this_episode, train_env_manager.max_episode_length))
+            print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, len(stats_collector), max_timesteps_this_episode, train_env_manager.max_episode_length))
 
             ################################################################
             episode_info = self.exploration_sampler.sample_episode(
                 env=train_env_manager.env, 
                 organism=self.organism,
                 max_timesteps_this_episode=max_timesteps_this_episode)
+
             ################################################################
-            all_returns.append(episode_info.returns)
-            all_moves.append(episode_info.moves)
+            stats_collector.append(episode_info)
             num_steps += (episode_info.moves)
-            num_episodes += 1
 
-        assert np.sum(all_moves) == num_steps
-        print('num_steps collected: {}'.format(np.sum(all_moves)))
+        print('num_steps collected: {}'.format(num_steps))
 
-        stats = self.bundle_batch_stats(num_episodes, all_returns, all_moves)
+        stats = stats_collector.bundle_batch_stats()
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
-        
-        print('num_steps: {} num_episodes: {}'.format(np.sum(all_moves), num_episodes))
+
+        print('num_steps: {} num_episodes: {}'.format(num_steps, len(stats_collector)))
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
         return stats
 
@@ -163,29 +215,23 @@ class Experiment():
             })))
 
     def test(self, epoch, env_manager, num_test):
-        returns = []
-        moves = []
+        stats_collector = self.stats_collector_builder()#Centralized_RL_Stats()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-
                 ################################################################
                 episode_info = self.evaluation_sampler.sample_episode(
                     env=env_manager.env, 
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
                 ################################################################
-
                 if i == 0 and self.organism.discrete:
                     env_manager.save_video(epoch, i, episode_info.bids, episode_info.returns, episode_info.frames)
-
-            returns.append(episode_info.returns)
-            moves.append(episode_info.moves)
-
-        stats = self.bundle_batch_stats(num_test, returns, moves)
+            stats_collector.append(episode_info)
+        stats = stats_collector.bundle_batch_stats()
         return stats
 
-    def bundle_batch_stats(self, num_episodes, returns, moves):
-        stats = dict(num_episodes=num_episodes)
+    def bundle_batch_stats(self, returns, moves):
+        stats = dict(num_episodes=len(moves))
         stats = dict({**stats, **self.log_metrics(np.array(returns), 'return')})
         stats = dict({**stats, **self.log_metrics(np.array(moves), 'steps')})
         return stats
@@ -226,9 +272,11 @@ class Experiment():
             {'args': self.args,
              'epoch': epoch,
              'logger': self.logger.get_state_dict(),
-             'experiment': stats,
+             # 'experiment': stats,
+             'mean_return': stats['mean_return'],  # note I'm not saving the entire stats dict anymore!
              'organism': self.organism.get_state_dict()},
              self.logger.printf)
+
 
     def visualize(self, env_manager, epoch, stats, name):
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
@@ -250,4 +298,11 @@ class Experiment():
         return multi_task_stats
 
 
-
+class CentralizedExperiment(Experiment):
+    def __init__(self, agent, task_progression, rl_alg, logger, device, args):
+        super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
+        self.exploration_sampler = Sampler(
+            step_info=AgentStepInfo, deterministic=False, render=False, device=device)
+        self.evaluation_sampler = Sampler(
+            step_info=AgentStepInfo, deterministic=False, render=True, device=device)
+        self.stats_collector_builder = Centralized_RL_Stats

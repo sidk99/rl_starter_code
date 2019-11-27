@@ -5,7 +5,7 @@ import torch
 from starter_code.agent import Agent
 from starter_code.configs import process_config, env_manager_switch
 from starter_code.env_config import EnvRegistry as ER
-from starter_code.experiment import Experiment
+from starter_code.experiment import CentralizedExperiment
 from starter_code.sampler import Sampler, AgentStepInfo
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
@@ -63,7 +63,7 @@ class BaseLauncher:
             policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
             policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
             critic = ValueFn(state_dim=task_progression.state_dim)
-        replay_buffer = OnPolicyMemory(element='simplertransition')
+        replay_buffer = OnPolicyMemory()
         agent = Agent(policy, critic, replay_buffer, args).to(device)
         return agent
 
@@ -74,19 +74,13 @@ class BaseLauncher:
         task_progression = cls.create_task_progression(logger, args)
         organism = cls.create_organism(device, task_progression, args)
         rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-        exploration_sampler = Sampler(
-            step_info=AgentStepInfo, deterministic=False, render=False, device=device)
-        evaluation_sampler = Sampler(
-            step_info=AgentStepInfo, deterministic=False, render=True, device=device)
-        experiment = Experiment(
-            organism, 
-            task_progression, 
-            rl_alg, 
-            exploration_sampler, 
-            evaluation_sampler, 
-            logger, 
-            device, 
-            args)
+        experiment = CentralizedExperiment(
+            agent=organism, 
+            task_progression=task_progression, 
+            rl_alg=rl_alg,
+            logger=logger, 
+            device=device, 
+            args=args)
         experiment.train(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':

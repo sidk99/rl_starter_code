@@ -97,10 +97,10 @@ class Agent(nn.Module):
 
     def store_transition(self, transition):
         self.replay_buffer.push(
-            transition.state,
-            transition.action,
-            transition.mask,
-            transition.reward,
+            state=transition.state,
+            action=transition.action,
+            mask=transition.mask,
+            reward=transition.reward,
             )
 
     def get_state_dict(self):

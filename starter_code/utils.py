@@ -150,3 +150,11 @@ def to_np(tensor):
 def is_float(n):
     return isinstance(n, float) or isinstance(n, np.float64) or isinstance(n, np.float32)
 
+
+# create a switching data structure thatyou can use to index
+
+
+
+
+
+

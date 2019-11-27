@@ -86,7 +86,8 @@ class Saver(object):
 
     def save(self, epoch, state_dict, pfunc):
         ckpt_id = epoch
-        ckpt_return = float(state_dict['experiment']['mean_return'])
+        # ckpt_return = float(state_dict['experiment']['mean_return'])
+        ckpt_return = float(state_dict['mean_return'])
         ckpt_name = self.create_save_file(epoch)
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
