@@ -14,6 +14,7 @@ from tqdm import tqdm
 from log import RunningAverage
 from starter_code.sampler import Sampler
 import starter_code.utils as u
+from starter_code.utils import AttrDict
 
 def analyze_size(obj, obj_name):
     obj_pickle = pickle.dumps(obj)
@@ -40,6 +41,16 @@ class Experiment():
         self.exploration_sampler = exploration_sampler
         self.evaluation_sampler = evaluation_sampler
 
+
+    # def foo(self):
+    #     my_array = []
+    #     for i in range(loop):
+    #         x = bar()
+    #         my_array.append(x)
+    #     stats = compute_stats(my_array)
+    #     return stats
+
+
     def collect_samples(self, epoch):
         """
             Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
@@ -53,7 +64,6 @@ class Experiment():
         while num_steps < self.rl_alg.num_samples_before_update:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
 
-            # if it makes it up here, that means max_timesteps_this_episode >= 
             max_timesteps_this_episode = min(
                 self.rl_alg.num_samples_before_update - num_steps,
                 train_env_manager.max_episode_length)
@@ -71,27 +81,16 @@ class Experiment():
             num_steps += (episode_info.moves)
 
             num_episodes += 1
-        print('num_steps collected: {}'.format(num_steps))
+        assert np.sum(all_moves) == num_steps
+        print('num_steps collected: {}'.format(np.sum(all_moves)))
 
-        stats = dict(
-            mean_return=np.mean(all_returns),
-            min_return=np.min(all_returns),
-            max_return=np.max(all_returns),
-            std_return=np.std(all_returns),
-            total_return=np.sum(all_returns),
-            mean_moves=np.mean(all_moves),
-            std_moves=np.std(all_moves),
-            min_moves=np.min(all_moves),
-            max_moves=np.max(all_moves),
-            num_episodes=num_episodes,
-            total_moves=num_steps,
-            )
+        stats = self.bundle_batch_stats(num_episodes, all_returns, all_moves)
+
         self.run_avg.update_variable('reward', stats['mean_return'])
 
-        episode_info['epoch_stats'] = stats
-        print('num_steps: {} num_episodes: {}'.format(num_steps, num_episodes))
+        print('num_steps: {} num_episodes: {}'.format(np.sum(all_moves), num_episodes))
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
-        return episode_info
+        return stats
 
     def train(self, max_epochs):
         # populate replay buffer before training
@@ -100,16 +99,16 @@ class Experiment():
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)
 
-            epoch_info = self.collect_samples(epoch)
+            epoch_stats = self.collect_samples(epoch)
             
             if epoch % self.args.log_every == 0:
-                self.log(epoch, epoch_info)
+                self.log(epoch, epoch_stats)
 
             if epoch % self.args.visualize_every == 0:
-                self.visualize(self.logger, epoch, epoch_info['epoch_stats'], self.logger.expname)
+                self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
             
             if epoch % self.args.save_every == 0:
-                self.save(self.logger, epoch, epoch_info['epoch_stats'])
+                self.save(self.logger, epoch, epoch_stats)
 
             self.update(epoch)
 
@@ -140,10 +139,9 @@ class Experiment():
         gt.stamp('Epoch {}: After Update'.format(epoch))
         self.organism.clear_buffer()
 
-    def log(self, epoch, epoch_info):
-        stats = epoch_info['epoch_stats']
-        self.logger.printf('Episode {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
-            epoch, stats['mean_return'], stats['min_return'], stats['max_return'], self.run_avg.get_value('reward')))
+    def log(self, epoch, epoch_stats):
+        self.logger.printf('Epoch {}\tAvg Return: {:.2f}\tMin Return: {:.2f}\tMax Return: {:.2f}\tRunning Return: {:.2f}'.format(
+            epoch, epoch_stats['mean_return'], epoch_stats['min_return'], epoch_stats['max_return'], self.run_avg.get_value('reward')))
 
     def test(self, epoch, env_manager, num_test):
         returns = []
@@ -164,11 +162,13 @@ class Experiment():
             returns.append(episode_info.returns)
             moves.append(episode_info.moves)
 
-        returns = np.array(returns)
-        moves = np.array(moves)
-        stats = {}
-        stats = {**stats, **self.log_metrics(np.array(returns), 'return')}
-        stats = {**stats, **self.log_metrics(np.array(moves), 'moves')}
+        stats = self.bundle_batch_stats(num_test, returns, moves)
+        return stats
+
+    def bundle_batch_stats(self, num_episodes, returns, moves):
+        stats = dict(num_episodes=num_episodes)
+        stats = dict({**stats, **self.log_metrics(np.array(returns), 'return')})
+        stats = dict({**stats, **self.log_metrics(np.array(moves), 'moves')})
         return stats
 
     def log_metrics(self, data, label):
@@ -187,6 +187,7 @@ class Experiment():
         stats[labeler('std')] = np.std(data)
         stats[labeler('min')] = np.min(data)
         stats[labeler('max')] = np.max(data)
+        stats[labeler('total')] = np.sum(data)
         return stats
 
     def update_metrics(self, env_manager, epoch, stats):
