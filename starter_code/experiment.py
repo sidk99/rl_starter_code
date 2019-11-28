@@ -12,9 +12,17 @@ import torch
 from tqdm import tqdm
 
 from starter_code.log import RunningAverage
-from starter_code.sampler import Sampler, AgentStepInfo
+from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
+
+
+
+"""
+* Algorithm level (epoch, episode, learning rate, etc)
+* Monitoring level (wall clock time, etc)
+* MDP level (returns, etc)
+"""
 
 def analyze_size(obj, obj_name):
     obj_pickle = pickle.dumps(obj)
@@ -38,63 +46,6 @@ def log_string(ordered_dict):
 #     stats = compute_stats(my_array)
 #     return stats
 
-# the purpose is that this is just a big fat datastructure that you can subclass for your needs
-class Compound_RL_Stats:
-    def __init__(self):
-        self.reset()
-
-    # initialize
-    def reset(self):
-        self.data = AttrDict(
-            returns=[],
-            steps=[],
-            episode_infos=[])
-
-    # update
-    def append(self, episode_info):
-        self.data.returns.append(episode_info.returns)
-        self.data.steps.append(episode_info.moves)
-        self.data.episode_infos.append(episode_info)
-
-    # query
-    def bundle_batch_stats(self):
-        stats = dict(num_episodes=len(self.data.steps))
-        stats = dict({**stats, **self.log_metrics(np.array(self.data.returns), 'return')})
-        stats = dict({**stats, **self.log_metrics(np.array(self.data.steps), 'steps')})
-        # stats['agent_episode_data'] = self.data.episode_infos[-1].agent_episode_data
-        # stats['organism_episode_data'] = self.data.episode_infos[-1].organism_episode_data
-        return stats
-
-    def __len__(self):
-        return len(self.data.steps)
-
-    def log_metrics(self, data, label):
-        """
-            input
-                data would be a numpy array
-                label would be the name for the data
-            output
-                {'label': data, 
-                 'mean_label': , 'std_label': , 'min_labe': , 'max_label'}
-        """
-        labeler = lambda cmp: '{}_{}'.format(cmp, label)
-        stats = {}
-        stats[label] = data
-        stats[labeler('mean')] = np.mean(data)
-        stats[labeler('std')] = np.std(data)
-        stats[labeler('min')] = np.min(data)
-        stats[labeler('max')] = np.max(data)
-        stats[labeler('total')] = np.sum(data)
-        return stats
-
-
-
-# what's the purpose? what's the scope?
-# the purpose: for data collection during training (what about testing?)
-# the scope is a single batch of collected samples. You overwrite the data every time you collect a new batch
-class Centralized_RL_Stats(Compound_RL_Stats):
-    def __init__(self):
-        super(Centralized_RL_Stats, self).__init__()
 
 class Experiment():
     """
@@ -133,7 +84,7 @@ class Experiment():
                 self.rl_alg.num_samples_before_update - num_steps,
                 train_env_manager.max_episode_length)
 
-            print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, len(stats_collector), max_timesteps_this_episode, train_env_manager.max_episode_length))
+            # print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, len(stats_collector), max_timesteps_this_episode, train_env_manager.max_episode_length))
 
             ################################################################
             episode_info = self.exploration_sampler.sample_episode(
@@ -145,21 +96,21 @@ class Experiment():
             stats_collector.append(episode_info)
             num_steps += (episode_info.moves)
 
-        print('num_steps collected: {}'.format(num_steps))
+        # print('num_steps collected: {}'.format(num_steps))
 
         stats = stats_collector.bundle_batch_stats()
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
 
-        print('num_steps: {} num_episodes: {}'.format(num_steps, len(stats_collector)))
+        # print('num_steps: {} num_episodes: {}'.format(num_steps, len(stats_collector)))
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
         return stats
 
     def train(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
-            print('epoch: {}'.format(epoch))
+            # print('epoch: {}'.format(epoch))
             if epoch % self.args.eval_every == 0:
                 stats = self.eval(epoch=epoch)
 

@@ -1,4 +1,5 @@
 from collections import defaultdict
+import numpy as np
 import torch
 import starter_code.env_utils as eu
 from starter_code.utils import AttrDict, from_np, to_np
@@ -98,7 +99,6 @@ class Sampler():
             state, done, e = self.sample_timestep(env, organism, state)
             self.record_episode_data(e)
             if done:
-                print('done')
                 break
         if not done:
             assert t == max_timesteps_this_episode-1 
@@ -114,3 +114,60 @@ class Sampler():
 
     def load_env_state(self, env_manager):
         pass
+
+
+# the purpose is that this is just a big fat datastructure that you can subclass for your needs
+class Compound_RL_Stats:
+    def __init__(self):
+        self.reset()
+
+    # initialize
+    def reset(self):
+        self.data = AttrDict(
+            returns=[],
+            steps=[],
+            episode_infos=[])
+
+    # update
+    def append(self, episode_info):
+        self.data.returns.append(episode_info.returns)
+        self.data.steps.append(episode_info.moves)
+        self.data.episode_infos.append(episode_info)
+
+    # query
+    def bundle_batch_stats(self):
+        stats = dict(num_episodes=len(self.data.steps))
+        stats = dict({**stats, **self.log_metrics(np.array(self.data.returns), 'return')})
+        stats = dict({**stats, **self.log_metrics(np.array(self.data.steps), 'steps')})
+        return stats
+
+    def __len__(self):
+        return len(self.data.steps)
+
+    def log_metrics(self, data, label):
+        """
+            input
+                data would be a numpy array
+                label would be the name for the data
+            output
+                {'label': data, 
+                 'mean_label': , 'std_label': , 'min_labe': , 'max_label'}
+        """
+        labeler = lambda cmp: '{}_{}'.format(cmp, label)
+        stats = {}
+        stats[label] = data
+        stats[labeler('mean')] = np.mean(data)
+        stats[labeler('std')] = np.std(data)
+        stats[labeler('min')] = np.min(data)
+        stats[labeler('max')] = np.max(data)
+        stats[labeler('total')] = np.sum(data)
+        return stats
+
+
+
+# what's the purpose? what's the scope?
+# the purpose: for data collection during training (what about testing?)
+# the scope is a single batch of collected samples. You overwrite the data every time you collect a new batch
+class Centralized_RL_Stats(Compound_RL_Stats):
+    def __init__(self):
+        super(Centralized_RL_Stats, self).__init__()
