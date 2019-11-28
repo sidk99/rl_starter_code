@@ -75,7 +75,7 @@ class Experiment():
         num_steps = 0
         stats_collector = self.stats_collector_builder()#Centralized_RL_Stats()
         # reset the data structure here? At least this is how things have been going anyways
-        # yeeah this would just contain data from the current batch
+        # yeah this would just contain data from the current batch
 
         while num_steps < self.rl_alg.num_samples_before_update:
             train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
@@ -83,8 +83,6 @@ class Experiment():
             max_timesteps_this_episode = min(
                 self.rl_alg.num_samples_before_update - num_steps,
                 train_env_manager.max_episode_length)
-
-            # print('num_steps: {} num_episodes: {}, max_timesteps_this_episode: {}, max_episode_length_from_env: {}'.format(num_steps, len(stats_collector), max_timesteps_this_episode, train_env_manager.max_episode_length))
 
             ################################################################
             episode_info = self.exploration_sampler.sample_episode(
@@ -96,14 +94,11 @@ class Experiment():
             stats_collector.append(episode_info)
             num_steps += (episode_info.moves)
 
-        # print('num_steps collected: {}'.format(num_steps))
-
         stats = stats_collector.bundle_batch_stats()
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
 
-        # print('num_steps: {} num_episodes: {}'.format(num_steps, len(stats_collector)))
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
         return stats
 
@@ -166,7 +161,7 @@ class Experiment():
             })))
 
     def test(self, epoch, env_manager, num_test):
-        stats_collector = self.stats_collector_builder()#Centralized_RL_Stats()
+        stats_collector = self.stats_collector_builder()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
                 ################################################################
