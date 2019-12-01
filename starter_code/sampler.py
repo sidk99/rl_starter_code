@@ -18,6 +18,12 @@ class BasicStepInfo():
     def __setitem__(self, key, value):
         self.__dict__[key] = value
 
+    # def __getattr__(self, name):
+    #     return self.__dict__[key]
+
+    # def __setattr__(self, name, value):
+    #     self.__dict__[name] = value
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -38,8 +44,6 @@ class Sampler():
         self.render = render
         self.device = device
         self.step_info_builder = step_info
-
-        # you need something to accumulate the stats
 
     def sample_timestep(self, env, organism, state):
         state_var = from_np(state, self.device)
@@ -68,7 +72,7 @@ class Sampler():
         ##########################################
         episode_info = AttrDict(
             returns=sum([e.reward for e in self.episode_data]),
-            moves=len(self.episode_data),
+            steps=len(self.episode_data),
             )
         if self.render:
             episode_info.frames = [e.frame for e in self.episode_data]
@@ -131,7 +135,7 @@ class Compound_RL_Stats:
     # update
     def append(self, episode_info):
         self.data.returns.append(episode_info.returns)
-        self.data.steps.append(episode_info.moves)
+        self.data.steps.append(episode_info.steps)
         self.data.episode_infos.append(episode_info)
 
     # query
@@ -162,8 +166,6 @@ class Compound_RL_Stats:
         stats[labeler('max')] = np.max(data)
         stats[labeler('total')] = np.sum(data)
         return stats
-
-
 
 # what's the purpose? what's the scope?
 # the purpose: for data collection during training (what about testing?)

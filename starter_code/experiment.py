@@ -38,14 +38,6 @@ def log_string(ordered_dict):
             s += delim + '{}: {}'.format(k, v)
     return s
 
-# def foo(self):
-#     my_array = []
-#     for i in range(loop):
-#         x = bar()
-#         my_array.append(x)
-#     stats = compute_stats(my_array)
-#     return stats
-
 
 class Experiment():
     """
@@ -73,7 +65,7 @@ class Experiment():
         """
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         num_steps = 0
-        stats_collector = self.stats_collector_builder()#Centralized_RL_Stats()
+        stats_collector = self.stats_collector_builder()
         # reset the data structure here? At least this is how things have been going anyways
         # yeah this would just contain data from the current batch
 
@@ -92,7 +84,7 @@ class Experiment():
 
             ################################################################
             stats_collector.append(episode_info)
-            num_steps += (episode_info.moves)
+            num_steps += (episode_info.steps)
 
         stats = stats_collector.bundle_batch_stats()
 
@@ -107,7 +99,7 @@ class Experiment():
         for epoch in gt.timed_for(range(max_epochs)):
             # print('epoch: {}'.format(epoch))
             if epoch % self.args.eval_every == 0:
-                stats = self.eval(epoch=epoch)
+                self.eval(epoch=epoch)
 
             epoch_stats = self.collect_samples(epoch)
             
@@ -164,41 +156,16 @@ class Experiment():
         stats_collector = self.stats_collector_builder()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                ################################################################
                 episode_info = self.evaluation_sampler.sample_episode(
                     env=env_manager.env, 
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
-                ################################################################
+                ##########################################
                 if i == 0 and self.organism.discrete:
                     env_manager.save_video(epoch, i, episode_info.bids, episode_info.returns, episode_info.frames)
+                ##########################################
             stats_collector.append(episode_info)
         stats = stats_collector.bundle_batch_stats()
-        return stats
-
-    def bundle_batch_stats(self, returns, moves):
-        stats = dict(num_episodes=len(moves))
-        stats = dict({**stats, **self.log_metrics(np.array(returns), 'return')})
-        stats = dict({**stats, **self.log_metrics(np.array(moves), 'steps')})
-        return stats
-
-    def log_metrics(self, data, label):
-        """
-            input
-                data would be a numpy array
-                label would be the name for the data
-            output
-                {'label': data, 
-                 'mean_label': , 'std_label': , 'min_labe': , 'max_label'}
-        """
-        labeler = lambda cmp: '{}_{}'.format(cmp, label)
-        stats = {}
-        stats[label] = data
-        stats[labeler('mean')] = np.mean(data)
-        stats[labeler('std')] = np.std(data)
-        stats[labeler('min')] = np.min(data)
-        stats[labeler('max')] = np.max(data)
-        stats[labeler('total')] = np.sum(data)
         return stats
 
     def update_metrics(self, env_manager, epoch, stats):
@@ -218,7 +185,6 @@ class Experiment():
             {'args': self.args,
              'epoch': epoch,
              'logger': self.logger.get_state_dict(),
-             # 'experiment': stats,
              'mean_return': stats['mean_return'],  # note I'm not saving the entire stats dict anymore!
              'organism': self.organism.get_state_dict()},
              self.logger.printf)
@@ -227,21 +193,19 @@ class Experiment():
     def visualize(self, env_manager, epoch, stats, name):
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
         # this assumes that you save every whole number of epochs
-        env_manager.update_variable(
-            name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
+        env_manager.update_variable(name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
         self.update_metrics(env_manager, epoch, stats)
         self.plot_metrics(env_manager, name)
 
     def eval(self, epoch):
-        multi_task_stats = {} 
         for env_manager in self.task_progression[self.epoch]['test']:
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             self.logger.pprintf(stats)
+            # hold on - why are we saving this?
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)
             if epoch % self.args.save_every == 0:
                 self.save(env_manager, epoch, stats)
-        return multi_task_stats
 
 
 class CentralizedExperiment(Experiment):
