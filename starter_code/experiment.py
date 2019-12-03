@@ -200,7 +200,8 @@ class Experiment():
     def eval(self, epoch):
         for env_manager in self.task_progression[self.epoch]['test']:
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
-            self.logger.pprintf(stats)
+            # self.logger.pprintf(stats)
+            self.logger.pprintf({k:v for k,v in stats.items() if k not in ['agent_episode_data', 'organism_episode_data']})
             # hold on - why are we saving this?
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)

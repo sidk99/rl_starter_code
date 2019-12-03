@@ -100,6 +100,7 @@ def build_expname(args):
     args.expname += '_s{}'.format(args.seed)
     args.expname += '_plr{}'.format(args.plr)
     args.expname += '_opt{}'.format(args.opt)
+    args.expname += '_{}'.format(args.alg_name)
     if args.debug:
         args.expname += '_db'
     if hasattr(args, 'auctiontype'):

@@ -55,7 +55,7 @@ class VPG(OnPolicyRLAlg):
         return states, actions
 
     def improve(self, agent):
-        batch = agent.replay_replay_buffer.sample()
+        batch = agent.replay_buffer.sample()
         states, actions = self.unpack_batch(batch)
         log_probs = agent.policy.get_log_prob(states, actions)
         assert log_probs.dim() == 2
@@ -93,7 +93,7 @@ class A2C(OnPolicyRLAlg):
         return states, actions
 
     def improve(self, agent):
-        batch = agent.replay_replay_buffer.sample()
+        batch = agent.replay_buffer.sample()
         states, actions = self.unpack_batch(batch)
         values = agent.valuefn(states)
         log_probs = agent.policy.get_log_prob(states, actions)
@@ -119,7 +119,7 @@ class A2C(OnPolicyRLAlg):
         loss.backward()
         agent.policy_optimizer.step()
         agent.value_optimizer.step()
-        agent.replay_replay_buffer.clear_buffer()
+        agent.replay_buffer.clear_buffer()
 
 
 class PPO(OnPolicyRLAlg):
