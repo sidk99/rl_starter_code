@@ -3,13 +3,17 @@ from collections import namedtuple
 # Taken from
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
 
+OnPolicy = namedtuple('OnPolicy', ('state', 'action', 'mask', 'reward'))
+OffPolicy = namedtuple('OffPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
+
+
 class Memory(object):
     def __init__(self, element):
         self.memory = []
         if element == 'on_policy':
-            self.element = namedtuple('OnPolicy', ('state', 'action', 'mask', 'reward'))
+            self.element = OnPolicy#namedtuple('OnPolicy', ('state', 'action', 'mask', 'reward'))
         elif element == 'off_policy':
-            self.element = namedtuple('OnPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
+            self.element = OffPolicy#namedtuple('OffPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
         else:
             assert False
 
