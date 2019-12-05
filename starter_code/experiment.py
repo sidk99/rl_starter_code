@@ -107,6 +107,7 @@ class Experiment():
                 self.log(epoch, epoch_stats)
 
             if epoch % self.args.visualize_every == 0:
+                # this ticks the epoch and steps
                 self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
             
             if epoch % self.args.save_every == 0:
@@ -128,7 +129,6 @@ class Experiment():
         plt.close()
         if self.args.debug:
             self.logger.remove_logdir()
-
 
     def update(self, epoch):
         if epoch >= self.args.anneal_policy_lr_after:
@@ -169,6 +169,10 @@ class Experiment():
         return stats
 
     def update_metrics(self, env_manager, epoch, stats):
+        env_manager.update_variable(name='epoch', index=epoch, value=epoch)
+        # this assumes that you save every whole number of epochs
+        env_manager.update_variable(name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
+
         for metric in self.metrics:
             env_manager.update_variable(
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
@@ -189,11 +193,7 @@ class Experiment():
              'organism': self.organism.get_state_dict()},
              self.logger.printf)
 
-
     def visualize(self, env_manager, epoch, stats, name):
-        env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-        # this assumes that you save every whole number of epochs
-        env_manager.update_variable(name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
         self.update_metrics(env_manager, epoch, stats)
         self.plot_metrics(env_manager, name)
 
