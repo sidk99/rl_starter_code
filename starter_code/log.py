@@ -193,6 +193,7 @@ class BaseLogger(object):
             plt.plot(x,y)
             plt.xlabel(var1_name)
             plt.ylabel(var2_name)
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
             plt.savefig(os.path.join(self.quantitative_dir,'_csv{}.png'.format(fname)))  # DIR
             plt.close()
 
@@ -215,9 +216,26 @@ class MultiBaseLogger(BaseLogger):
         self.saver = Saver(self.checkpoint_dir)
         self.printf('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
             self.subroot, self.expname, self.logdir, self.checkpoint_dir))
-        json.dump(vars(args), open(os.path.join(self.logdir, 'params.json'), 'w'))
+
+        self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
+        json.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'))
+
+
 
         self.initialize()
+
+
+# def create_logdir(root, dirname, setdate):
+#     logdir = os.path.join(root, dirname)
+#     if setdate:
+#         if not dirname == '': logdir += '__'
+#         logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
+#         date=datetime.datetime.now())
+#     mkdirp(logdir)
+#     return logdir
+    def save_source_code(self):
+        pass
+
 
     def initialize(self):
         self.add_variable('epoch')
