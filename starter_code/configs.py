@@ -11,14 +11,6 @@ from starter_code.utils import AttrDict
     local args
 """
 
-# def rlalg_config_switch(alg_name):
-#     rlalg_configs = dict(
-#         ppo = ppo_config,
-#         a2c = a2c_config,
-#         vpg = vpg_config,
-#     )
-#     return rlalg_configs[alg_name]
-
 def rlalg_config(args):
     rlalg_configs = dict(
         ppo = ppo_config,
@@ -37,7 +29,8 @@ def ppo_config(args):
     if not hasattr(args, 'vlr'):
         args.vlr = 5e-3
     if not hasattr(args, 'opt'):
-        args.opt = 'sgd'
+        args.opt = 'adam'
+        # args.opt = 'sgd'
     if not hasattr(args, 'entropy_coeff'):
         args.entropy_coeff = 0
     return args
@@ -58,12 +51,13 @@ def vpg_config(args):
 
 def experiment_config(args):
     args.gpu_index = 0
-    # args.eval_every = 5000
-    # args.log_every = 100
-    args.eval_every = 500
+    # args.eval_every = 500
     args.log_every = 10
     args.save_every = 500
-    args.visualize_every = 50
+    if not hasattr(args, 'visualize_every'):
+        args.visualize_every = 50
+    if not hasattr(args, 'eval_every'):
+        args.eval_every = 500
     args.max_epochs = int(1e7)
     args.num_test = 100
     if args.debug:
@@ -80,7 +74,8 @@ def lifelong_config(args):
     return args
 
 def network_config(args):
-    args.hdim = [128, 128]
+    # args.hdim = [128, 128]
+    args.hdim = [64]
     if args.debug:
         args.hdim = [20, 20]
     return args
