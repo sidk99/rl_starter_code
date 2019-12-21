@@ -16,7 +16,6 @@ class Agent(nn.Module):
         args.vlr
         args.anneal_policy_lr
         args.anneal_policy_lr_gamma
-        
     """
     def __init__(self, policy, valuefn, replay_buffer, args):
         super(Agent, self).__init__()
@@ -58,14 +57,16 @@ class Agent(nn.Module):
             last_epoch=-1)
 
     def step_optimizer_schedulers(self, pfunc):
+        verbose = False
         def update_optimizer_lr(optimizer, scheduler, name):
             before_lr = optimizer.state_dict()['param_groups'][0]['lr']
             scheduler.step()
             after_lr = optimizer.state_dict()['param_groups'][0]['lr']
-            to_print_alr = 'Learning rate for {} was {}. Now it is {}.'.format(name, before_lr, after_lr)
-            if before_lr != after_lr:
-                to_print_alr += ' Learning rate changed!'
-                pfunc(to_print_alr)
+            if verbose:
+                to_print_alr = 'Learning rate for {} was {}. Now it is {}.'.format(name, before_lr, after_lr)
+                if before_lr != after_lr:
+                    to_print_alr += ' Learning rate changed!'
+                    pfunc(to_print_alr)
         update_optimizer_lr(
             optimizer=self.policy_optimizer,
             scheduler=self.po_scheduler,
@@ -235,7 +236,7 @@ class SACAgent(nn.Module):
             self.qf1_optimizer.load_state_dict(agent_state_dict['qf1_optimizer'])
             self.qf2_optimizer.load_state_dict(agent_state_dict['qf2_optimizer'])
 
-################################################################################
+    ################################################################################
 
 
         if self.use_automatic_entropy_tuning:
