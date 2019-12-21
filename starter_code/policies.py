@@ -8,6 +8,8 @@ from torch.distributions.log_normal import LogNormal
 
 from starter_code.networks import MLP, GaussianParams, BetaSoftPlusParams, BetaReluParams, CNN
 
+import starter_code.torch_utils as tu
+
 class BidPolicyLN(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):
         super(BidPolicyLN, self).__init__()
@@ -45,12 +47,71 @@ class BidPolicyLN(nn.Module):
         entropy = dist.entropy().view(bsize, 1)
         return entropy
 
-class DiscretePolicy(nn.Module):
-    def __init__(self, state_dim, hdim, action_dim):
-        super(DiscretePolicy, self).__init__()
-        self.action_dim = action_dim
-        self.network = MLP(dims=[state_dim, *hdim, action_dim])
+class BasePolicy(nn.Module):
+    def __init__(self):
+        super(BasePolicy, self).__init__()
+
+    def get_log_prob(self, action_dist, action):
+        bsize = tu.dist_bsize(action_dist)
+        log_prob = action_dist.log_prob(action).view(bsize, 1)
+        assert log_prob.size() == (bsize, 1)
+        return log_prob
+
+    def get_entropy(self, action_dist):
+        bsize = tu.dist_bsize(action_dist)
+        entropy = action_dist.entropy().view(bsize, 1)
+        assert entropy.size() == (bsize, 1)
+        return entropy
+
+class BaseDiscretePolicy(BasePolicy):
+    def __init__(self):
+        super(BaseDiscretePolicy, self).__init__()
         self.discrete = True
+
+    def get_action_dist(self, obs):
+        action_probs = self.forward(obs)
+        action_dist = Categorical(action_probs)
+        return action_dist
+
+    def get_log_prob(self, action_dist, action):
+        bsize = tu.dist_bsize(action_dist)
+        action = action.view(bsize)
+        return super(BaseDiscretePolicy, self).get_log_prob(action_dist, action)
+
+class BaseContinuousPolicy(BasePolicy):
+    def __init__(self):
+        super(BaseContinuousPolicy, self).__init__()
+        self.discrete = False
+
+class BaseBetaPolicy(BaseContinuousPolicy):
+    def __init__(self):
+        super(BaseBetaPolicy, self).__init__()
+        # the decoder is BetaSoftPlusParams(hdim, action_dim)
+
+    def forward(self, x):
+        x = self.encoder(x)
+        alpha, beta = self.decoder(x)
+        return alpha, beta
+
+    def get_action_dist(self, obs):
+        alpha, beta = self.forward(obs)
+        dist = Beta(concentration1=alpha, concentration0=beta)
+        return dist
+
+    def select_action(self, state, deterministic, reparameterize=False):
+        dist = self.get_action_dist(state)
+        if reparameterize:
+            action = dist.rsample()  # (bsize, action_dim)
+        else:
+            action = dist.sample()  # (bsize, action_dim)
+        return action, dist
+
+#####################################################################################
+
+class DiscretePolicy(BaseDiscretePolicy):
+    def __init__(self, state_dim, hdim, action_dim):
+        super(DiscretePolicy, self).__init__(action_dim)
+        self.network = MLP(dims=[state_dim, *hdim, action_dim])
 
     def forward(self, x):
         action_scores = self.network(x)
@@ -68,32 +129,13 @@ class DiscretePolicy(nn.Module):
         assert action.size() == (bsize, 1)
         return action, action_dist
 
-    def get_log_prob(self, state, action):
-        bsize = state.size(0)
-        action = action.view(bsize)
-        action_probs = self.forward(state)
-        action_dist = Categorical(action_probs)
-        log_prob = action_dist.log_prob(action).view(bsize, 1)
-        assert log_prob.size() == (bsize, 1)
-        return log_prob
-
-    def get_entropy(self, state):
-        bsize = state.size(0)
-        action_probs = self.forward(state)
-        action_dist = Categorical(action_probs)
-        entropy = action_dist.entropy().view(bsize, 1)
-        return entropy
-
-class DiscreteCNNPolicy(nn.Module):
+class DiscreteCNNPolicy(BaseDiscretePolicy):
     def __init__(self, state_dim, action_dim):
         super(DiscreteCNNPolicy, self).__init__()
-        self.action_dim = action_dim
         self.encoder = CNN(*state_dim)
         self.decoder = MLP(dims=[self.encoder.image_embedding_size, action_dim])
-        self.discrete = True
 
     def forward(self, x):
-        # action_scores = self.network(x)
         action_scores = self.decoder(self.encoder(x))
         action_probs = F.softmax(action_scores, dim=-1)
         return action_probs
@@ -109,22 +151,20 @@ class DiscreteCNNPolicy(nn.Module):
         assert action.size() == (bsize, 1)
         return action, action_dist
 
-    def get_log_prob(self, state, action):
-        bsize = state.size(0)
-        action = action.view(bsize)
-        action_probs = self.forward(state)
-        action_dist = Categorical(action_probs)
-        log_prob = action_dist.log_prob(action).view(bsize, 1)
-        assert log_prob.size() == (bsize, 1)
-        return log_prob
+class BetaCNNPolicy(BaseBetaPolicy):
+    def __init__(self, state_dim, action_dim):
+        super(BetaCNNPolicy, self).__init__()
+        self.encoder = CNN(*state_dim)
+        self.decoder = BetaSoftPlusParams(self.encoder.image_embedding_size, action_dim)
 
-    def get_entropy(self, state):
-        bsize = state.size(0)
-        action_probs = self.forward(state)
-        action_dist = Categorical(action_probs)
-        entropy = action_dist.entropy().view(bsize, 1)
-        return entropy
+class SimpleBetaSoftPlusPolicy(BaseBetaPolicy):
+    def __init__(self, state_dim, hdim, action_dim):
+        super(SimpleBetaSoftPlusPolicy, self).__init__()
+        self.encoder = MLP(dims=[state_dim, *hdim])
+        self.decoder = BetaSoftPlusParams(hdim[-1], action_dim)
 
+
+################################################################################
 
 class SimpleGaussianPolicy(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):
@@ -164,75 +204,39 @@ class SimpleGaussianPolicy(nn.Module):
         entropy = dist.entropy().view(bsize, 1)
         return entropy
 
-class BetaCNNPolicy(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(BetaCNNPolicy, self).__init__()
-        self.encoder = CNN(*state_dim)
-        self.decoder = BetaSoftPlusParams(self.encoder.image_embedding_size, action_dim)
-        self.discrete = False
+
+
+
+
+class IsotropicGaussianDensityPolicy(nn.Module):
+    def __init__(self, state_dim):
+        super(GaussianDensityPolicy, self).__init__()
+        self.state_dim = state_dim
+        self.mu = nn.Parameter(torch.randn(self.state_dim))
+        self.logstd = nn.Parameter(torch.ones(self.state_dim))
+        # TODO: improve initialization
 
     def forward(self, x):
-        x = self.encoder(x)
-        alpha, beta = self.decoder(x)
-        return alpha, beta
-
-    def select_action(self, state, deterministic, reparameterize=False):
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        if reparameterize:
-            action = dist.rsample()  # (bsize, action_dim)
-        else:
-            action = dist.sample()  # (bsize, action_dim)
-        return action, dist
-
-    def get_log_prob(self, state, action):
-        bsize = state.size(0)
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+        dist = MultivariateNormal(loc=self.mu, scale_tril=torch.diag_embed(torch.exp(self.log_std)))
+        log_prob = dist.log_prob(x)
         return log_prob
 
-    def get_entropy(self, state):
-        bsize = state.size(0)
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        entropy = dist.entropy().view(bsize, 1)
-        return entropy
-
-class SimpleBetaSoftPlusPolicy(nn.Module):
-    def __init__(self, state_dim, hdim, action_dim):
-        super(SimpleBetaSoftPlusPolicy, self).__init__()
-        self.encoder = MLP(dims=[state_dim, *hdim])
-        self.decoder = BetaSoftPlusParams(hdim[-1], action_dim)
-        self.discrete = False
-
-    def forward(self, x):
-        x = self.encoder(x)
-        alpha, beta = self.decoder(x)
-        return alpha, beta
-
-    def select_action(self, state, deterministic, reparameterize=False):
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        if reparameterize:
-            action = dist.rsample()  # (bsize, action_dim)
-        else:
-            action = dist.sample()  # (bsize, action_dim)
-        return action, dist
-
-    def get_log_prob(self, state, action):
-        bsize = state.size(0)
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        log_prob = dist.log_prob(action).view(bsize, 1) # (bsize, 1)
+    def select_action(self, state, deterministic):
+        log_prob = self.forward(state)
         return log_prob
 
-    def get_entropy(self, state):
-        bsize = state.size(0)
-        alpha, beta = self.forward(state)
-        dist = Beta(concentration1=alpha, concentration0=beta)
-        entropy = dist.entropy().view(bsize, 1)
-        return entropy
+
+    # what is the policy distribution?
+
+    # maybe I can use reward-weighted regression? 
+
+    # def how do you train this RL?
+
+
+# what happens if you have a deterministic policy?
+
+
+
 
 class SimpleBetaReluPolicy(nn.Module):
     def __init__(self, state_dim, hdim, action_dim):

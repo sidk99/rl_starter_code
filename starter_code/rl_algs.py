@@ -12,6 +12,9 @@ import rlkit.torch.pytorch_util as ptu
 from starter_code.common import estimate_advantages
 import starter_code.utils as u
 
+import time
+import gtimer as gt
+
 eps = np.finfo(np.float32).eps.item()
 
 def analyze_size(obj, obj_name):
@@ -25,6 +28,7 @@ def rlalg_switch(alg_name):
         'vpg': VPG
     }
     return rlalgs[alg_name]
+
 
 class OnPolicyRLAlg():
     def __init__(self, device, max_buffer_size):
@@ -133,15 +137,14 @@ class PPO(OnPolicyRLAlg):
         self.args = args
 
         self.gamma = 0.99
-        self.tau = 0.95 
+        self.tau = 0.95
         self.l2_reg = 1e-3
         self.clip_epsilon = 0.2
         self.entropy_coeff = args.entropy_coeff
 
-        self.optim_epochs = 10
+        self.optim_epochs = 1#5#10  # this may be why it takes so long
         self.optim_batch_size = args.optim_batch_size
         self.optim_value_iternum = 1
-
 
         self.reset_record()
 
@@ -166,6 +169,7 @@ class PPO(OnPolicyRLAlg):
         return stats
 
     def unpack_batch(self, batch):
+        time_start_batch = time.time()
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
         masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
@@ -180,7 +184,8 @@ class PPO(OnPolicyRLAlg):
         states, actions, masks, rewards = self.unpack_batch(batch)
         with torch.no_grad():
             values = agent.valuefn(states)  # (bsize, 1)
-            fixed_log_probs = agent.policy.get_log_prob(states, actions)  # (bsize, 1)
+            fixed_log_probs = agent.policy.get_log_prob(
+                agent.policy.get_action_dist(states), actions)  # (bsize, 1)
             assert values.dim() == fixed_log_probs.dim() == 2
 
         """get advantage estimation from the trajectories"""
@@ -188,7 +193,9 @@ class PPO(OnPolicyRLAlg):
 
         """perform mini-batch PPO update"""
         optim_iter_num = int(math.ceil(states.shape[0] / self.optim_batch_size))
+
         for j in range(self.optim_epochs):
+            time_before_permute = time.time()
             perm = np.arange(states.shape[0])
             np.random.shuffle(perm)
             perm = torch.LongTensor(perm).to(self.device)
@@ -216,9 +223,6 @@ class PPO(OnPolicyRLAlg):
 
             entropy: (minibatch_size, 1)
         """
-
-
-
         """update critic"""
         for _ in range(self.optim_value_iternum):
             values_pred = agent.valuefn(states)
@@ -231,24 +235,23 @@ class PPO(OnPolicyRLAlg):
             agent.value_optimizer.step()
 
         """update policy"""
-        log_probs = agent.policy.get_log_prob(states, actions)
+        action_dist = agent.policy.get_action_dist(states)
+        log_probs = agent.policy.get_log_prob(action_dist, actions)  # (bsize, 1)
         ratio = torch.exp(log_probs - fixed_log_probs)
         surr1 = ratio * advantages
         surr2 = torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantages
         policy_surr = -torch.min(surr1, surr2).mean()
-        entropy = agent.policy.get_entropy(states).mean()
+        entropy = agent.policy.get_entropy(action_dist).mean()
+
         policy_loss = policy_surr - self.entropy_coeff*entropy
         agent.policy_optimizer.zero_grad()
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 40)
         agent.policy_optimizer.step()
 
-
-
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
         ratio_clipped = num_clipped / states.size(0)
-        # print('ratio_clipped', ratio_clipped)
         log = {}
         log['num_clipped'] = num_clipped
         log['ratio_clipped'] = ratio_clipped
