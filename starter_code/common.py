@@ -24,3 +24,6 @@ def estimate_advantages(rewards, masks, values, gamma, tau, device):
 
     advantages, returns = to_device(device, advantages, returns)
     return advantages, returns
+
+
+# you could consider just parallelizing this across agents
