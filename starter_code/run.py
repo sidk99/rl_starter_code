@@ -6,7 +6,6 @@ from starter_code.agent import Agent
 from starter_code.configs import process_config, env_manager_switch
 from starter_code.env_config import EnvRegistry as ER
 from starter_code.experiment import CentralizedExperiment
-from starter_code.sampler import Sampler, AgentStepInfo
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from starter_code.multitask import construct_task_progression, default_task_prog_spec, task_prog_spec_multi
@@ -81,7 +80,7 @@ class BaseLauncher:
             logger=logger, 
             device=device, 
             args=args)
-        experiment.train(max_epochs=args.max_epochs)
+        experiment.main_loop(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':
     launcher = BaseLauncher()
