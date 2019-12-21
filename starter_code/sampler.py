@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import starter_code.env_utils as eu
 from starter_code.utils import AttrDict, from_np, to_np
+from starter_code.filter import MeanStdFilter, NoFilter
 
 class BasicStepInfo():
     def __init__(self, state, action_dict, next_state, mask, reward):
@@ -18,12 +19,6 @@ class BasicStepInfo():
     def __setitem__(self, key, value):
         self.__dict__[key] = value
 
-    # def __getattr__(self, name):
-    #     return self.__dict__[key]
-
-    # def __setattr__(self, name, value):
-    #     self.__dict__[name] = value
-
     def __str__(self):
         return str(self.__dict__)
 
@@ -34,16 +29,18 @@ class AgentStepInfo(BasicStepInfo):
         self.action = self.action_dict.stored_action
         self.action_dist = self.action_dict.action_dist
 
+
 class Sampler():
     """
         one sampler for exploration
         one sampler for evaluation
     """
-    def __init__(self, step_info, deterministic, render, device):
+    def __init__(self, eval_mode, obs_dim, step_info, deterministic, render, device):
         self.deterministic = deterministic
         self.render = render
         self.device = device
         self.step_info_builder = step_info
+        self.eval_mode = eval_mode
 
     def sample_timestep(self, env, organism, state):
         state_var = from_np(state, self.device)
@@ -67,9 +64,10 @@ class Sampler():
         return state
 
     def finish_episode(self):
-        for e in self.episode_data:
-            self.organism.store_transition(e)
-        ##########################################
+        if not self.eval_mode:
+            for e in self.episode_data:
+                self.organism.store_transition(e)
+
         episode_info = AttrDict(
             returns=sum([e.reward for e in self.episode_data]),
             steps=len(self.episode_data),
@@ -120,6 +118,22 @@ class Sampler():
         pass
 
 
+class ParallelSampler(Sampler):
+    def __init__(self, step_info, deterministic, render, device):
+        super(ParallelSampler, self).__init__(step_info, deterministic, render, device)
+
+    def sample_episode(self, env, organism, max_timesteps_this_episode):
+        # now make copies of each organism and a copy of the environment
+
+        # maybe use ray
+        cloned_episode_infos = []
+        for cloned_env, cloned_organism in clones:
+            cloned_episode_info = super(ParallelSampler, self).sample_episode(
+                cloned_env, cloned_organism, max_timesteps_this_episode)
+            cloned_episode_infos.append(cloned_episode_info)
+        return cloned_episode_infos
+
+
 # the purpose is that this is just a big fat datastructure that you can subclass for your needs
 class Compound_RL_Stats:
     def __init__(self):
@@ -133,13 +147,13 @@ class Compound_RL_Stats:
             episode_infos=[])
 
     # update
-    def append(self, episode_info):
+    def append(self, episode_info, eval_mode=False):
         self.data.returns.append(episode_info.returns)
         self.data.steps.append(episode_info.steps)
         self.data.episode_infos.append(episode_info)
 
     # query
-    def bundle_batch_stats(self):
+    def bundle_batch_stats(self, eval_mode=False):
         stats = dict(num_episodes=len(self.data.steps))
         stats = dict({**stats, **self.log_metrics(np.array(self.data.returns), 'return')})
         stats = dict({**stats, **self.log_metrics(np.array(self.data.steps), 'steps')})
