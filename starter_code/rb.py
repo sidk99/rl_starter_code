@@ -11,9 +11,9 @@ class Memory(object):
     def __init__(self, element):
         self.memory = []
         if element == 'on_policy':
-            self.element = OnPolicy#namedtuple('OnPolicy', ('state', 'action', 'mask', 'reward'))
+            self.element = OnPolicy
         elif element == 'off_policy':
-            self.element = OffPolicy#namedtuple('OffPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
+            self.element = OffPolicy
         else:
             assert False
 
