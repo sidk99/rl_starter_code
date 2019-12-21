@@ -37,6 +37,12 @@ class EnvRegistry():
             'gym': {
                 'CartPole-v0',
                 'InvertedPendulum-v2',
+                'HalfCheetah-v2',
+                'LunarLander-v2',
+                'MountainCar-v0',
+                'Acrobot-v1',
+                'Taxi-v2',
+                'FrozenLake-v0',
             },
             'mg': {
                 'MiniGrid-MultiRoom-N6-v0',
