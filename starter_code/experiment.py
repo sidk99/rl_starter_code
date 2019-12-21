@@ -18,6 +18,8 @@ from starter_code.utils import AttrDict, is_float
 
 
 
+
+
 """
 * Algorithm level (epoch, episode, learning rate, etc)
 * Monitoring level (wall clock time, etc)
@@ -33,10 +35,11 @@ def log_string(ordered_dict):
     for i, (k, v) in enumerate(ordered_dict.items()):
         delim = '' if i == 0 else ' | '
         if is_float(v):
-            s += delim + '{}: {:.2f}'.format(k, v)
+            s += delim + '{}: {:.5f}'.format(k, v)
         else:
             s += delim + '{}: {}'.format(k, v)
     return s
+
 
 
 class Experiment():
@@ -63,6 +66,8 @@ class Experiment():
         """
             Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
         """
+        t0 = time.time()
+
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         num_steps = 0
         stats_collector = self.stats_collector_builder()
@@ -77,6 +82,7 @@ class Experiment():
                 train_env_manager.max_episode_length)
 
             ################################################################
+            # ARS: perhaps for ARS we just sample a single episode
             episode_info = self.exploration_sampler.sample_episode(
                 env=train_env_manager.env, 
                 organism=self.organism,
@@ -92,30 +98,30 @@ class Experiment():
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
 
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
+
+        self.logger.printf('Epoch {}: Time to Collect Samples: {}'.format(epoch, time.time()-t0))
         return stats
 
-    def train(self, max_epochs):
+
+    def main_loop(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
-            # print('epoch: {}'.format(epoch))
-            if epoch % self.args.eval_every == 0:
-                self.eval(epoch=epoch)
-
-            epoch_stats = self.collect_samples(epoch)
-            
-            if epoch % self.args.log_every == 0:
-                self.log(epoch, epoch_stats)
-
-            if epoch % self.args.visualize_every == 0:
-                # this ticks the epoch and steps
-                self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
-            
-            if epoch % self.args.save_every == 0:
-                self.save(self.logger, epoch, epoch_stats)
-
-            self.update(epoch)
-
+            # if epoch % self.args.eval_every == 0:
+            #     self.eval_step(epoch)
+            self.train_step(epoch)
         self.finish_training()
+
+
+    def train_step(self, epoch):
+        epoch_stats = self.collect_samples(epoch)
+        if epoch % self.args.log_every == 0:
+            self.log(epoch, epoch_stats)
+        if epoch % self.args.visualize_every == 0:
+            # this ticks the epoch and steps
+            self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
+        if epoch % self.args.save_every == 0:
+            self.save(self.logger, epoch, epoch_stats)
+        self.update(epoch)
 
 
     def finish_training(self):
@@ -137,9 +143,10 @@ class Experiment():
         gt.stamp('Epoch {}: Before Update'.format(epoch))
         t0 = time.time()
         self.organism.update(self.rl_alg)
-        self.logger.printf('Epoch {}: After Update: {}'.format(epoch, time.time()-t0))
+        self.logger.printf('Epoch {}: Time to Update: {}'.format(epoch, time.time()-t0))
         gt.stamp('Epoch {}: After Update'.format(epoch))
         self.organism.clear_buffer()
+        # torch.cuda.empty_cache()  # may be I should do this
 
     def log(self, epoch, epoch_stats):
         self.logger.printf(log_string(OrderedDict({
@@ -161,11 +168,11 @@ class Experiment():
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
                 ##########################################
-                if i == 0 and self.organism.discrete:
+                if i == 0 and self.organism.discrete and env_manager.visual:
                     env_manager.save_video(epoch, i, episode_info.bids, episode_info.returns, episode_info.frames)
                 ##########################################
-            stats_collector.append(episode_info)
-        stats = stats_collector.bundle_batch_stats()
+            stats_collector.append(episode_info, eval_mode=True)
+        stats = stats_collector.bundle_batch_stats(eval_mode=True)
         return stats
 
     def update_metrics(self, env_manager, epoch, stats):
@@ -193,16 +200,15 @@ class Experiment():
              'organism': self.organism.get_state_dict()},
              self.logger.printf)
 
-    def visualize(self, env_manager, epoch, stats, name):
+    def visualize(self, env_manager, epoch, stats, name, eval_mode=False):
         self.update_metrics(env_manager, epoch, stats)
         self.plot_metrics(env_manager, name)
 
-    def eval(self, epoch):
+    def eval_step(self, epoch):
         for env_manager in self.task_progression[self.epoch]['test']:
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
-            # self.logger.pprintf(stats)
-            self.logger.pprintf({k:v for k,v in stats.items() if k not in ['agent_episode_data', 'organism_episode_data']})
-            # hold on - why are we saving this?
+            self.logger.pprintf({k:v for k,v in stats.items() if k not in 
+                ['bid_differences', 'Q_differences', 'agent_episode_data', 'organism_episode_data']})
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)
             if epoch % self.args.save_every == 0:
@@ -213,7 +219,29 @@ class CentralizedExperiment(Experiment):
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
         self.exploration_sampler = Sampler(
-            step_info=AgentStepInfo, deterministic=False, render=False, device=device)
+            eval_mode=False, obs_dim=task_progression.state_dim, step_info=AgentStepInfo, deterministic=False, render=False, device=device)
         self.evaluation_sampler = Sampler(
-            step_info=AgentStepInfo, deterministic=False, render=True, device=device)
+            eval_mode=True, obs_dim=task_progression.state_dim, step_info=AgentStepInfo, deterministic=False, render=True, device=device)
         self.stats_collector_builder = Centralized_RL_Stats
+
+        # wait yeah, actually you only need the filter for the exploration sampler!
+
+class ParallelCentralizedExperiment(Experiment):
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
