@@ -302,6 +302,7 @@ class EnvManager(EnvLogger):
         self.env_type = env_registry.get_env_type(env_name)
         self.env = env_registry.get_env_constructor(env_name)()
         self.env.seed(args.seed)
+        self.visual = False  # default
         self.initialize()
 
     def initialize(self):
@@ -351,6 +352,7 @@ class TabularEnvManager(EnvManager):
 class VisualEnvManager(EnvManager):
     def __init__(self, env_name, env_registry, args):
         super(VisualEnvManager, self).__init__(env_name, env_registry, args)
+        self.visual = True
 
     def initialize(self):
         super(VisualEnvManager, self).initialize()
