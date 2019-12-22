@@ -12,12 +12,9 @@ import torch
 from tqdm import tqdm
 
 from starter_code.log import RunningAverage
-from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats
+from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
-
-
-
 
 
 """
@@ -40,8 +37,6 @@ def log_string(ordered_dict):
             s += delim + '{}: {}'.format(k, v)
     return s
 
-
-
 class Experiment():
     """
         args.eval_every
@@ -56,7 +51,6 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.epoch = 0
         self.run_avg = RunningAverage()
         self.run_avg.update_variable('steps', 0)
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
@@ -69,30 +63,30 @@ class Experiment():
         t0 = time.time()
 
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
-        num_steps = 0
-        stats_collector = self.stats_collector_builder()
-        # reset the data structure here? At least this is how things have been going anyways
-        # yeah this would just contain data from the current batch
 
-        while num_steps < self.rl_alg.num_samples_before_update:
-            train_env_manager = self.task_progression.sample(i=self.epoch, mode='train')
+        stats = collect_train_samples_serial(
+            epoch=epoch, 
+            max_steps=self.rl_alg.num_samples_before_update, 
+            objects=AttrDict(
+                task_progression=self.task_progression, 
+                stats_collector_builder=self.stats_collector_builder, 
+                sampler_builder=self.exploration_sampler_builder, 
+                organism=self.organism)
+            )
 
-            max_timesteps_this_episode = min(
-                self.rl_alg.num_samples_before_update - num_steps,
-                train_env_manager.max_episode_length)
-
-            episode_info = self.exploration_sampler.sample_episode(
-                env=train_env_manager.env, 
-                organism=self.organism,
-                max_timesteps_this_episode=max_timesteps_this_episode)
-
-            stats_collector.append(episode_info)
-            num_steps += (episode_info.steps)
-
-        stats = stats_collector.bundle_batch_stats()
+        # stats = collect_train_samples_parallel(
+        #     epoch=epoch, 
+        #     max_steps=self.rl_alg.num_samples_before_update, 
+        #     objects=AttrDict(
+        #         task_progression=self.task_progression, 
+        #         stats_collector_builder=self.stats_collector_builder, 
+        #         sampler_builder=self.exploration_sampler_builder, 
+        #         organism=self.organism)
+        #     )
+        # assert False
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
-        self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+num_steps)
+        self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+stats['total_steps'])
 
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
 
@@ -160,7 +154,7 @@ class Experiment():
         stats_collector = self.stats_collector_builder()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_info = self.evaluation_sampler.sample_episode(
+                episode_info = self.evaluation_sampler_builder().sample_episode(
                     env=env_manager.env, 
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
@@ -202,7 +196,7 @@ class Experiment():
         self.plot_metrics(env_manager, name)
 
     def eval_step(self, epoch):
-        for env_manager in self.task_progression[self.epoch]['test']:
+        for env_manager in self.task_progression[epoch]['test']:
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             self.logger.pprintf({k:v for k,v in stats.items() if k not in 
                 ['bid_differences', 'Q_differences', 'agent_episode_data', 'organism_episode_data']})
@@ -215,29 +209,24 @@ class Experiment():
 class CentralizedExperiment(Experiment):
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
-        self.exploration_sampler = Sampler(
-            eval_mode=False, obs_dim=task_progression.state_dim, step_info=AgentStepInfo, deterministic=False, render=False, device=device)
-        self.evaluation_sampler = Sampler(
-            eval_mode=True, obs_dim=task_progression.state_dim, step_info=AgentStepInfo, deterministic=False, render=True, device=device)
+        self.exploration_sampler_builder = lambda: Sampler(
+            eval_mode=False, 
+            obs_dim=task_progression.state_dim, 
+            step_info=AgentStepInfo, 
+            deterministic=False, 
+            render=False, 
+            device=device)
+        self.evaluation_sampler_builder = lambda: Sampler(
+            eval_mode=True, 
+            obs_dim=task_progression.state_dim, 
+            step_info=AgentStepInfo, 
+            deterministic=False, 
+            render=True, 
+            device=device)
+
         self.stats_collector_builder = Centralized_RL_Stats
 
         # wait yeah, actually you only need the filter for the exploration sampler!
-
-class ParallelCentralizedExperiment(Experiment):
-    pass
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

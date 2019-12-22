@@ -1,9 +1,126 @@
 from collections import defaultdict
 import numpy as np
+import time
 import torch
 import starter_code.env_utils as eu
 from starter_code.utils import AttrDict, from_np, to_np
 from starter_code.filter import MeanStdFilter, NoFilter
+
+import torch.multiprocessing as mp
+
+
+def collect_train_samples_serial(epoch, max_steps, objects):
+    task_progression = objects.task_progression
+    stats_collector = objects.stats_collector_builder()
+    sampler = objects.sampler_builder()
+    organism = objects.organism
+
+    num_steps = 0
+    # maybe have a memory object here?
+    episode_num = 0
+
+    while num_steps < max_steps:
+        print('Episode {}'.format(episode_num))
+        train_env_manager = task_progression.sample(i=epoch, mode='train')
+        max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
+        episode_info = sampler.sample_episode(
+            env=train_env_manager.env, 
+            organism=organism,
+            max_timesteps_this_episode=max_timesteps_this_episode)
+
+        # episode_info = sampler.dummy_method(
+        #     env=train_env_manager.env, 
+        #     organism=organism,
+        #     max_timesteps_this_episode=max_timesteps_this_episode)
+
+        stats_collector.append(episode_info)
+        num_steps += (episode_info.steps)
+        episode_num += 1
+        print('Steps so far: {}'.format(num_steps))
+
+    stats = stats_collector.bundle_batch_stats()
+    assert num_steps == stats['total_steps'] == max_steps
+    return stats
+
+
+# def collect_train_samples_parallel(epoch, max_steps, objects):
+#     num_steps = 0
+#     num_workers = 8
+#     stats_collector = stats_collector_builder()
+#     num_steps_per_worker = max_steps // num_workers
+#     num_residual_steps = max_steps - num_steps_per_worker * num_workers
+
+#     # you should initialize workers right here
+#     workers = None
+#     all_worker_stats = []
+#     for i, worker in enumerate(workers):
+#         worker_steps = num_steps_per_worker + num_residual_steps if i == 0 else num_steps_per_worker
+#         worker_stats = collect_train_samples_serial(epoch, worker_steps, copy.deepcopy(objects))
+#         all_worker_stats.append(worker_stats)
+
+#     # wait for all workers to finish joining
+#     stats_collector.extend(all_worker_stats)
+#     stats = stats_collector.bundle_batch_stats()
+#     assert stats['total_steps'] == max_steps
+#     return stats
+
+def collect_train_samples_parallel(epoch, max_steps, objects):
+    num_steps = 0
+    num_workers = 8
+    stats_collector = stats_collector_builder()
+    num_steps_per_worker = max_steps // num_workers
+    num_residual_steps = max_steps - num_steps_per_worker * num_workers
+
+    # you should initialize workers right here
+    queue = mp.Queue()
+    workers = []
+    for i in range(num_workers):
+        worker_steps = num_steps_per_worker + num_residual_steps if i == 0 else num_steps_per_worker
+        worker_kwargs = dict(
+            pid=i+1,
+            queue=queue,
+            epoch=epoch,
+            max_steps=worker_steps,
+            objects=objects)
+        workers.append(mp.Process(target=collect_train_samples_serial, kwargs=worker_kwargs))
+    for worker in workers:
+        worker.start()
+
+    all_worker_stats = []
+    for worker in workers:
+        worker_stats = queue.get()
+        all_worker_stats.append(worker_stats)
+
+    stats = all_worker_stats
+
+    # processes = []
+    # all_worker_stats = []
+    # for i, worker in enumerate(workers):
+    #     worker_steps = num_steps_per_worker + num_residual_steps if i == 0 else num_steps_per_worker
+    #     worker_stats = collect_train_samples_serial(epoch, worker_steps, copy.deepcopy(objects))
+    #     all_worker_stats.append(worker_stats)
+
+    # # wait for all workers to finish joining
+    # stats_collector.extend(all_worker_stats)
+    # stats = stats_collector.bundle_batch_stats()
+    # assert stats['total_steps'] == max_steps
+    return stats
+
+    # def update(self, rl_alg):
+    #     learnable_active_agents = [a for a in self.get_active_agents() if a.learnable]
+    #     if self.args.parallel_update:
+    #         processes = []
+    #         for agent in learnable_active_agents:
+    #             p = mp.Process(target=agent_update, args=(agent, rl_alg))
+    #             p.start()
+    #             processes.append(p)
+    #         for p in processes:
+    #             p.join()
+    #     else:
+    #         # watch out here because different agents' replay buffers may be different sizes
+    #         for agent in learnable_active_agents: 
+    #             agent.update(rl_alg)
+
 
 class BasicStepInfo():
     def __init__(self, state, action_dict, next_state, mask, reward):
@@ -58,15 +175,21 @@ class Sampler():
             e.frame = eu.render(env=env, scale=0.25)
         return next_state, done, e
 
+    def dummy_method(self, env, organism, max_timesteps_this_episode):
+        time.sleep(1)
+        return {i: np.random.random() for i in range(10)}
+
     def begin_episode(self):
         self.episode_data = []
         state = self.env.reset()
         return state
 
     def finish_episode(self):
+        start = time.time()
         if not self.eval_mode:
             for e in self.episode_data:
                 self.organism.store_transition(e)
+        after_store_transition = time.time()
 
         episode_info = AttrDict(
             returns=sum([e.reward for e in self.episode_data]),
@@ -76,6 +199,10 @@ class Sampler():
             episode_info.frames = [e.frame for e in self.episode_data]
             episode_info.bids = self.get_bids_for_episode(self.episode_data)
 
+        after_episode_info = time.time()
+
+        print('\tTime to store transition: {}'.format(after_store_transition-start))
+        print('\tTime to create episode info: {}'.format(after_episode_info-after_store_transition))
         return episode_info
 
     def get_bids_for_episode(self, episode_data):
@@ -90,6 +217,7 @@ class Sampler():
         self.episode_data.append(e)
 
     def sample_episode(self, env, organism, max_timesteps_this_episode):
+        start = time.time()
         # or can set self.env and self.organism here
         ###################################
         # Dangerous? only if you modify them in begin_episode or finish_episode
@@ -105,17 +233,12 @@ class Sampler():
         if not done:
             assert t == max_timesteps_this_episode-1 
             # save the environment state here
+        after_sampling = time.time()
         episode_info = self.finish_episode()
+        after_finish = time.time()
+        print('Time to sample episode: {}'.format(after_sampling-start))
+        print('Time to finish episode: {}'.format(after_finish-after_sampling))
         return episode_info
-
-    def sample_many_episodes(self, env_manager):
-        pass
-
-    def save_env_state(self, env_manager):
-        pass
-
-    def load_env_state(self, env_manager):
-        pass
 
 
 class ParallelSampler(Sampler):
