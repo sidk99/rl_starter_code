@@ -81,14 +81,11 @@ class Experiment():
                 self.rl_alg.num_samples_before_update - num_steps,
                 train_env_manager.max_episode_length)
 
-            ################################################################
-            # ARS: perhaps for ARS we just sample a single episode
             episode_info = self.exploration_sampler.sample_episode(
                 env=train_env_manager.env, 
                 organism=self.organism,
                 max_timesteps_this_episode=max_timesteps_this_episode)
 
-            ################################################################
             stats_collector.append(episode_info)
             num_steps += (episode_info.steps)
 
@@ -146,7 +143,7 @@ class Experiment():
         self.logger.printf('Epoch {}: Time to Update: {}'.format(epoch, time.time()-t0))
         gt.stamp('Epoch {}: After Update'.format(epoch))
         self.organism.clear_buffer()
-        # torch.cuda.empty_cache()  # may be I should do this
+        torch.cuda.empty_cache()  # may be I should do this
 
     def log(self, epoch, epoch_stats):
         self.logger.printf(log_string(OrderedDict({
