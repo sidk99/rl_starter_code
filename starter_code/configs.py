@@ -59,14 +59,14 @@ def experiment_config(args):
     if not hasattr(args, 'eval_every'):
         args.eval_every = 500
     args.max_epochs = int(1e7)
-    args.num_test = 100
+    args.num_test = 10
     if args.debug:
         args.max_epochs = 12
         args.eval_every = 3
         args.save_every = 3
         args.visualize_every = 3
         args.log_every = 3
-        args.num_test = 10
+        # args.num_test = 10
     return args
 
 def lifelong_config(args):
