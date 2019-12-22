@@ -66,7 +66,6 @@ def experiment_config(args):
         args.save_every = 3
         args.visualize_every = 3
         args.log_every = 3
-        # args.num_test = 10
     return args
 
 def lifelong_config(args):
