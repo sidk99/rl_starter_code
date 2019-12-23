@@ -56,6 +56,8 @@ class Experiment():
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_steps', 'max_steps', 'mean_steps', 'std_steps']
 
+        self.parallel_collect = True
+
     def collect_samples(self, epoch):
         """
             Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
@@ -63,8 +65,9 @@ class Experiment():
         t0 = time.time()
 
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
+        collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
 
-        stats_collector = collect_train_samples_serial(
+        stats_collector = collector(
             epoch=epoch, 
             max_steps=self.rl_alg.num_samples_before_update, 
             objects=AttrDict(
@@ -76,20 +79,9 @@ class Experiment():
 
         stats = stats_collector.bundle_batch_stats()  # you might want to bundle batch stats after the parallel thing
 
-        for episode_data in stats_collector.data.episode_datas:
+        for episode_data in stats_collector.data['episode_datas']:
             for e in episode_data:
                 self.organism.store_transition(e)
-
-        # stats = collect_train_samples_parallel(
-        #     epoch=epoch, 
-        #     max_steps=self.rl_alg.num_samples_before_update, 
-        #     objects=AttrDict(
-        #         task_progression=self.task_progression, 
-        #         stats_collector_builder=self.stats_collector_builder, 
-        #         sampler_builder=self.exploration_sampler_builder, 
-        #         organism=self.organism)
-        #     )
-        # assert False
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+stats['total_steps'])
@@ -161,10 +153,10 @@ class Experiment():
         stats_collector = self.stats_collector_builder()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                evaluation_sampler = self.evaluation_sampler_builder()
-                episode_data = self.evaluation_sampler_builder().sample_episode(
+                evaluation_sampler = self.evaluation_sampler_builder(self.organism)
+                episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
-                    organism=self.organism,
+                    # organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:
@@ -224,16 +216,16 @@ class Experiment():
 class CentralizedExperiment(Experiment):
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
-        self.exploration_sampler_builder = lambda: Sampler(
+        self.exploration_sampler_builder = lambda organism: Sampler(
+            organism=organism,
             eval_mode=False, 
-            obs_dim=task_progression.state_dim, 
             step_info=AgentStepInfo, 
             deterministic=False, 
             render=False, 
             device=device)
-        self.evaluation_sampler_builder = lambda: Sampler(
+        self.evaluation_sampler_builder = lambda organism: Sampler(
+            organism=organism,
             eval_mode=True, 
-            obs_dim=task_progression.state_dim, 
             step_info=AgentStepInfo, 
             deterministic=False, 
             render=True, 

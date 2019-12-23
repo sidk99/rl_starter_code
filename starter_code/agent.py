@@ -53,7 +53,7 @@ class Agent(nn.Module):
         self.vo_scheduler = optim.lr_scheduler.StepLR(
             self.value_optimizer, 
             step_size=args.anneal_policy_lr_step, 
-            gamma=args.anneal_policy_lr_gamma, 
+            gamma=args.anneal_policy_lr_gamma,
             last_epoch=-1)
 
     def step_optimizer_schedulers(self, pfunc):
@@ -84,10 +84,11 @@ class Agent(nn.Module):
             stored_action = [action]
         else:
             stored_action = action
-        action_dict = AttrDict(
+        action_dict = dict(
             action=action,
             stored_action=stored_action,
-            action_dist=dist)
+            action_dist=dist
+            )
         return action_dict
 
     def update(self, rl_alg):

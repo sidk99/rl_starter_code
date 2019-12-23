@@ -301,13 +301,13 @@ class EnvManager(EnvLogger):
         self.env_name = env_name
         self.env_type = env_registry.get_env_type(env_name)
         self.env = env_registry.get_env_constructor(env_name)()
-        self.env.seed(args.seed)
         self.visual = False  # default
         self.initialize()
 
     def initialize(self):
         self.add_variable('epoch')
         self.add_variable('steps')
+
 
 class TabularEnvManager(EnvManager):
     def __init__(self, env_name, env_registry, args):

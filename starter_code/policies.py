@@ -110,7 +110,7 @@ class BaseBetaPolicy(BaseContinuousPolicy):
 
 class DiscretePolicy(BaseDiscretePolicy):
     def __init__(self, state_dim, hdim, action_dim):
-        super(DiscretePolicy, self).__init__(action_dim)
+        super(DiscretePolicy, self).__init__()
         self.network = MLP(dims=[state_dim, *hdim, action_dim])
 
     def forward(self, x):
