@@ -23,10 +23,16 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
         print('Episode {}'.format(episode_num))
         train_env_manager = task_progression.sample(i=epoch, mode='train')
         max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
+
         episode_info = sampler.sample_episode(
             env=train_env_manager.env, 
             organism=organism,
             max_timesteps_this_episode=max_timesteps_this_episode)
+
+        if not sampler.eval_mode:
+            for e in episode_info.organism_episode_data:
+                organism.store_transition(e)
+
         stats_collector.append(episode_info)
         num_steps += (episode_info.steps)
         episode_num += 1
@@ -34,7 +40,7 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
 
     stats = stats_collector.bundle_batch_stats()
     assert num_steps == stats['total_steps'] == max_steps
-    
+
     if queue is not None:
         queue.put([stats])
     else:
@@ -213,30 +219,23 @@ class Sampler():
         return {i: np.random.random() for i in range(10)}
 
     def begin_episode(self):
-        self.episode_data = []
         state = self.env.reset()
         return state
 
-    def finish_episode(self):
-        start = time.time()
-        if not self.eval_mode:
-            for e in self.episode_data:
-                self.organism.store_transition(e)
-        after_store_transition = time.time()
 
+    # perhaps this is what you do after you collect all that data
+    def finish_episode(self, episode_data):
         episode_info = AttrDict(
-            returns=sum([e.reward for e in self.episode_data]),
-            steps=len(self.episode_data),
+            returns=sum([e.reward for e in episode_data]),
+            steps=len(episode_data),
+            organism_episode_data=episode_data
             )
         if self.render:
-            episode_info.frames = [e.frame for e in self.episode_data]
-            episode_info.bids = self.get_bids_for_episode(self.episode_data)
-
-        after_episode_info = time.time()
-
-        print('\tTime to store transition: {}'.format(after_store_transition-start))
-        print('\tTime to create episode info: {}'.format(after_episode_info-after_store_transition))
+            episode_info.frames = [e.frame for e in episode_data]
+            episode_info.bids = self.get_bids_for_episode(episode_data)
         return episode_info
+    # perhaps all of this will be done after I merge the parallel threads.
+
 
     def get_bids_for_episode(self, episode_data):
         episode_bids = defaultdict(lambda: [])
@@ -246,31 +245,23 @@ class Sampler():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def record_episode_data(self, e):
-        self.episode_data.append(e)
-
     def sample_episode(self, env, organism, max_timesteps_this_episode):
-        start = time.time()
         # or can set self.env and self.organism here
         ###################################
         # Dangerous? only if you modify them in begin_episode or finish_episode
         self.env = env
         self.organism = organism
         ###################################
+        episode_data = []
         state = self.begin_episode()
         for t in range(max_timesteps_this_episode):
             state, done, e = self.sample_timestep(env, organism, state)
-            self.record_episode_data(e)
-            if done:
-                break
+            episode_data.append(e)
+            if done: break
         if not done:
             assert t == max_timesteps_this_episode-1 
             # save the environment state here
-        after_sampling = time.time()
-        episode_info = self.finish_episode()
-        after_finish = time.time()
-        print('Time to sample episode: {}'.format(after_sampling-start))
-        print('Time to finish episode: {}'.format(after_finish-after_sampling))
+        episode_info = self.finish_episode(episode_data)
         return episode_info
 
 
