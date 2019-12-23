@@ -15,10 +15,8 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     organism = objects.organism
 
     num_steps = 0
-    episode_num = 0
 
     while num_steps < max_steps:
-        print('Episode {}'.format(episode_num))
         train_env_manager = task_progression.sample(i=epoch, mode='train')
         max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
 
@@ -27,23 +25,15 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
             organism=organism,
             max_timesteps_this_episode=max_timesteps_this_episode)
 
-        if not sampler.eval_mode:
-            for e in episode_data:
-                organism.store_transition(e)
-
         stats_collector.append(episode_data)
-
         num_steps += len(episode_data)
-        episode_num += 1
-        print('Steps so far: {}'.format(num_steps))
-
-    stats = stats_collector.bundle_batch_stats()
-    assert num_steps == stats['total_steps'] == max_steps
 
     if queue is not None:
-        queue.put([stats])
+        queue.put([stats_collector])
     else:
-        return stats
+        return stats_collector
+
+    # then in the parallel version you will still return the stats_collector, but you it will be a merged one
 
 
 
@@ -285,6 +275,11 @@ class Compound_RL_Stats:
         self.data.returns.append(sum([e.reward for e in episode_data]))
         self.data.steps.append(len(episode_data))
         self.data.episode_datas.append(episode_data)
+
+    def merge(self, other):
+        self.data.returns.extend(other.data.returns)
+        self.data.steps.extend(other.data.steps)
+        self.data.episode_datas.extend(other.data.episode_datas)
 
     # query
     def bundle_batch_stats(self, eval_mode=False):
