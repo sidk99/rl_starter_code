@@ -8,7 +8,6 @@ from starter_code.filter import MeanStdFilter, NoFilter
 
 import torch.multiprocessing as mp
 
-
 def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     task_progression = objects.task_progression
     stats_collector = objects.stats_collector_builder()
@@ -16,7 +15,6 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     organism = objects.organism
 
     num_steps = 0
-    # maybe have a memory object here?
     episode_num = 0
 
     while num_steps < max_steps:
@@ -24,17 +22,18 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
         train_env_manager = task_progression.sample(i=epoch, mode='train')
         max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
 
-        episode_info = sampler.sample_episode(
+        episode_data = sampler.sample_episode(
             env=train_env_manager.env, 
             organism=organism,
             max_timesteps_this_episode=max_timesteps_this_episode)
 
         if not sampler.eval_mode:
-            for e in episode_info.organism_episode_data:
+            for e in episode_data:
                 organism.store_transition(e)
 
-        stats_collector.append(episode_info)
-        num_steps += (episode_info.steps)
+        stats_collector.append(episode_data)
+
+        num_steps += len(episode_data)
         episode_num += 1
         print('Steps so far: {}'.format(num_steps))
 
@@ -222,20 +221,8 @@ class Sampler():
         state = self.env.reset()
         return state
 
-
-    # perhaps this is what you do after you collect all that data
     def finish_episode(self, episode_data):
-        episode_info = AttrDict(
-            returns=sum([e.reward for e in episode_data]),
-            steps=len(episode_data),
-            organism_episode_data=episode_data
-            )
-        if self.render:
-            episode_info.frames = [e.frame for e in episode_data]
-            episode_info.bids = self.get_bids_for_episode(episode_data)
-        return episode_info
-    # perhaps all of this will be done after I merge the parallel threads.
-
+        return episode_data
 
     def get_bids_for_episode(self, episode_data):
         episode_bids = defaultdict(lambda: [])
@@ -291,13 +278,13 @@ class Compound_RL_Stats:
         self.data = AttrDict(
             returns=[],
             steps=[],
-            episode_infos=[])
+            episode_datas=[])
 
     # update
-    def append(self, episode_info, eval_mode=False):
-        self.data.returns.append(episode_info.returns)
-        self.data.steps.append(episode_info.steps)
-        self.data.episode_infos.append(episode_info)
+    def append(self, episode_data, eval_mode=False):
+        self.data.returns.append(sum([e.reward for e in episode_data]))
+        self.data.steps.append(len(episode_data))
+        self.data.episode_datas.append(episode_data)
 
     # query
     def bundle_batch_stats(self, eval_mode=False):

@@ -150,21 +150,73 @@ class Experiment():
             'running mean return': self.run_avg.get_value('mean_return')
             })))
 
+
+
+    # # perhaps this is what you do after you collect all that data
+    # def finish_episode(self, episode_data):
+    #     episode_info = AttrDict(
+    #         returns=sum([e.reward for e in episode_data]),
+    #         steps=len(episode_data),
+    #         organism_episode_data=episode_data
+    #         )
+    #     if self.render:
+    #         episode_info.frames = [e.frame for e in episode_data]
+    #         episode_info.bids = self.get_bids_for_episode(episode_data)
+    #     return episode_info
+    # # perhaps all of this will be done after I merge the parallel threads.
+
+
+
+    # def test(self, epoch, env_manager, num_test):
+    #     stats_collector = self.stats_collector_builder()
+    #     for i in tqdm(range(num_test)):
+    #         with torch.no_grad():
+    #             evaluation_sampler = self.evaluation_sampler_builder()
+    #             episode_info = self.evaluation_sampler_builder().sample_episode(
+    #                 env=env_manager.env, 
+    #                 organism=self.organism,
+    #                 max_timesteps_this_episode=env_manager.max_episode_length)
+    #             ##########################################
+    #             if i == 0 and self.organism.discrete and env_manager.visual:
+
+    #                 bids = evaluation_sampler.get_bids_for_episode(episode_info.organism_episode_data)
+    #                 returns = sum([e.reward for e in episode_info.organism_episode_data])
+    #                 frames = [e.frame for e in episode_info.organism_episode_data]
+
+    #                 env_manager.save_video(epoch, i, bids, returns, frames)
+
+    #             ##########################################
+    #         stats_collector.append(episode_info.organism_episode_data, eval_mode=True)
+    #     stats = stats_collector.bundle_batch_stats(eval_mode=True)
+    #     return stats
+
+
     def test(self, epoch, env_manager, num_test):
         stats_collector = self.stats_collector_builder()
         for i in tqdm(range(num_test)):
             with torch.no_grad():
-                episode_info = self.evaluation_sampler_builder().sample_episode(
+                evaluation_sampler = self.evaluation_sampler_builder()
+                episode_data = self.evaluation_sampler_builder().sample_episode(
                     env=env_manager.env, 
                     organism=self.organism,
                     max_timesteps_this_episode=env_manager.max_episode_length)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:
-                    env_manager.save_video(epoch, i, episode_info.bids, episode_info.returns, episode_info.frames)
+
+                    bids = evaluation_sampler.get_bids_for_episode(episode_data)
+                    returns = sum([e.reward for e in episode_data])
+                    frames = [e.frame for e in episode_data]
+
+                    env_manager.save_video(epoch, i, bids, returns, frames)
+
                 ##########################################
-            stats_collector.append(episode_info, eval_mode=True)
+            stats_collector.append(episode_data, eval_mode=True)
         stats = stats_collector.bundle_batch_stats(eval_mode=True)
         return stats
+
+
+
+
 
     def update_metrics(self, env_manager, epoch, stats):
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
