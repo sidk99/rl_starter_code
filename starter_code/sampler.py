@@ -9,7 +9,7 @@ from starter_code.filter import MeanStdFilter, NoFilter
 import torch.multiprocessing as mp
 
 
-def collect_train_samples_serial(epoch, max_steps, objects):
+def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     task_progression = objects.task_progression
     stats_collector = objects.stats_collector_builder()
     sampler = objects.sampler_builder()
@@ -27,12 +27,6 @@ def collect_train_samples_serial(epoch, max_steps, objects):
             env=train_env_manager.env, 
             organism=organism,
             max_timesteps_this_episode=max_timesteps_this_episode)
-
-        # episode_info = sampler.dummy_method(
-        #     env=train_env_manager.env, 
-        #     organism=organism,
-        #     max_timesteps_this_episode=max_timesteps_this_episode)
-
         stats_collector.append(episode_info)
         num_steps += (episode_info.steps)
         episode_num += 1
@@ -40,7 +34,47 @@ def collect_train_samples_serial(epoch, max_steps, objects):
 
     stats = stats_collector.bundle_batch_stats()
     assert num_steps == stats['total_steps'] == max_steps
-    return stats
+    
+    if queue is not None:
+        queue.put([stats])
+    else:
+        return stats
+
+
+
+# def collect_train_samples_serial(epoch, max_steps, objects):
+#     task_progression = objects.task_progression
+#     stats_collector = objects.stats_collector_builder()
+#     sampler = objects.sampler_builder()
+#     organism = objects.organism
+
+#     # num_steps = 0
+#     # maybe have a memory object here?
+#     episode_num = 0
+
+#     while num_steps < max_steps:
+#         print('Episode {}'.format(episode_num))
+#         train_env_manager = task_progression.sample(i=epoch, mode='train')
+#         max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
+#         # episode_info = sampler.sample_episode(
+#         #     env=train_env_manager.env, 
+#         #     organism=organism,
+#         #     max_timesteps_this_episode=max_timesteps_this_episode)
+
+#         episode_info = sampler.dummy_method(
+#             env=train_env_manager.env, 
+#             organism=organism,
+#             max_timesteps_this_episode=max_timesteps_this_episode)
+
+#         stats_collector.append(episode_info)
+#         # num_steps += (episode_info.steps)
+#         episode_num += 1
+#         # print('Steps so far: {}'.format(num_steps))
+
+#     # stats = stats_collector.bundle_batch_stats()
+#     stats = episode_info
+#     # assert num_steps == stats['total_steps'] == max_steps
+#     return stats
 
 
 # def collect_train_samples_parallel(epoch, max_steps, objects):
@@ -67,7 +101,6 @@ def collect_train_samples_serial(epoch, max_steps, objects):
 def collect_train_samples_parallel(epoch, max_steps, objects):
     num_steps = 0
     num_workers = 8
-    stats_collector = stats_collector_builder()
     num_steps_per_worker = max_steps // num_workers
     num_residual_steps = max_steps - num_steps_per_worker * num_workers
 
@@ -77,11 +110,11 @@ def collect_train_samples_parallel(epoch, max_steps, objects):
     for i in range(num_workers):
         worker_steps = num_steps_per_worker + num_residual_steps if i == 0 else num_steps_per_worker
         worker_kwargs = dict(
-            pid=i+1,
-            queue=queue,
             epoch=epoch,
             max_steps=worker_steps,
-            objects=objects)
+            objects=objects,
+            pid=i+1,
+            queue=queue)
         workers.append(mp.Process(target=collect_train_samples_serial, kwargs=worker_kwargs))
     for worker in workers:
         worker.start()

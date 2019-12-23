@@ -155,6 +155,42 @@ def is_float(n):
 
 
 
+def tranpose_list_of_dicts(list_of_dicts):
+    """
+    input:
+        [
+            {key1: val1_0, key2: val2_0, ...},
+            {key1: val1_1, key2: val2_1, ...},
+        ]
+
+    output:
+        {
+            key1: [val1_0, val1_1, ...]
+            key2: [val2_0, val2_1, ...]
+        }
+    """
+    keys = list_of_dicts[0].keys()
+    output = {key: [] for key in keys}
+    for element_dict in list_of_dicts:
+        for key in element_dict:
+            output[key].append(element_dict[key])
+    return output
+
+def transpose_dict_of_lists(dict_of_lists):
+    """
+    input:
+        {
+            key1: [val1_0, val1_1, ...]
+            key2: [val2_0, val2_1, ...]
+        }
+
+    output:
+        [
+            {key1: val1_0, key2: val2_0, ...},
+            {key1: val1_1, key2: val2_1, ...},
+        ]
+    """
+
 
 
 

@@ -182,6 +182,7 @@ class PPO(OnPolicyRLAlg):
         self.reset_record()
         batch = agent.replay_buffer.sample()
         states, actions, masks, rewards = self.unpack_batch(batch)
+
         with torch.no_grad():
             values = agent.valuefn(states)  # (bsize, 1)
             fixed_log_probs = agent.policy.get_log_prob(
