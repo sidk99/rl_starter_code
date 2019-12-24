@@ -9,7 +9,7 @@ from starter_code.experiment import CentralizedExperiment
 from starter_code.log import MultiBaseLogger
 from starter_code.policies import DiscretePolicy, SimpleGaussianPolicy, DiscreteCNNPolicy
 from starter_code.multitask import construct_task_progression, default_task_prog_spec, task_prog_spec_multi
-from starter_code.rb import OnPolicyMemory
+from starter_code.rb import OnPolicyMemory, StaticMemory
 from starter_code.rl_algs import rlalg_switch
 from starter_code.value_function import ValueFn, CNNValueFn
 
@@ -62,7 +62,15 @@ class BaseLauncher:
             policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
             policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
             critic = ValueFn(state_dim=task_progression.state_dim)
+
+        #############################################
         replay_buffer = OnPolicyMemory()
+        # replay_buffer = StaticMemory(
+        #     max_replay_buffer_size=args.max_buffer_size,
+        #     ob_dim=(7,7,3), # hacky task_progression.state_dim,
+        #     action_dim=1)# hacky; 1 because Categorical task_progression.action_dim)
+        #############################################
+
         agent = Agent(policy, critic, replay_buffer, args).to(device)
         return agent
 

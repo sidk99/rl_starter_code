@@ -98,7 +98,6 @@ class AgentStepInfo(BasicStepInfo):
         self.action = self.action_dict['stored_action']
         self.action_dist = self.action_dict['action_dist']
 
-
 class Sampler():
     """
         one sampler for exploration

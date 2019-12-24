@@ -1,4 +1,5 @@
 from collections import namedtuple
+import numpy as np
 
 # Taken from
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
@@ -59,15 +60,19 @@ class OnPolicyMemory(Memory):
     def __init__(self):
         super(OnPolicyMemory, self).__init__('on_policy')
 
-
+class AttrDict(dict):
+  __getattr__ = dict.__getitem__
+  __setattr__ = dict.__setitem__    
 
 
 class StaticMemory():
     def __init__(self, max_replay_buffer_size, ob_dim, action_dim):
-        self._states = np.empty((max_replay_buffer_size, ob_dim))
+        self._max_replay_buffer_size = max_replay_buffer_size
+
+        self._states = np.empty((max_replay_buffer_size, *ob_dim))
         self._actions = np.empty((max_replay_buffer_size, action_dim))
-        self._masks = np.empty((max_replay_buffer_size, 1), dtype='uint8')
-        self._rewards = np.empty((max_replay_buffer_size, 1))
+        self._masks = np.empty((max_replay_buffer_size), dtype='uint8')
+        self._rewards = np.empty((max_replay_buffer_size))
 
         self._top = 0
         self._size = 0
@@ -86,9 +91,9 @@ class StaticMemory():
 
     def sample(self, batch_size=None):
         if batch_size is None:
-            batch_size = max_replay_buffer_size
+            batch_size = self._max_replay_buffer_size
         indices = np.random.randint(0, self._size, batch_size)
-        batch = dict(
+        batch = AttrDict(
             state=self._states[indices],
             action=self._actions[indices],
             mask=self._masks[indices],
