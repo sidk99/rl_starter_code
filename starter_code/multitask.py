@@ -103,6 +103,9 @@ class TaskProgression(object):
     def __init__(self):
         self.task_dist_group_series = []
 
+    def __len__(self):
+        return len(self.task_dist_group_series)
+
     def __getitem__(self, i):
         idx = min(i, len(self.task_dist_group_series)-1)  # keep last one if saturated
         return self.task_dist_group_series[idx]

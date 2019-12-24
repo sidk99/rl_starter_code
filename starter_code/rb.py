@@ -58,3 +58,50 @@ class OffPolicyMemory(Memory):
 class OnPolicyMemory(Memory):
     def __init__(self):
         super(OnPolicyMemory, self).__init__('on_policy')
+
+
+
+
+class StaticMemory():
+    def __init__(self, max_replay_buffer_size, ob_dim, action_dim):
+        self._states = np.empty((max_replay_buffer_size, ob_dim))
+        self._actions = np.empty((max_replay_buffer_size, action_dim))
+        self._masks = np.empty((max_replay_buffer_size, 1), dtype='uint8')
+        self._rewards = np.empty((max_replay_buffer_size, 1))
+
+        self._top = 0
+        self._size = 0
+
+    def _advance(self):
+        self._top = (self._top + 1) % self._max_replay_buffer_size
+        if self._size < self._max_replay_buffer_size:
+            self._size += 1
+
+    def push(self, state, action, mask, reward):
+        self._states[self._top] = state
+        self._actions[self._top] = action
+        self._masks[self._top] = mask
+        self._rewards[self._top] = reward
+        self._advance()
+
+    def sample(self, batch_size=None):
+        if batch_size is None:
+            batch_size = max_replay_buffer_size
+        indices = np.random.randint(0, self._size, batch_size)
+        batch = dict(
+            state=self._states[indices],
+            action=self._actions[indices],
+            mask=self._masks[indices],
+            reward=self._rewards[indices],
+            )
+        return batch
+
+    def __len__(self):
+        return self._size
+
+    def clear_buffer(self):
+        pass
+
+
+
+

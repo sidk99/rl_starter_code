@@ -9,7 +9,7 @@ import pickle
 import sys
 import time
 import torch
-from tqdm import tqdm
+# from tqdm import tqdm
 
 from starter_code.log import RunningAverage
 from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
@@ -67,21 +67,41 @@ class Experiment():
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
 
+        assert len(self.task_progression) == 1
+        train_env_manager = self.task_progression.sample(i=epoch, mode='train')  # there should only one environment here 
+
+        self.organism.to('cpu')
+
         stats_collector = collector(
             epoch=epoch, 
             max_steps=self.rl_alg.num_samples_before_update, 
-            objects=AttrDict(
-                task_progression=self.task_progression, 
+            objects=dict(
+                max_episode_length=train_env_manager.max_episode_length,
+                env=train_env_manager.env,
                 stats_collector_builder=self.stats_collector_builder, 
                 sampler_builder=self.exploration_sampler_builder, 
                 organism=self.organism)
             )
 
+        self.organism.to(self.device)
+
+        t1 = time.time()
         stats = stats_collector.bundle_batch_stats()  # you might want to bundle batch stats after the parallel thing
+        t2 = time.time()
 
         for episode_data in stats_collector.data['episode_datas']:
+            t_01 = time.time()
             for e in episode_data:
+                t_001 = time.time()
                 self.organism.store_transition(e)
+                t_002 = time.time()
+                print('Time to store one transition: {}'.format(t_002-t_001))
+            t_02 = time.time()
+            print('Time to store one episode: {}'.format(t_02-t_01))
+        t3 = time.time()
+
+        print('Bundle time: {}'.format(t2-t1))
+        print('Storage time: {}'.format(t3-t2))
 
         self.run_avg.update_variable('mean_return', stats['mean_return'])
         self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+stats['total_steps'])
@@ -151,13 +171,13 @@ class Experiment():
 
     def test(self, epoch, env_manager, num_test):
         stats_collector = self.stats_collector_builder()
-        for i in tqdm(range(num_test)):
+        for i in range(num_test):
             with torch.no_grad():
                 evaluation_sampler = self.evaluation_sampler_builder(self.organism)
                 episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
-                    # organism=self.organism,
-                    max_timesteps_this_episode=env_manager.max_episode_length)
+                    max_timesteps_this_episode=env_manager.max_episode_length,
+                    render=True)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:
 
@@ -170,6 +190,7 @@ class Experiment():
                 ##########################################
             stats_collector.append(episode_data, eval_mode=True)
         stats = stats_collector.bundle_batch_stats(eval_mode=True)
+
         return stats
 
 
@@ -203,38 +224,52 @@ class Experiment():
         self.plot_metrics(env_manager, name)
 
     def eval_step(self, epoch):
+        self.organism.to('cpu')
         for env_manager in self.task_progression[epoch]['test']:
+            t0 = time.time()
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
+            t1 = time.time()
             self.logger.pprintf({k:v for k,v in stats.items() if k not in 
                 ['bid_differences', 'Q_differences', 'agent_episode_data', 'organism_episode_data']})
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)
+            t2 = time.time()
             if epoch % self.args.save_every == 0:
                 self.save(env_manager, epoch, stats)
+            t3 = time.time()
+
+            print('Time to sample test examples: {}'.format(t1-t0))
+            print('Time to visualize: {}'.format(t2-t1))
+            print('Time to save: {}'.format(t3-t2))
+        self.organism.to(self.device)
 
 
 class CentralizedExperiment(Experiment):
     def __init__(self, agent, task_progression, rl_alg, logger, device, args):
         super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
-        self.exploration_sampler_builder = lambda organism: Sampler(
-            organism=organism,
-            eval_mode=False, 
-            step_info=AgentStepInfo, 
-            deterministic=False, 
-            render=False, 
-            device=device)
-        self.evaluation_sampler_builder = lambda organism: Sampler(
-            organism=organism,
-            eval_mode=True, 
-            step_info=AgentStepInfo, 
-            deterministic=False, 
-            render=True, 
-            device=device)
+        self.exploration_sampler_builder = exploration_sampler_builder
+        self.evaluation_sampler_builder = evaluation_sampler_builder
 
         self.stats_collector_builder = Centralized_RL_Stats
 
         # wait yeah, actually you only need the filter for the exploration sampler!
 
+# need to do this for pickling
+def exploration_sampler_builder(organism):
+    return Sampler(
+            organism=organism,
+            eval_mode=False, 
+            step_info=AgentStepInfo, 
+            deterministic=False, 
+            )
+
+def evaluation_sampler_builder(organism):
+    return Sampler(
+            organism=organism,
+            eval_mode=True, 
+            step_info=AgentStepInfo, 
+            deterministic=False, 
+            )
 
 
 

@@ -16,11 +16,10 @@ import pandas as pd
 import pprint
 import shutil
 import torch
-from tqdm import tqdm
 from matplotlib.ticker import MaxNLocator
 import heapq
-
 from env_config import EnvRegistry
+
 
 er = EnvRegistry()
 
@@ -78,7 +77,6 @@ class Saver(object):
         self.heapsize = heapsize
         self.most_recents = []  # largest is most recent
         self.bests = []  # largest is best
-        self.create_save_file = lambda epoch: os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(epoch))
 
         with open(os.path.join(self.checkpoint_dir, 'summary.csv'), 'w') as f:
             csv_writer = csv.DictWriter(f, fieldnames=['recent', 'best'])
@@ -88,7 +86,7 @@ class Saver(object):
         ckpt_id = epoch
         # ckpt_return = float(state_dict['experiment']['mean_return'])
         ckpt_return = float(state_dict['mean_return'])
-        ckpt_name = self.create_save_file(epoch)
+        ckpt_name = os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(epoch))#self.create_save_file(epoch)
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
         torch.save(state_dict, ckpt_name)
@@ -406,7 +404,8 @@ class VisualEnvManager(EnvManager):
                 os.remove(fname)
 
     def save_video(self, epoch, test_example, bids, ret, frames):
-        for i, frame in tqdm(enumerate(frames)):
+        # for i, frame in tqdm(enumerate(frames)):
+        for i, frame in enumerate(frames):
             fname = '{}_e{}_n{}_t{}.png'.format(self.env_name, epoch, test_example, i)
             agent_ids = sorted(bids.keys())
             bids_t = [(agent_id, bids[agent_id][i]) for agent_id in agent_ids]

@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import torch
-
+# import torch.multiprocessing as mp
 from starter_code.agent import Agent
 from starter_code.configs import process_config, env_manager_switch
 from starter_code.env_config import EnvRegistry as ER
@@ -83,5 +83,11 @@ class BaseLauncher:
         experiment.main_loop(max_epochs=args.max_epochs)
 
 if __name__ == '__main__':
+    # import torch.multiprocessing as mp
+    # mp.set_start_method('spawn')  # if I set this to spawn, then I get a pickling error
+    # mp.set_start_method('forkserver')  # if I set this to spawn, then I get a pickling error
+    import multiprocessing as mp
+    mp.set_start_method('spawn')
+
     launcher = BaseLauncher()
     launcher.main(parse_args)

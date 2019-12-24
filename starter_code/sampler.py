@@ -1,36 +1,36 @@
 from collections import defaultdict
 import numpy as np
+import pickle
 import time
 import torch
 import starter_code.env_utils as eu
 from starter_code.utils import AttrDict, from_np, to_np
 from starter_code.filter import MeanStdFilter, NoFilter
 
-# import torch.multiprocessing as mp
 import multiprocessing as mp
 
 def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
+    env = objects['env']
+    stats_collector = objects['stats_collector_builder']()
+    sampler = objects['sampler_builder'](objects['organism'])
+
+    env.seed(1000000+pid)
     torch.manual_seed(1000000+pid)
     np.random.seed(1000000+pid)
 
-    task_progression = objects.task_progression
-    stats_collector = objects.stats_collector_builder()
-    sampler = objects.sampler_builder(objects.organism)
-
+    start = time.time()
     num_steps = 0
     while num_steps < max_steps:
-        train_env_manager = task_progression.sample(i=epoch, mode='train')
-        env = train_env_manager.env  # or maybe I can just make the environment here
-        env.seed(1000000+pid)
-
-        max_timesteps_this_episode = min(max_steps - num_steps, train_env_manager.max_episode_length)
+        max_timesteps_this_episode = min(max_steps - num_steps, objects['max_episode_length'])
 
         episode_data = sampler.sample_episode(
-            env=train_env_manager.env, 
+            env=env,
             max_timesteps_this_episode=max_timesteps_this_episode)
 
         stats_collector.append(episode_data)
         num_steps += len(episode_data)
+    end = time.time()
+    print('PID: {} Time to collect samples: {}'.format(pid, end-start))
 
     if queue is not None:
         queue.put([pid, stats_collector.data])
@@ -57,10 +57,13 @@ def collect_train_samples_parallel(epoch, max_steps, objects):
     for j, worker in enumerate(workers):
         worker.start()
 
-    master_stats_collector = objects.stats_collector_builder()
+    start = time.time()
+    master_stats_collector = objects['stats_collector_builder']()
     for j, worker in enumerate(workers):
         worker_pid, worker_stats_data = queue.get()
         master_stats_collector.extend(worker_stats_data)
+    end = time.time()
+    print('Time to extend master_stats_collector: {}'.format(end-start))
 
     for j, worker in enumerate(workers):
         worker.join()
@@ -101,16 +104,14 @@ class Sampler():
         one sampler for exploration
         one sampler for evaluation
     """
-    def __init__(self, organism, eval_mode, step_info, deterministic, render, device):
+    def __init__(self, organism, eval_mode, step_info, deterministic):#, render):
         self.organism = organism
         self.deterministic = deterministic
-        self.render = render
-        self.device = device
         self.step_info_builder = step_info
         self.eval_mode = eval_mode
 
-    def sample_timestep(self, env, organism, state):
-        state_var = from_np(state, self.device)
+    def sample_timestep(self, env, organism, state, render=False):
+        state_var = from_np(state, 'cpu')
         with torch.no_grad():
             action_dict = organism.forward(state_var, deterministic=self.deterministic)
         next_state, reward, done, _ = env.step(action_dict['action'])
@@ -121,7 +122,7 @@ class Sampler():
             next_state=next_state,
             mask=mask,
             reward=reward)
-        if self.render:
+        if render:
             e.frame = eu.render(env=env, scale=0.25)
         return next_state, done, e
 
@@ -144,7 +145,7 @@ class Sampler():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_episode(self, env, max_timesteps_this_episode):
+    def sample_episode(self, env, max_timesteps_this_episode, render=False):
         # or can set self.env and self.organism here
         ###################################
         # Dangerous? only if you modify them in begin_episode or finish_episode
@@ -153,7 +154,7 @@ class Sampler():
         episode_data = []
         state = self.begin_episode()
         for t in range(max_timesteps_this_episode):
-            state, done, e = self.sample_timestep(env, self.organism, state)
+            state, done, e = self.sample_timestep(env, self.organism, state, render)
             episode_data.append(e)
             if done: break
         if not done:
