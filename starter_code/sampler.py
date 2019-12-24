@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+import dill
 import pickle
 import time
 import torch
@@ -42,7 +43,6 @@ def collect_train_samples_parallel(epoch, max_steps, objects):
     num_steps_per_worker = max_steps // num_workers
     num_residual_steps = max_steps - num_steps_per_worker * num_workers
 
-    # you should initialize workers right here
     queue = mp.Queue()
     workers = []
     for i in range(num_workers):

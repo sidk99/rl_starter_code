@@ -90,11 +90,8 @@ class Experiment():
         t2 = time.time()
 
         for episode_data in stats_collector.data['episode_datas']:
-            # t_01 = time.time()
             for e in episode_data:
                 self.organism.store_transition(e)
-            # t_02 = time.time()
-            # print('Time to store one episode: {}'.format(t_02-t_01))
         t3 = time.time()
 
         print('Bundle time: {}'.format(t2-t1))
@@ -246,12 +243,8 @@ class CentralizedExperiment(Experiment):
         super(CentralizedExperiment, self).__init__(agent, task_progression, rl_alg, logger, device, args)
         self.exploration_sampler_builder = exploration_sampler_builder
         self.evaluation_sampler_builder = evaluation_sampler_builder
-
         self.stats_collector_builder = Centralized_RL_Stats
 
-        # wait yeah, actually you only need the filter for the exploration sampler!
-
-# need to do this for pickling
 def exploration_sampler_builder(organism):
     return Sampler(
             organism=organism,
