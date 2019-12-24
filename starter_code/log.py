@@ -84,9 +84,9 @@ class Saver(object):
 
     def save(self, epoch, state_dict, pfunc):
         ckpt_id = epoch
-        # ckpt_return = float(state_dict['experiment']['mean_return'])
         ckpt_return = float(state_dict['mean_return'])
-        ckpt_name = os.path.join(self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(epoch))#self.create_save_file(epoch)
+        ckpt_name = os.path.join(
+            self.checkpoint_dir, 'ckpt_batch{}.pth.tar'.format(epoch))
         heapq.heappush(self.most_recents, (ckpt_id, ckpt_name))
         heapq.heappush(self.bests, (ckpt_return, ckpt_name))
         torch.save(state_dict, ckpt_name)
@@ -218,19 +218,8 @@ class MultiBaseLogger(BaseLogger):
         self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
         json.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'))
 
-
-
         self.initialize()
 
-
-# def create_logdir(root, dirname, setdate):
-#     logdir = os.path.join(root, dirname)
-#     if setdate:
-#         if not dirname == '': logdir += '__'
-#         logdir += '{date:%Y-%m-%d_%H-%M-%S}'.format(
-#         date=datetime.datetime.now())
-#     mkdirp(logdir)
-#     return logdir
     def save_source_code(self):
         pass
 

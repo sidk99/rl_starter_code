@@ -94,8 +94,8 @@ if __name__ == '__main__':
     # import torch.multiprocessing as mp
     # mp.set_start_method('spawn')  # if I set this to spawn, then I get a pickling error
     # mp.set_start_method('forkserver')  # if I set this to spawn, then I get a pickling error
-    import multiprocessing as mp
-    mp.set_start_method('spawn')
+    # import multiprocessing as mp
+    # mp.set_start_method('spawn')
 
     launcher = BaseLauncher()
     launcher.main(parse_args)

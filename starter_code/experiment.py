@@ -90,11 +90,11 @@ class Experiment():
         t2 = time.time()
 
         for episode_data in stats_collector.data['episode_datas']:
-            t_01 = time.time()
+            # t_01 = time.time()
             for e in episode_data:
                 self.organism.store_transition(e)
-            t_02 = time.time()
-            print('Time to store one episode: {}'.format(t_02-t_01))
+            # t_02 = time.time()
+            # print('Time to store one episode: {}'.format(t_02-t_01))
         t3 = time.time()
 
         print('Bundle time: {}'.format(t2-t1))

@@ -125,10 +125,6 @@ class Sampler():
             e.frame = eu.render(env=env, scale=0.25)
         return next_state, done, e
 
-    def dummy_method(self, env, max_timesteps_this_episode):
-        time.sleep(0.01)
-        return {i: np.random.random() for i in range(10)}
-
     def begin_episode(self):
         state = self.env.reset()
         return state
