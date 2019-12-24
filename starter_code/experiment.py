@@ -92,10 +92,7 @@ class Experiment():
         for episode_data in stats_collector.data['episode_datas']:
             t_01 = time.time()
             for e in episode_data:
-                t_001 = time.time()
                 self.organism.store_transition(e)
-                t_002 = time.time()
-                print('Time to store one transition: {}'.format(t_002-t_001))
             t_02 = time.time()
             print('Time to store one episode: {}'.format(t_02-t_01))
         t3 = time.time()

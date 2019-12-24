@@ -57,7 +57,7 @@ class RunningAverage(object):
             self.data['running_'+key] = value
         else:
             self.data['running_'+key] = (1-self.alpha) * self.data['running_'+key] + self.alpha * value
-        return copy.deepcopy(self.data['running_'+key])
+        return copy.deepcopy(self.data['running_'+key])  # is copying actually necessary?
 
     def get_value(self, key):
         if 'running_'+key in self.data:
