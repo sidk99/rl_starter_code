@@ -9,7 +9,6 @@ import pickle
 import sys
 import time
 import torch
-# from tqdm import tqdm
 
 from starter_code.log import RunningAverage
 from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
