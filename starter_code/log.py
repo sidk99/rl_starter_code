@@ -19,6 +19,7 @@ import torch
 from matplotlib.ticker import MaxNLocator
 import heapq
 from env_config import EnvRegistry
+from starter_code.utils import is_float
 
 
 er = EnvRegistry()
@@ -419,3 +420,20 @@ class MinigridEnvManager(VisualEnvManager):
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
         self.max_episode_length = self.env.max_steps
 
+
+def log_string(ordered_dict):
+    s = ''
+    for i, (k, v) in enumerate(ordered_dict.items()):
+        delim = '' if i == 0 else ' | '
+        if is_float(v):
+            s += delim + '{}: {:.5f}'.format(k, v)
+        else:
+            s += delim + '{}: {}'.format(k, v)
+    return s
+
+def format_log_string(list_of_rows):
+    length = max(len(s) for s in list_of_rows)
+    outside_border = '#'*length
+    inside_border = '*'*length
+    s = '\n'.join([outside_border]+list_of_rows+[outside_border])
+    return s

@@ -14,6 +14,7 @@ from starter_code.log import RunningAverage
 from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
+from starter_code.log import log_string, format_log_string
 
 
 """
@@ -25,16 +26,6 @@ from starter_code.utils import AttrDict, is_float
 def analyze_size(obj, obj_name):
     obj_pickle = pickle.dumps(obj)
     print('Size of {}: {}'.format(obj_name, sys.getsizeof(obj_pickle)))
-
-def log_string(ordered_dict):
-    s = ''
-    for i, (k, v) in enumerate(ordered_dict.items()):
-        delim = '' if i == 0 else ' | '
-        if is_float(v):
-            s += delim + '{}: {:.5f}'.format(k, v)
-        else:
-            s += delim + '{}: {}'.format(k, v)
-    return s
 
 class Experiment():
     """
@@ -108,8 +99,8 @@ class Experiment():
     def main_loop(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
-            if epoch % self.args.eval_every == 0:
-                self.eval_step(epoch)
+            # if epoch % self.args.eval_every == 0:
+            #     self.eval_step(epoch)
             self.train_step(epoch)
         self.finish_training()
 
@@ -117,7 +108,7 @@ class Experiment():
     def train_step(self, epoch):
         epoch_stats = self.collect_samples(epoch)
         if epoch % self.args.log_every == 0:
-            self.log(epoch, epoch_stats)
+            self.logger.printf(format_log_string(self.log(epoch, epoch_stats)))
         if epoch % self.args.visualize_every == 0:
             # this ticks the epoch and steps
             self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
@@ -151,16 +142,17 @@ class Experiment():
         torch.cuda.empty_cache()  # may be I should do this
 
     def log(self, epoch, epoch_stats):
-        self.logger.printf(log_string(OrderedDict({
+        s = log_string(OrderedDict({
             'epoch': epoch,
             'env steps this batch': epoch_stats['total_steps'],
             'env steps taken': self.run_avg.get_last_value('steps'),
             'avg return': epoch_stats['mean_return'],
+            'std return': epoch_stats['std_return'],
             'min return': epoch_stats['min_return'],
             'max return': epoch_stats['max_return'],
             'running mean return': self.run_avg.get_value('mean_return')
-            })))
-
+            }))
+        return [s]
 
     def test(self, epoch, env_manager, num_test):
         stats_collector = self.stats_collector_builder()
@@ -169,7 +161,7 @@ class Experiment():
                 evaluation_sampler = self.evaluation_sampler_builder(self.organism)
                 episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
-                    max_timesteps_this_episode=env_manager.max_episode_length,
+                    max_steps_this_episode=env_manager.max_episode_length,
                     render=True)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:

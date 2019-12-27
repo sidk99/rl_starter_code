@@ -14,6 +14,7 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     env = objects['env']
     stats_collector = objects['stats_collector_builder']()
     sampler = objects['sampler_builder'](objects['organism'])
+    max_episode_length = objects['max_episode_length']
 
     env.seed(1000000+pid)
     torch.manual_seed(1000000+pid)
@@ -22,11 +23,11 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     start = time.time()
     num_steps = 0
     while num_steps < max_steps:
-        max_timesteps_this_episode = min(max_steps - num_steps, objects['max_episode_length'])
+        max_steps_this_episode = min(max_steps - num_steps, max_episode_length)
 
         episode_data = sampler.sample_episode(
-            env=env,
-            max_timesteps_this_episode=max_timesteps_this_episode)
+            env=env, 
+            max_steps_this_episode=max_steps_this_episode)
 
         stats_collector.append(episode_data)
         num_steps += len(episode_data)
@@ -38,8 +39,7 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     else:
         return stats_collector
 
-def collect_train_samples_parallel(epoch, max_steps, objects):
-    num_workers = 8
+def collect_train_samples_parallel(epoch, max_steps, objects, num_workers=8):
     num_steps_per_worker = max_steps // num_workers
     num_residual_steps = max_steps - num_steps_per_worker * num_workers
 
@@ -140,7 +140,7 @@ class Sampler():
                 episode_bids[index].append(prob)
         return episode_bids
 
-    def sample_episode(self, env, max_timesteps_this_episode, render=False):
+    def sample_episode(self, env, max_steps_this_episode, render=False):
         # or can set self.env and self.organism here
         ###################################
         # Dangerous? only if you modify them in begin_episode or finish_episode
@@ -148,12 +148,12 @@ class Sampler():
         ###################################
         episode_data = []
         state = self.begin_episode()
-        for t in range(max_timesteps_this_episode):
+        for t in range(max_steps_this_episode):
             state, done, e = self.sample_timestep(env, self.organism, state, render)
             episode_data.append(e)
             if done: break
         if not done:
-            assert t == max_timesteps_this_episode-1 
+            assert t == max_steps_this_episode-1 
             # save the environment state here
         episode_info = self.finish_episode(episode_data)
         return episode_info
@@ -167,33 +167,50 @@ class Compound_RL_Stats:
     def reset(self):
         self.data = dict(
             returns=[],
-            steps=[],
+            steps=0,
             episode_datas=[]
             )
 
     # update
     def append(self, episode_data, eval_mode=False):
-        self.data['returns'].append(sum([e.reward for e in episode_data]))
-        self.data['steps'].append(len(episode_data))
+        self.data['steps'] += len(episode_data)
         self.data['episode_datas'].append(episode_data)
 
     def extend(self, other_data):
-        self.data['returns'].extend(other_data['returns'])
-        self.data['steps'].extend(other_data['steps'])
+        self.data['steps'] += other_data['steps']
         self.data['episode_datas'].extend(other_data['episode_datas'])
 
     def get_total_steps(self):
-        return sum(self.data['steps'])
+        return self.data['steps']
+
+    def summarize(self):
+        """
+        input:
+            episode_datas
+
+        output:
+            returns
+            steps
+
+        questions:
+            should this modify self.data?
+                the alternative would be to output a bunch of lists, but the problem this is is that the only situation where we'd actually use the output would be to modify self.data anyways, so might as well just modify self.datas
+            should this take in episode_datas as input?
+                but if we directly modify self.data here, then we should probably just not take in episode_datas either then, or perhaps we should - I suppose taking in episode_datas makes it explicit what the input spec of the function is
+        """
+        self.data['returns'] = [sum([e.reward for e in episode_data]) 
+            for episode_data in self.data['episode_datas']]
 
     # query
     def bundle_batch_stats(self, eval_mode=False):
-        stats = dict(num_episodes=len(self.data['steps']))
+        self.summarize()
+        stats = dict(num_episodes=len(self.data['episode_datas']))
         stats = dict({**stats, **self.log_metrics(np.array(self.data['returns']), 'return')})
         stats = dict({**stats, **self.log_metrics(np.array(self.data['steps']), 'steps')})
         return stats
 
     def __len__(self):
-        return len(self.data['steps'])
+        return len(self.data['episode_datas'])
 
     def log_metrics(self, data, label):
         """
