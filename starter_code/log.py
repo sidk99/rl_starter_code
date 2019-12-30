@@ -349,6 +349,13 @@ class TabularEnvManager(EnvManager):
         self.add_variable('mean_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
         self.add_variable('std_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
+    # should I merge VickreyLogger with this?
+    # I think I should merge VickreyLogger with this.
+
+
+
+
+
 
 class VisualEnvManager(EnvManager):
     def __init__(self, env_name, env_registry, args):
