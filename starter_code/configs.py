@@ -1,14 +1,6 @@
-
-
 from types import SimpleNamespace
 from starter_code.env_config import simplify_name
-
-
-
 from starter_code.log import MultiBaseLogger, MinigridEnvManager, GymEnvManager, TabularEnvManager
-
-
-
 from env_config import EnvRegistry
 from starter_code.utils import AttrDict
 
