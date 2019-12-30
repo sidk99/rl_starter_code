@@ -112,7 +112,6 @@ class Experiment():
             self.logger.printf(format_log_string(self.log(epoch, epoch_stats, mode='train')))
         if epoch % self.args.visualize_every == 0:
             # this ticks the epoch and steps
-            # self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
             self.visualize(train_env_manager, epoch, epoch_stats, self.logger.expname)
         if epoch % self.args.save_every == 0:
             self.save(self.logger, epoch, epoch_stats)
