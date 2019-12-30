@@ -44,7 +44,7 @@ class Experiment():
         self.parallel_collect = False#True  if this does not update state_histogram??
         self.steps = 0
 
-    def collect_samples(self, epoch):
+    def collect_samples(self, epoch, env_manager):
         """
             Invariants:
                 - metrics will always be updated after this method
@@ -60,16 +60,13 @@ class Experiment():
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
 
-        assert len(self.task_progression) == 1
-        train_env_manager = self.task_progression.sample(i=epoch, mode='train')  # there should only one environment here 
-
         self.organism.to('cpu')
         stats_collector = collector(
             epoch=epoch, 
             max_steps=self.rl_alg.num_samples_before_update, 
             objects=dict(
-                max_episode_length=train_env_manager.max_episode_length,
-                env=train_env_manager.env,
+                max_episode_length=env_manager.max_episode_length,
+                env=env_manager.env,
                 stats_collector_builder=self.stats_collector_builder, 
                 sampler_builder=self.exploration_sampler_builder, 
                 organism=self.organism)
@@ -98,7 +95,6 @@ class Experiment():
         self.logger.printf('Epoch {}: Time to Collect Samples: {}'.format(epoch, time.time()-t0))
         return stats
 
-
     def main_loop(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
@@ -107,14 +103,17 @@ class Experiment():
             self.train_step(epoch)
         self.finish_training()
 
-
     def train_step(self, epoch):
-        epoch_stats = self.collect_samples(epoch)
+        assert len(self.task_progression) == 1
+        train_env_manager = self.task_progression.sample(i=epoch, mode='train')
+
+        epoch_stats = self.collect_samples(epoch, train_env_manager)
         if epoch % self.args.log_every == 0:
             self.logger.printf(format_log_string(self.log(epoch, epoch_stats, mode='train')))
         if epoch % self.args.visualize_every == 0:
             # this ticks the epoch and steps
-            self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
+            # self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
+            self.visualize(train_env_manager, epoch, epoch_stats, self.logger.expname)
         if epoch % self.args.save_every == 0:
             self.save(self.logger, epoch, epoch_stats)
         self.update(epoch)
