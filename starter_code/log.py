@@ -238,7 +238,6 @@ class MultiBaseLogger(BaseLogger):
     def save_source_code(self):
         pass
 
-
     def initialize(self):
         self.add_variable('epoch')
         self.add_variable('steps')
@@ -433,7 +432,6 @@ class MinigridEnvManager(VisualEnvManager):
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
         self.max_episode_length = self.env.max_steps
-
 
 def log_string(ordered_dict):
     s = ''
