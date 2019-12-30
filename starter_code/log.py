@@ -46,19 +46,21 @@ def create_logdir(root, dirname, setdate):
     mkdirp(logdir)
     return logdir
 
+
 class RunningAverage(object):
     def __init__(self):
         super(RunningAverage, self).__init__()
         self.data = {}
-        self.alpha = 0.01
 
     def update_variable(self, key, value):
         self.data[key] = value # overwrite
         if 'running_'+key not in self.data:
             self.data['running_'+key] = value
+            self.data['counter_'+key] = 1
         else:
-            self.data['running_'+key] = (1-self.alpha) * self.data['running_'+key] + self.alpha * value
-        return copy.deepcopy(self.data['running_'+key])  # is copying actually necessary?
+            self.data['counter_'+key] += 1
+            n = self.data['counter_'+key]
+            self.data['running_'+key] = float(n-1)/n * self.data['running_'+key] + 1.0/n * value
 
     def get_value(self, key):
         if 'running_'+key in self.data:
@@ -71,6 +73,19 @@ class RunningAverage(object):
             return self.data[key]
         else:
             assert KeyError
+
+class ExponentialRunningAverage(RunningAverage):
+    def __init__(self):
+        super(ExponentialRunningAverage, self).__init__()
+        self.data = {}
+        self.alpha = 0.01
+
+    def update_variable(self, key, value):
+        self.data[key] = value # overwrite
+        if 'running_'+key not in self.data:
+            self.data['running_'+key] = value
+        else:
+            self.data['running_'+key] = (1-self.alpha) * self.data['running_'+key] + self.alpha * value
 
 class Saver(object):
     def __init__(self, checkpoint_dir, heapsize=1):
@@ -138,7 +153,6 @@ class BaseLogger(object):
         """
             Appends to the log
         """
-        # print('name: {} index: {} value: {}'.format(name, index, value))
         if include_running_avg:
             running_name = 'running_{}'.format(name)
             self.run_avg.update_variable(name, value)
@@ -146,7 +160,7 @@ class BaseLogger(object):
         self.data[name].append((index, value))
 
     def get_recent_variable_value(self, name):
-        index, recent_value = copy.deepcopy(self.data[name][-1])
+        index, recent_value = self.data[name][-1]
         return recent_value
 
     def has_running_avg(self, name):

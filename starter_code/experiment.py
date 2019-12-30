@@ -10,7 +10,7 @@ import sys
 import time
 import torch
 
-from starter_code.log import RunningAverage
+from starter_code.log import ExponentialRunningAverage
 from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
@@ -41,19 +41,27 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.run_avg = RunningAverage()
-        self.run_avg.update_variable('steps', 0)
+        self.parallel_collect = True
+
+        # keep track of steps, and running return
+        self.run_avg = ExponentialRunningAverage()
+        self.steps = 0
         self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
                        'min_steps', 'max_steps', 'mean_steps', 'std_steps']
 
-        self.parallel_collect = True
 
     def collect_samples(self, epoch):
         """
-            Here we will be guaranteed to collect exactly self.rl_alg.num_samples_before_update samples
+            Invariants:
+                - metrics will always be updated after this method
+                - this method will always collect self.rl_alg.num_samples_before_update samples
+                - this method will not modify any state in the organism
+
+            What this method does
+                - returns stats from a bunch of rollouts
+                - updates env_manager's logger based on stats
         """
         t0 = time.time()
-
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
 
@@ -61,7 +69,6 @@ class Experiment():
         train_env_manager = self.task_progression.sample(i=epoch, mode='train')  # there should only one environment here 
 
         self.organism.to('cpu')
-
         stats_collector = collector(
             epoch=epoch, 
             max_steps=self.rl_alg.num_samples_before_update, 
@@ -72,11 +79,10 @@ class Experiment():
                 sampler_builder=self.exploration_sampler_builder, 
                 organism=self.organism)
             )
-
         self.organism.to(self.device)
-
         t1 = time.time()
-        stats = stats_collector.bundle_batch_stats()  # you might want to bundle batch stats after the parallel thing
+
+        stats = stats_collector.bundle_batch_stats()
         t2 = time.time()
 
         for episode_data in stats_collector.data['episode_datas']:
@@ -87,8 +93,20 @@ class Experiment():
         print('Bundle time: {}'.format(t2-t1))
         print('Storage time: {}'.format(t3-t2))
 
+        # ok, you should update the metrics here
+        ######################################################
+        self.steps += stats['total_steps']
+        
+        
         self.run_avg.update_variable('mean_return', stats['mean_return'])
-        self.run_avg.update_variable('steps', self.run_avg.get_last_value('steps')+stats['total_steps'])
+
+
+
+        ######################################################
+
+
+
+
 
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
 
@@ -100,7 +118,7 @@ class Experiment():
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
             # if epoch % self.args.eval_every == 0:
-            #     self.eval_step(epoch)
+            #     self.eval_step(epoch)  # somehow this is not deterministic for decentralized?
             self.train_step(epoch)
         self.finish_training()
 
@@ -108,7 +126,7 @@ class Experiment():
     def train_step(self, epoch):
         epoch_stats = self.collect_samples(epoch)
         if epoch % self.args.log_every == 0:
-            self.logger.printf(format_log_string(self.log(epoch, epoch_stats)))
+            self.logger.printf(format_log_string(self.log(epoch, epoch_stats, mode='train')))
         if epoch % self.args.visualize_every == 0:
             # this ticks the epoch and steps
             self.visualize(self.logger, epoch, epoch_stats, self.logger.expname)
@@ -141,11 +159,11 @@ class Experiment():
         self.organism.clear_buffer()
         torch.cuda.empty_cache()  # may be I should do this
 
-    def log(self, epoch, epoch_stats):
+    def log(self, epoch, epoch_stats, mode):
         s = log_string(OrderedDict({
-            'epoch': epoch,
+            '{} epoch'.format(mode): epoch,
             'env steps this batch': epoch_stats['total_steps'],
-            'env steps taken': self.run_avg.get_last_value('steps'),
+            'env steps taken': self.steps,
             'avg return': epoch_stats['mean_return'],
             'std return': epoch_stats['std_return'],
             'min return': epoch_stats['min_return'],
@@ -159,12 +177,21 @@ class Experiment():
         for i in range(num_test):
             with torch.no_grad():
                 evaluation_sampler = self.evaluation_sampler_builder(self.organism)
+
+                # should put the seed here
+                # env.seed(1000000+pid)
+                # torch.manual_seed(1000000+pid)
+                # np.random.seed(1000000+pid)
+
                 episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
                     max_steps_this_episode=env_manager.max_episode_length,
                     render=True)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:
+
+                    # you could imagine having the sampler also return the best episode
+                    # or perhaps you could bundle thiis in the stats_collector
 
                     bids = evaluation_sampler.get_bids_for_episode(episode_data)
                     returns = sum([e.reward for e in episode_data])
@@ -176,13 +203,29 @@ class Experiment():
             stats_collector.append(episode_data, eval_mode=True)
         stats = stats_collector.bundle_batch_stats(eval_mode=True)
 
+
+        ######################################################
+        # ok, you should update the metrics here
+
+
+
+
+
+
+        ######################################################
+
         return stats
 
-
+    # ok: 
     def update_metrics(self, env_manager, epoch, stats):
+        """
+            Assumes that we update every whole number of epochs
+
+            Purpose: 
+
+        """
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
-        # this assumes that you save every whole number of epochs
-        env_manager.update_variable(name='steps', index=epoch, value=self.run_avg.get_last_value('steps'))
+        env_manager.update_variable(name='steps', index=epoch, value=self.steps)
 
         for metric in self.metrics:
             env_manager.update_variable(
@@ -214,8 +257,7 @@ class Experiment():
             t0 = time.time()
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             t1 = time.time()
-            self.logger.pprintf({k:v for k,v in stats.items() if k not in 
-                ['bid_differences', 'Q_differences', 'agent_episode_data', 'organism_episode_data']})
+            self.logger.printf(format_log_string(self.log(epoch, stats, mode='eval')))
             if epoch % self.args.visualize_every == 0:
                 self.visualize(env_manager, epoch, stats, env_manager.env_name)
             t2 = time.time()
@@ -226,6 +268,7 @@ class Experiment():
             print('Time to sample test examples: {}'.format(t1-t0))
             print('Time to visualize: {}'.format(t2-t1))
             print('Time to save: {}'.format(t3-t2))
+        assert False
         self.organism.to(self.device)
 
 

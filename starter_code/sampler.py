@@ -11,6 +11,10 @@ from starter_code.filter import MeanStdFilter, NoFilter
 import multiprocessing as mp
 
 def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
+    """
+        Purpose: collect rollouts for max_steps steps
+        Return: stats_collector
+    """
     env = objects['env']
     stats_collector = objects['stats_collector_builder']()
     sampler = objects['sampler_builder'](objects['organism'])
@@ -40,6 +44,10 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
         return stats_collector
 
 def collect_train_samples_parallel(epoch, max_steps, objects, num_workers=8):
+    """
+        Purpose: collect rollouts for max_steps steps using num_workers workers
+        Return: stats_collector
+    """
     num_steps_per_worker = max_steps // num_workers
     num_residual_steps = max_steps - num_steps_per_worker * num_workers
 
@@ -166,7 +174,6 @@ class Compound_RL_Stats:
     # initialize
     def reset(self):
         self.data = dict(
-            returns=[],
             steps=0,
             episode_datas=[]
             )
@@ -185,24 +192,26 @@ class Compound_RL_Stats:
 
     def summarize(self):
         """
-        input:
-            episode_datas
+        operates on:
+            self.data['episode_datas']
 
-        output:
-            returns
-            steps
-
-        questions:
-            should this modify self.data?
-                the alternative would be to output a bunch of lists, but the problem this is is that the only situation where we'd actually use the output would be to modify self.data anyways, so might as well just modify self.datas
-            should this take in episode_datas as input?
-                but if we directly modify self.data here, then we should probably just not take in episode_datas either then, or perhaps we should - I suppose taking in episode_datas makes it explicit what the input spec of the function is
+        produces:
+            self.data['returns'] = []
         """
         self.data['returns'] = [sum([e.reward for e in episode_data]) 
             for episode_data in self.data['episode_datas']]
 
     # query
     def bundle_batch_stats(self, eval_mode=False):
+        """
+            stats['num_episodes']
+            stats['return']
+            stats['{metric}_return'] 
+            stats['steps']
+            stats['{metric}_steps']
+
+            where metric in ['mean', 'std', 'min', 'max', 'total']
+        """
         self.summarize()
         stats = dict(num_episodes=len(self.data['episode_datas']))
         stats = dict({**stats, **self.log_metrics(np.array(self.data['returns']), 'return')})
