@@ -41,14 +41,8 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = True
-
-        # keep track of steps, and running return
-        self.run_avg = ExponentialRunningAverage()
+        self.parallel_collect = False#True  if this does not update state_histogram??
         self.steps = 0
-        self.metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
-                       'min_steps', 'max_steps', 'mean_steps', 'std_steps']
-
 
     def collect_samples(self, epoch):
         """
@@ -61,6 +55,7 @@ class Experiment():
                 - returns stats from a bunch of rollouts
                 - updates env_manager's logger based on stats
         """
+        print('Collecting Samples...')
         t0 = time.time()
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
@@ -93,20 +88,10 @@ class Experiment():
         print('Bundle time: {}'.format(t2-t1))
         print('Storage time: {}'.format(t3-t2))
 
-        # ok, you should update the metrics here
         ######################################################
+        # update metrics
         self.steps += stats['total_steps']
-        
-        
-        self.run_avg.update_variable('mean_return', stats['mean_return'])
-
-
-
         ######################################################
-
-
-
-
 
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
 
@@ -117,8 +102,8 @@ class Experiment():
     def main_loop(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
-            # if epoch % self.args.eval_every == 0:
-            #     self.eval_step(epoch)  # somehow this is not deterministic for decentralized?
+            if epoch % self.args.eval_every == 0:
+                self.eval_step(epoch)  # somehow this is not deterministic for decentralized?
             self.train_step(epoch)
         self.finish_training()
 
@@ -168,7 +153,6 @@ class Experiment():
             'std return': epoch_stats['std_return'],
             'min return': epoch_stats['min_return'],
             'max return': epoch_stats['max_return'],
-            'running mean return': self.run_avg.get_value('mean_return')
             }))
         return [s]
 
@@ -177,12 +161,7 @@ class Experiment():
         for i in range(num_test):
             with torch.no_grad():
                 evaluation_sampler = self.evaluation_sampler_builder(self.organism)
-
-                # should put the seed here
-                # env.seed(1000000+pid)
-                # torch.manual_seed(1000000+pid)
-                # np.random.seed(1000000+pid)
-
+                env_manager.env.seed(epoch+self.args.seed)
                 episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
                     max_steps_this_episode=env_manager.max_episode_length,
@@ -202,38 +181,25 @@ class Experiment():
                 ##########################################
             stats_collector.append(episode_data, eval_mode=True)
         stats = stats_collector.bundle_batch_stats(eval_mode=True)
-
-
-        ######################################################
-        # ok, you should update the metrics here
-
-
-
-
-
-
-        ######################################################
-
         return stats
 
-    # ok: 
-    def update_metrics(self, env_manager, epoch, stats):
+    def update_metrics(self, env_manager, epoch, stats, metrics):
         """
             Assumes that we update every whole number of epochs
 
-            Purpose: 
+            Purpose: append to a list of things you will plot
 
         """
         env_manager.update_variable(name='epoch', index=epoch, value=epoch)
         env_manager.update_variable(name='steps', index=epoch, value=self.steps)
 
-        for metric in self.metrics:
+        for metric in metrics:
             env_manager.update_variable(
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
 
-    def plot_metrics(self, env_manager, name):
+    def plot_metrics(self, env_manager, name, metrics):
         env_manager.plot(
-            var_pairs=[(('steps', k)) for k in self.metrics],
+            var_pairs=[(('steps', k)) for k in metrics],
             expname=name,
             pfunc=self.logger.printf)
 
@@ -248,27 +214,27 @@ class Experiment():
              self.logger.printf)
 
     def visualize(self, env_manager, epoch, stats, name, eval_mode=False):
-        self.update_metrics(env_manager, epoch, stats)
-        self.plot_metrics(env_manager, name)
+        metrics = ['min_return', 'max_return', 'mean_return', 'std_return',
+                       'min_steps', 'max_steps', 'mean_steps', 'std_steps']
+        self.update_metrics(env_manager, epoch, stats, metrics)
+        self.plot_metrics(env_manager, name, metrics)
 
     def eval_step(self, epoch):
+        print('Evaluating...')
         self.organism.to('cpu')
         for env_manager in self.task_progression[epoch]['test']:
             t0 = time.time()
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             t1 = time.time()
             self.logger.printf(format_log_string(self.log(epoch, stats, mode='eval')))
-            if epoch % self.args.visualize_every == 0:
-                self.visualize(env_manager, epoch, stats, env_manager.env_name)
+            self.visualize(env_manager, epoch, stats, env_manager.env_name)
             t2 = time.time()
-            if epoch % self.args.save_every == 0:
-                self.save(env_manager, epoch, stats)
+            self.save(env_manager, epoch, stats)
             t3 = time.time()
 
             print('Time to sample test examples: {}'.format(t1-t0))
             print('Time to visualize: {}'.format(t2-t1))
             print('Time to save: {}'.format(t3-t2))
-        assert False
         self.organism.to(self.device)
 
 
