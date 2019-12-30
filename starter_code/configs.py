@@ -60,7 +60,6 @@ def vpg_config(args):
 
 def experiment_config(args):
     args.gpu_index = 0
-    # args.eval_every = 500
     args.log_every = 10
     args.save_every = 500
     if not hasattr(args, 'visualize_every'):
@@ -75,6 +74,7 @@ def experiment_config(args):
         args.save_every = 3
         args.visualize_every = 3
         args.log_every = 3
+        args.num_test = 4
     return args
 
 def lifelong_config(args):
@@ -82,7 +82,6 @@ def lifelong_config(args):
     return args
 
 def network_config(args):
-    # args.hdim = [128, 128]
     args.hdim = [64]
     if args.debug:
         args.hdim = [20, 20]
