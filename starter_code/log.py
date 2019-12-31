@@ -234,7 +234,7 @@ class MultiBaseLogger(BaseLogger):
             self.subroot, self.expname, self.logdir, self.checkpoint_dir))
 
         self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
-        json.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'))
+        ujson.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
 
         self.initialize()
 
