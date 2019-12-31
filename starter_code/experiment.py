@@ -69,7 +69,8 @@ class Experiment():
                 env=env_manager.env,
                 stats_collector_builder=self.stats_collector_builder, 
                 sampler_builder=self.exploration_sampler_builder, 
-                organism=self.organism)
+                organism=self.organism),
+            seed=self.args.seed,
             )
         self.organism.to(self.device)
         t1 = time.time()
@@ -159,7 +160,7 @@ class Experiment():
         for i in range(num_test):
             with torch.no_grad():
                 evaluation_sampler = self.evaluation_sampler_builder(self.organism)
-                env_manager.env.seed(epoch+self.args.seed)
+                env_manager.env.seed(int(1e8)*self.args.seed+epoch)
                 episode_data = evaluation_sampler.sample_episode(
                     env=env_manager.env, 
                     max_steps_this_episode=env_manager.max_episode_length,

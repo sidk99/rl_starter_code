@@ -14,15 +14,16 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
     """
         Purpose: collect rollouts for max_steps steps
         Return: stats_collector
+
+
     """
     env = objects['env']
     stats_collector = objects['stats_collector_builder']()
     sampler = objects['sampler_builder'](objects['organism'])
     max_episode_length = objects['max_episode_length']
+    seed = int(1e6)*objects.seed + pid
 
-    env.seed(1000000+pid)
-    torch.manual_seed(1000000+pid)
-    np.random.seed(1000000+pid)
+    env.seed(seed)
 
     start = time.time()
     num_steps = 0
