@@ -37,8 +37,7 @@ PLOT_ROOT = '/Users/michaelchang/Documents/Researchlink/Berkeley/auction_project
 EXP_ROOT = '/Users/michaelchang/Documents/Researchlink/Berkeley/auction_project/runs'
 
 class Plotter():
-    def __init__(self, plot_dir, exp_subroot):
-        self.plot_dir = os.path.join(PLOT_ROOT, plot_dir)
+    def __init__(self, exp_subroot):
         self.exp_subroot = exp_subroot
 
     def load_stats_for_mode(self, mode, fp_mode_dir):
@@ -73,8 +72,8 @@ class Plotter():
         return stats_dict
 
 class MultiAgentPlotter(Plotter):
-    def __init__(self, plot_dir, exp_subroot):
-        Plotter.__init__(self, plot_dir, exp_subroot)
+    def __init__(self, exp_subroot):
+        Plotter.__init__(self, exp_subroot)
 
     def load_stats_for_mode(self, mode, fp_mode_dir):
         mode_dict = super(MultiAgentPlotter, self).load_stats_for_mode(mode, fp_mode_dir)
@@ -84,8 +83,9 @@ class MultiAgentPlotter(Plotter):
         return mode_dict
 
 class CurvePlotter(Plotter):
-    def __init__(self, plot_dir, exp_subroot):
-        Plotter.__init__(self, plot_dir, exp_subroot)
+    def __init__(self, exp_subroot, quantile=True):
+        Plotter.__init__(self, exp_subroot)
+        self.quantile = quantile
 
     def get_x_y_for_exp(self, exp_dict, x_label, metric):
         xs = []
@@ -124,9 +124,7 @@ class CurvePlotter(Plotter):
             facecolor=base_line.get_color(), alpha=0.5, linewidth=0.0)
 
     def fill_plot(self, run_x, ys, **kwargs):
-        quantile=True
-
-        if not quantile:
+        if not self.quantile:
             centers = np.mean(ys, axis=0)
             stds = np.std(ys, axis=0)
             mins, maxs = centers-stds, centers+stds
@@ -159,16 +157,18 @@ class CurvePlotter(Plotter):
         # title
         if title: plt.title(title)
 
-        # save
-        plt.savefig(os.path.join(self.plot_dir, '{}_{}.png'.format(fname, metric)), 
-            bbox_inches="tight")
+        # save in exp_subroot
+        plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, '{}_{}.png'.format(fname, metric)), bbox_inches="tight")
         plt.close()
 
+
 if __name__ == '__main__':
-    p = CurvePlotter(plot_dir='debug', exp_subroot='debug_plot')
+    p = CurvePlotter(exp_subroot='debug_plot')
     stats_dict = p.load_all_stats(exp_dirs={
         'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
         'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
     p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='mean_return')
+    p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='max_return')
+    p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='min_return')
 
 
