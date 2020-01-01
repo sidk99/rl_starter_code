@@ -184,7 +184,7 @@ class BaseLogger(object):
         for key, value in self.data.items():
             for index, e in value:
                 csv_dict[index][key] = e
-        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))  # DIR
+        filename = os.path.join(self.quantitative_dir,'global_stats.csv')  # DIR
         pfunc('Saving to {}'.format(filename))
         file_exists = os.path.isfile(filename)
         with open(filename, 'a+') as csv_file:
@@ -195,7 +195,7 @@ class BaseLogger(object):
                 writer.writerow(csv_dict[i])
 
     def load_csv(self, expname):
-        filename = os.path.join(self.quantitative_dir,'{}.csv'.format(expname))  # DIR
+        filename = os.path.join(self.quantitative_dir,'global_stats.csv')  # DIR
         df = pd.read_csv(filename)
         return df
 
@@ -221,22 +221,31 @@ class MultiBaseLogger(BaseLogger):
     def __init__(self, args):
         super(MultiBaseLogger, self).__init__(args)
         self.args = args
-        self.subroot = os.path.join('runs', args.subroot)
         self.expname = args.expname
-        self.logdir = create_logdir(root=self.subroot, dirname=self.expname, setdate=True)
 
-        self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
-        self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
+        self.subroot = os.path.join('runs', args.subroot)
+        self.exproot = os.path.join(self.subroot, self.expname)
+        self.logdir = create_logdir(root=self.exproot, dirname='seed{}'.format(args.seed), setdate=True)  # is it just a matter of doing this?
 
-        self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
-        self.saver = Saver(self.checkpoint_dir)
-        self.printf('Subroot: {}\nExperiment Name: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(
-            self.subroot, self.expname, self.logdir, self.checkpoint_dir))
-
+        ################################################
+        # unnecessary actually
+        # self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
+        # self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
+        # self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
+        # self.saver = Saver(self.checkpoint_dir)
+        ################################################
         self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
         ujson.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
 
+        self.print_dirs()
         self.initialize()
+
+    def print_dirs(self):
+        s = []
+        s.append('subroot: {}'.format(self.subroot))
+        s.append('exproot: {}'.format(self.exproot))
+        s.append('logdir: {}'.format(self.logdir))
+        self.printf('\n'.join(s))
 
     def save_source_code(self):
         pass
@@ -256,7 +265,7 @@ class MultiBaseLogger(BaseLogger):
         self.add_variable('std_steps', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
 
     def get_state_dict(self):
-        return {'logdir': self.logdir, 'checkpoint_dir': self.checkpoint_dir}
+        return {'logdir': self.logdir, 'code_dir': self.code_dir}
 
     def printf(self, string):
         if self.args.printf:

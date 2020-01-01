@@ -91,7 +91,7 @@ def training_config(args):
 
 def build_expname(args):
     args.expname = simplify_name(args.env_name)
-    args.expname += '_s{}'.format(args.seed)
+    # args.expname += '_s{}'.format(args.seed)
     args.expname += '_plr{}'.format(args.plr)
     args.expname += '_opt{}'.format(args.opt)
     args.expname += '_{}'.format(args.alg_name)
