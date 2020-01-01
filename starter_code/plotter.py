@@ -7,7 +7,7 @@ import pandas as pd
 import pprint
 import ujson
 
-from starter_code.utils import all_same
+from starter_code.utils import all_same, get_first_key
 from starter_code.log import mkdirp
 
 """
@@ -79,7 +79,8 @@ class MultiAgentPlotter(Plotter):
         mode_dict = super(MultiAgentPlotter, self).load_stats_for_mode(mode, fp_mode_dir)
         # load agent stats
         agent_stats_file = os.path.join(fp_mode_dir, 'quantitative', 'agent_state_stats.json')
-        mode_dict['agent'] = ujson.load(open(agent_stats_file, 'r'))
+        mode_dict['agent'] = ujson.load(open(agent_stats_file, 'r'))  
+        # note that all keys are strings
         return mode_dict
 
 class CurvePlotter(Plotter):
@@ -87,26 +88,13 @@ class CurvePlotter(Plotter):
         Plotter.__init__(self, exp_subroot)
         self.quantile = quantile
 
-    def get_x_y_for_exp(self, exp_dict, x_label, metric):
-        xs = []
-        ys = []
-        for seed in exp_dict:
-            xs.append(exp_dict[seed]['train']['global'][x_label].tolist())
-            ys.append(exp_dict[seed]['train']['global'][metric].tolist())
-
+    def cap_min_length(self, xs, ys):
         min_length = min(len(run_x) for run_x in xs)
         xs = [run_x[:min_length] for run_x in xs]
         assert all_same(xs)
         run_x = xs[0]  # since they are the same just take the first one
         ys = np.stack([run_y[:min_length] for run_y in ys])
         return run_x, ys
-
-    def get_x_y(self, stats_dict, x_label, metric):
-        exp_x_y = dict()
-        for label in stats_dict:
-            x, ys= self.get_x_y_for_exp(stats_dict[label], x_label, metric)
-            exp_x_y[label] = dict(x=x, ys=ys)
-        return exp_x_y
 
     def apply_labels(self, xlabel, ylabel, outside=True, legend='upper left'):
         if len(legend) > 0:
@@ -135,19 +123,13 @@ class CurvePlotter(Plotter):
 
         self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
 
-    def plot(self, fname, stats_dict, metric, x_label='steps', title=None):
-        """
-            top-level keys in stats_dict are the labels
-        """
-        # get data
-        exp_x_y = self.get_x_y(stats_dict, x_label, metric)
-
+    def plot(self, fname, curve_plot_dict, metric, x_label='steps', title=None):
         # get color
-        colors = plt.cm.viridis(np.linspace(0,1,len(exp_x_y)))
+        colors = plt.cm.viridis(np.linspace(0,1,len(curve_plot_dict)))
 
         # plot data
-        for i, label in enumerate(exp_x_y):
-            self.fill_plot(exp_x_y[label]['x'], exp_x_y[label]['ys'], 
+        for i, label in enumerate(curve_plot_dict):
+            self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
                 label=label, color=colors[i])
 
         # axes labels and legend
@@ -158,8 +140,82 @@ class CurvePlotter(Plotter):
         if title: plt.title(title)
 
         # save in exp_subroot
-        plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, '{}_{}.png'.format(fname, metric)), bbox_inches="tight")
+        plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, fname), bbox_inches="tight")
         plt.close()
+
+    def reorganize_episode_data(self, stats_dict, mode, metric, x_label):
+        exp_x_y = dict()
+        for label in stats_dict:
+            xs = []
+            ys = []
+            for seed in stats_dict[label]:
+                xs.append(stats_dict[label][seed][mode]['global'][x_label].tolist())
+                ys.append(stats_dict[label][seed][mode]['global'][metric].tolist())
+            run_x, ys = self.cap_min_length(xs, ys)
+
+            exp_x_y[label] = dict(x=run_x, ys=ys)
+        return exp_x_y
+
+    def plot_episode_metrics(self, fname, stats_dict, mode, metric, x_label='steps', title=None):
+        """
+            top-level keys in stats_dict are the labels
+        """
+        # get data
+        curve_plot_dict = self.reorganize_episode_data(stats_dict, mode, metric, x_label)
+        self.plot('{}_{}.png'.format(fname, metric), curve_plot_dict, metric, x_label, title)
+
+
+class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
+    def __init__(self, exp_subroot, quantile=True):
+        CurvePlotter.__init__(self, exp_subroot, quantile)
+
+    def reorganize_state_data(self, stats_dict, mode, metric, x_label):
+        """
+        return 
+            d[state][a_id][x]
+            d[state][a_id][ys]
+        """
+        assert len(stats_dict) == 1
+        stats_dict = get_first_key(stats_dict)
+
+        reorganized_dict = dict()  
+
+        for seed in stats_dict:
+            for state in stats_dict[seed][mode]['agent'][metric]:
+                subdict = stats_dict[seed][mode]['agent'][metric][state]
+                reorganized_dict[state] = {a_id: dict() for a_id in subdict}
+
+        for state in reorganized_dict:
+            for a_id in reorganized_dict[state]:
+                xs = []
+                ys = []
+                for seed in stats_dict:
+                    subdict = stats_dict[seed][mode]['agent'][metric][state]
+                    run_x = []
+                    run_y = []
+                    for step in subdict[a_id]:
+                        run_x.append(int(step))
+                        run_y.append(subdict[a_id][step])
+                    xs.append(run_x)
+                    ys.append(run_y)
+
+                run_x, ys = self.cap_min_length(xs, ys)
+                reorganized_dict[state][a_id]['x'] = run_x
+                reorganized_dict[state][a_id]['ys'] = ys
+
+        return reorganized_dict
+
+    # actually to be honest I don't think it makes sense to compare multiple experiments here
+    def plot_state_metrics(self, fname, stats_dict, mode, metric, x_label='steps', title=None):
+        assert 'bid' in metric or 'payoff' in metric
+
+        # get data
+        reorganized_data = self.reorganize_state_data(stats_dict, mode, metric, x_label)
+
+        # want to do it for each state
+        for state in reorganized_data:
+            curve_plot_dict = reorganized_data[state]
+            self.plot('{}_state_{}_{}.png'.format(fname, state, metric), curve_plot_dict, metric, x_label, title)
 
 
 if __name__ == '__main__':
@@ -167,8 +223,15 @@ if __name__ == '__main__':
     stats_dict = p.load_all_stats(exp_dirs={
         'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
         'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
-    p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='mean_return')
-    p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='max_return')
-    p.plot(fname='English_vs_Vickrey', stats_dict=stats_dict, metric='min_return')
+    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='mean_return')
+    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='max_return')
+    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='min_return')
+
+    # p = MultiAgentCurvePlotter(exp_subroot='debug')
+    # stats_dict = p.load_all_stats(exp_dirs={
+    #     # 'Redundancy 3': '1S1T1A_plr4e-05_optsgd_ppo_aucv_red3_ec0',
+    #     'Redundancy 4': '1S1T1A_plr4e-05_optsgd_ppo_aucv_red4_ec0'})
+    # print(stats_dict.keys())
+    # p.plot_state_metrics(fname='Redundancy_4', stats_dict=stats_dict, mode='train', metric='mean_bid')
 
 

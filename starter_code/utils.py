@@ -190,7 +190,10 @@ def transpose_dict_of_lists(dict_of_lists):
             {key1: val1_1, key2: val2_1, ...},
         ]
     """
+    pass
 
-
+def get_first_key(dictionary):
+    for key in dictionary:
+        return dictionary[key]
 
 
