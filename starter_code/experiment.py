@@ -55,7 +55,7 @@ class Experiment():
                 - returns stats from a bunch of rollouts
                 - updates env_manager's logger based on stats
         """
-        print('Collecting Samples...')
+        self.logger.printf('Collecting Samples...')
         t0 = time.time()
         gt.stamp('Epoch {}: Before Collect Samples'.format(epoch))
         collector = collect_train_samples_parallel if self.parallel_collect else collect_train_samples_serial
@@ -69,8 +69,9 @@ class Experiment():
                 env=env_manager.env,
                 stats_collector_builder=self.stats_collector_builder, 
                 sampler_builder=self.exploration_sampler_builder, 
-                organism=self.organism),
-            seed=self.args.seed,
+                organism=self.organism,
+                seed=self.args.seed,
+                ),
             )
         self.organism.to(self.device)
         t1 = time.time()
@@ -83,8 +84,8 @@ class Experiment():
                 self.organism.store_transition(e)
         t3 = time.time()
 
-        print('Bundle time: {}'.format(t2-t1))
-        print('Storage time: {}'.format(t3-t2))
+        self.logger.printf('Bundle time: {}'.format(t2-t1))
+        self.logger.printf('Storage time: {}'.format(t3-t2))
 
         ######################################################
         # update metrics
@@ -115,7 +116,7 @@ class Experiment():
             # this ticks the epoch and steps
             self.visualize(train_env_manager, epoch, epoch_stats, self.logger.expname)
         if epoch % self.args.save_every == 0:
-            self.save(self.logger, epoch, epoch_stats)
+            self.save(train_env_manager, epoch, epoch_stats)
         self.update(epoch)
 
 
@@ -219,7 +220,7 @@ class Experiment():
         self.plot_metrics(env_manager, name, metrics)
 
     def eval_step(self, epoch):
-        print('Evaluating...')
+        self.logger.printf('Evaluating...')
         self.organism.to('cpu')
         for env_manager in self.task_progression[epoch]['test']:
             t0 = time.time()
@@ -231,9 +232,9 @@ class Experiment():
             self.save(env_manager, epoch, stats)
             t3 = time.time()
 
-            print('Time to sample test examples: {}'.format(t1-t0))
-            print('Time to visualize: {}'.format(t2-t1))
-            print('Time to save: {}'.format(t3-t2))
+            self.logger.printf('Time to sample test examples: {}'.format(t1-t0))
+            self.logger.printf('Time to visualize: {}'.format(t2-t1))
+            self.logger.printf('Time to save: {}'.format(t3-t2))
         self.organism.to(self.device)
 
 
