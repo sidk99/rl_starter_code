@@ -27,7 +27,6 @@ class Agent(nn.Module):
 
         self.initialize_optimizer()
         self.initialize_optimizer_schedulers(args)
-        print(self)
 
     def initialize_optimizer(self):
         if self.args.opt == 'adam':

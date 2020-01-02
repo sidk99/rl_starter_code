@@ -41,8 +41,9 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = False#True  if this does not update state_histogram??
+        self.parallel_collect = True  #if this does not update state_histogram??
         self.steps = 0
+        self.logger.printf(self.organism)
 
     def collect_samples(self, epoch, env_manager):
         """
@@ -71,6 +72,7 @@ class Experiment():
                 sampler_builder=self.exploration_sampler_builder, 
                 organism=self.organism,
                 seed=self.args.seed,
+                printer=self.logger.printf,
                 ),
             )
         self.organism.to(self.device)
