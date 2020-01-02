@@ -53,7 +53,7 @@ class Plotter():
         # load params
         seed_dict['params'] = ujson.load(
             open(os.path.join(fp_seed_dir, 'code', 'params.json'), 'r'))
-        for mode_dir in [x for x in os.listdir(os.path.join(fp_seed_dir, 'group_0')) if 'train' in x]:# or 'test' in x]:
+        for mode_dir in [x for x in os.listdir(os.path.join(fp_seed_dir, 'group_0')) if 'train' in x or 'test' in x]:
             mode = mode_dir[mode_dir.rfind('_')+1:]
             fp_mode_dir = os.path.join(fp_seed_dir, 'group_0', mode_dir)
             seed_dict[mode] = self.load_stats_for_mode(mode, fp_mode_dir)
@@ -162,7 +162,7 @@ class CurvePlotter(Plotter):
         """
         # get data
         curve_plot_dict = self.reorganize_episode_data(stats_dict, mode, metric, x_label)
-        self.plot('{}_{}.png'.format(fname, metric), curve_plot_dict, metric, x_label, title)
+        self.plot('{}_{}_{}.png'.format(fname, metric, mode), curve_plot_dict, metric, x_label, title)
 
 
 class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
@@ -215,23 +215,49 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
         # want to do it for each state
         for state in reorganized_data:
             curve_plot_dict = reorganized_data[state]
-            self.plot('{}_state_{}_{}.png'.format(fname, state, metric), curve_plot_dict, metric, x_label, title)
+            self.plot('{}_state_{}_{}_{}.png'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title)
 
+###############################################################################################
 
-if __name__ == '__main__':
+def plot_1_1_20_debug_return():
     p = CurvePlotter(exp_subroot='debug_plot')
     stats_dict = p.load_all_stats(exp_dirs={
         'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
         'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
-    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='mean_return')
-    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='max_return')
-    p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode='train', metric='min_return')
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode=mode, metric=metric)
 
-    # p = MultiAgentCurvePlotter(exp_subroot='debug')
-    # stats_dict = p.load_all_stats(exp_dirs={
-    #     # 'Redundancy 3': '1S1T1A_plr4e-05_optsgd_ppo_aucv_red3_ec0',
-    #     'Redundancy 4': '1S1T1A_plr4e-05_optsgd_ppo_aucv_red4_ec0'})
-    # print(stats_dict.keys())
-    # p.plot_state_metrics(fname='Redundancy_4', stats_dict=stats_dict, mode='train', metric='mean_bid')
+def plot_1_1_20_debug_state_metrics():
+    p = MultiAgentCurvePlotter(exp_subroot='debug')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Redundancy 4': '1S1T1A_plr4e-05_optsgd_ppo_aucv_red4_ec0'})
+    p.plot_state_metrics(fname='Redundancy_4', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+
+def plot_1_1_20_debug_return_hdim32():
+    p = CurvePlotter(exp_subroot='debug_plot_hdim32')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode=mode, metric=metric)
+
+def plot_1_2_20_debug_return_hdim16():
+    p = CurvePlotter(exp_subroot='debug_plot_hdim16')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+
+
+if __name__ == '__main__':
+    plot_1_2_20_debug_return_hdim16()
+
+
 
 
