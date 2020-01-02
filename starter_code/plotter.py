@@ -10,6 +10,8 @@ import ujson
 from starter_code.utils import all_same, get_first_key
 from starter_code.log import mkdirp
 
+import pprint
+
 """
 subroot
     - exp_0 (expdir)
@@ -90,11 +92,141 @@ class CurvePlotter(Plotter):
 
     def cap_min_length(self, xs, ys):
         min_length = min(len(run_x) for run_x in xs)
-        xs = [run_x[:min_length] for run_x in xs]
-        assert all_same(xs)
-        run_x = xs[0]  # since they are the same just take the first one
-        ys = np.stack([run_y[:min_length] for run_y in ys])
-        return run_x, ys
+        max_length = max(len(run_x) for run_x in xs)
+
+        # need to comment out
+        xs = [run_x[:min_length] for run_x in xs]  
+        ys = [run_y[:min_length] for run_y in ys]
+
+
+        # pprint.pprint(xs)
+        # pprint.pprint(ys)
+
+        for xx in xs:
+            print(xx)
+
+        for yy in ys:
+            print(yy)
+
+
+        if all_same(xs):
+            run_x = xs[0]  # since they are the same just take the first one
+            ys = np.stack([run_y[:min_length] for run_y in ys])  # (num_seeds, run_length)
+            data_dict = {}
+            for idx, _x in enumerate(run_x):
+                data_dict[_x] = ys[:, idx]
+            return run_x, ys, data_dict
+        else:
+            # ok, here is the stupid way. For any step that is inconsistent, just delete it.
+
+
+
+            # # ok now manually craete the data dict
+            # # you have pointers and you will advance them
+            # pointers = {seed: 0 for seed in range(len(xs))}
+
+
+
+            # df = pd.DataFrame(data=ys, index=xs)
+
+            # print(df)
+
+
+
+            # assert False
+            # do it manually
+            print('Manually')
+            run_x = []
+
+            idx = 0
+            while idx < min(len(run_x) for run_x in xs):
+                step = xs[0][idx]
+
+                xs_for_this_step = [_run_x[idx] for _run_x in xs]
+                if all_same(xs_for_this_step):
+                    run_x.append(step)
+                    idx += 1
+                else:
+                    # find the minimum. Delete all the minimums
+                    step_with_min_value = np.min(xs_for_this_step)
+
+                    # if I delete I will mutate!
+                    for seed_idx, seed_value in enumerate(xs_for_this_step):
+                        if seed_value == step_with_min_value:
+                            print('delete: x: {} y: {}'.format(xs[seed_idx][idx], ys[seed_idx][idx]))
+                            # mutates!
+                            del xs[seed_idx][idx]  
+                            del ys[seed_idx][idx]
+
+
+
+                    # min_step
+
+
+
+
+
+                    """
+                    1 2 2
+                    1 1 2
+
+
+                    """
+
+
+                    print('idx', idx, 'step', step, 'step_with_min_value', step_with_min_value)
+                    for _run_x in xs:
+                        print(_run_x[idx])
+                    pass
+
+            print('run_x')
+            # pprint.pprint(run_x)
+            for xx in run_x:
+                print(xx)
+            # print('idxs')
+            # print(idxs)
+            # pprint.pprint(idxs)
+            for yy in ys:
+                print(yy)
+            # pprint.pprint(ys)
+
+
+            # assert False
+
+
+
+            # # what we want is to average it across the slice
+
+
+
+
+            # run_ys = []
+
+
+            # assert False
+
+
+            # pass
+
+            # ok at this point, everything up to len(run_x) is aligned
+            ys = [run_y[:len(run_x)] for run_y in ys]
+
+            print('len(run_x)', len(run_x))
+            for yy in ys:
+                print(len(yy))
+
+            ys = np.stack(ys)
+            assert ys.shape[-1] == len(run_x)
+            # ys = np.stack([run_y[:min_length] for run_y in ys])  # (num_seeds, run_length)
+            data_dict = {}
+            for idx, _x in enumerate(run_x):
+                data_dict[_x] = ys[:, idx]
+            return run_x, ys, data_dict
+
+
+# actually the main goal is for the xs to correspond with the ys
+
+
 
     def apply_labels(self, xlabel, ylabel, outside=True, legend='upper left'):
         if len(legend) > 0:
@@ -111,7 +243,7 @@ class CurvePlotter(Plotter):
         ax.fill_between(x, mins, maxs, 
             facecolor=base_line.get_color(), alpha=0.5, linewidth=0.0)
 
-    def fill_plot(self, run_x, ys, **kwargs):
+    def calculate_error_bars(self, ys):
         if not self.quantile:
             centers = np.mean(ys, axis=0)
             stds = np.std(ys, axis=0)
@@ -120,7 +252,41 @@ class CurvePlotter(Plotter):
             centers = np.median(ys, axis=0)
             mins = np.percentile(ys, 10, axis=0)
             maxs = np.percentile(ys, 90, axis=0)
+        return centers, mins, maxs
 
+    def manually_calculate_error_bars(self, data_dict):
+        centers = []
+        mins = []
+        maxs = []
+        run_x = []
+
+        for step in sorted(data_dict.keys()):
+            run_x.append(step)
+            if not self.quantile:
+                center = np.mean(data_dict[step])
+                std = np.std(data_dict[step])
+
+                centers.append(center)
+                mins.append(center-std)
+                maxs.append(center+std)
+            else:
+                centers.append(np.median(data_dict[step]))
+                mins.append(np.percentile(data_dict[step], 10))
+                maxs.append(np.percentile(data_dict[step], 90))
+        return run_x, centers, mins, maxs
+
+
+    # def fill_plot(self, run_x, ys, **kwargs):
+    #     centers, mins, maxs = self.calculate_error_bars(ys)
+    #     self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
+
+    def fill_plot(self, data_dict, **kwargs):
+        # manual = True
+        # if manual:
+        run_x, centers, mins, maxs = self.manually_calculate_error_bars(data_dict)
+    # else:
+    #     run_x = 
+    #     centers, mins, maxs = self.calculate_error_bars(ys)
         self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
 
     def plot(self, fname, curve_plot_dict, metric, x_label='steps', title=None):
@@ -129,7 +295,9 @@ class CurvePlotter(Plotter):
 
         # plot data
         for i, label in enumerate(curve_plot_dict):
-            self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
+            # self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
+            #     label=label, color=colors[i])
+            self.fill_plot(curve_plot_dict[label]['data_dict'],
                 label=label, color=colors[i])
 
         # axes labels and legend
@@ -143,6 +311,9 @@ class CurvePlotter(Plotter):
         plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, fname), bbox_inches="tight")
         plt.close()
 
+
+
+
     def reorganize_episode_data(self, stats_dict, mode, metric, x_label):
         exp_x_y = dict()
         for label in stats_dict:
@@ -151,7 +322,7 @@ class CurvePlotter(Plotter):
             for seed in stats_dict[label]:
                 xs.append(stats_dict[label][seed][mode]['global'][x_label].tolist())
                 ys.append(stats_dict[label][seed][mode]['global'][metric].tolist())
-            run_x, ys = self.cap_min_length(xs, ys)
+            run_x, ys, data_dict = self.cap_min_length(xs, ys)
 
             exp_x_y[label] = dict(x=run_x, ys=ys)
         return exp_x_y
@@ -186,7 +357,9 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
                 reorganized_dict[state] = {a_id: dict() for a_id in subdict}
 
         for state in reorganized_dict:
+            print('state', state)
             for a_id in reorganized_dict[state]:
+                print('a_id', a_id)
                 xs = []
                 ys = []
                 for seed in stats_dict:
@@ -199,14 +372,16 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
                     xs.append(run_x)
                     ys.append(run_y)
 
-                run_x, ys = self.cap_min_length(xs, ys)
+                run_x, ys, data_dict = self.cap_min_length(xs, ys)
                 reorganized_dict[state][a_id]['x'] = run_x
                 reorganized_dict[state][a_id]['ys'] = ys
+                reorganized_dict[state][a_id]['data_dict'] = data_dict
 
         return reorganized_dict
 
     # actually to be honest I don't think it makes sense to compare multiple experiments here
     def plot_state_metrics(self, fname, stats_dict, mode, metric, x_label='steps', title=None):
+        print('Plotting {} for metric {} mode {}'.format(fname, metric, mode))
         assert 'bid' in metric or 'payoff' in metric
 
         # get data
@@ -252,11 +427,43 @@ def plot_1_2_20_debug_return_hdim16():
         for metric in ['mean_return', 'min_return', 'max_return']:
             p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode=mode, metric=metric)
 
+def plot_vickrey_chain_debug_geb():
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_vickrey_chain_geb')
+
+    # stats_dict = p.load_all_stats(exp_dirs={
+    #     'Chain_2' : 'CW2_plr4e-05_optadam_ppo_aucv_red2_ec0',
+    #     })
+    # p.plot_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+    # p.plot_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metric='mean_bid')
+
+    # stats_dict = p.load_all_stats(exp_dirs={
+    #     'Chain_3' : 'CW3_plr4e-05_optadam_ppo_aucv_red2_ec0',
+    #     })
+    # p.plot_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+    # p.plot_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metric='mean_bid')
+
+    # stats_dict = p.load_all_stats(exp_dirs={
+    #     'Chain_4' : 'CW4_plr4e-05_optadam_ppo_aucv_red2_ec0',
+    #     })
+    # p.plot_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+    # p.plot_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metric='mean_bid')
+
+    # stats_dict = p.load_all_stats(exp_dirs={
+    #     'Chain_5' : 'CW5_plr4e-05_optadam_ppo_aucv_red2_ec0',
+    #     })
+    # p.plot_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+    # p.plot_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metric='mean_bid')
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_6' : 'CW6_plr4e-05_optadam_ppo_aucv_red2_ec0',
+        })
+    p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_payoff')
+    p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_bid')
 
 
 
 if __name__ == '__main__':
-    plot_1_2_20_debug_return_hdim16()
+    plot_vickrey_chain_debug_geb()
 
 
 
