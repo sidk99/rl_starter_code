@@ -91,16 +91,13 @@ class CurvePlotter(Plotter):
         self.quantile = quantile
 
     def cap_min_length(self, xs, ys):
-        min_length = min(len(run_x) for run_x in xs)
-        max_length = max(len(run_x) for run_x in xs)
+        # min_length = min(len(run_x) for run_x in xs)
+        # max_length = max(len(run_x) for run_x in xs)
 
-        # need to comment out
-        xs = [run_x[:min_length] for run_x in xs]  
-        ys = [run_y[:min_length] for run_y in ys]
+        # # need to comment out
+        # xs = [run_x[:min_length] for run_x in xs]  
+        # ys = [run_y[:min_length] for run_y in ys]
 
-
-        # pprint.pprint(xs)
-        # pprint.pprint(ys)
 
         for xx in xs:
             print(xx)
@@ -111,30 +108,8 @@ class CurvePlotter(Plotter):
 
         if all_same(xs):
             run_x = xs[0]  # since they are the same just take the first one
-            ys = np.stack([run_y[:min_length] for run_y in ys])  # (num_seeds, run_length)
-            data_dict = {}
-            for idx, _x in enumerate(run_x):
-                data_dict[_x] = ys[:, idx]
-            return run_x, ys, data_dict
+            # ys = np.stack([run_y[:min_length] for run_y in ys])  # (num_seeds, run_length)
         else:
-            # ok, here is the stupid way. For any step that is inconsistent, just delete it.
-
-
-
-            # # ok now manually craete the data dict
-            # # you have pointers and you will advance them
-            # pointers = {seed: 0 for seed in range(len(xs))}
-
-
-
-            # df = pd.DataFrame(data=ys, index=xs)
-
-            # print(df)
-
-
-
-            # assert False
-            # do it manually
             print('Manually')
             run_x = []
 
@@ -158,70 +133,28 @@ class CurvePlotter(Plotter):
                             del xs[seed_idx][idx]  
                             del ys[seed_idx][idx]
 
-
-
-                    # min_step
-
-
-
-
-
-                    """
-                    1 2 2
-                    1 1 2
-
-
-                    """
-
-
                     print('idx', idx, 'step', step, 'step_with_min_value', step_with_min_value)
                     for _run_x in xs:
                         print(_run_x[idx])
                     pass
 
             print('run_x')
-            # pprint.pprint(run_x)
             for xx in run_x:
                 print(xx)
-            # print('idxs')
-            # print(idxs)
-            # pprint.pprint(idxs)
             for yy in ys:
                 print(yy)
-            # pprint.pprint(ys)
 
 
-            # assert False
+        # ok at this point, everything up to len(run_x) is aligned
+        ys = [run_y[:len(run_x)] for run_y in ys]
 
+        print('len(run_x)', len(run_x))
+        for yy in ys:
+            print(len(yy))
 
-
-            # # what we want is to average it across the slice
-
-
-
-
-            # run_ys = []
-
-
-            # assert False
-
-
-            # pass
-
-            # ok at this point, everything up to len(run_x) is aligned
-            ys = [run_y[:len(run_x)] for run_y in ys]
-
-            print('len(run_x)', len(run_x))
-            for yy in ys:
-                print(len(yy))
-
-            ys = np.stack(ys)
-            assert ys.shape[-1] == len(run_x)
-            # ys = np.stack([run_y[:min_length] for run_y in ys])  # (num_seeds, run_length)
-            data_dict = {}
-            for idx, _x in enumerate(run_x):
-                data_dict[_x] = ys[:, idx]
-            return run_x, ys, data_dict
+        ys = np.stack(ys)
+        assert ys.shape[-1] == len(run_x)
+        return run_x, ys
 
 
 # actually the main goal is for the xs to correspond with the ys
@@ -254,40 +187,40 @@ class CurvePlotter(Plotter):
             maxs = np.percentile(ys, 90, axis=0)
         return centers, mins, maxs
 
-    def manually_calculate_error_bars(self, data_dict):
-        centers = []
-        mins = []
-        maxs = []
-        run_x = []
+    # def manually_calculate_error_bars(self, data_dict):
+    #     centers = []
+    #     mins = []
+    #     maxs = []
+    #     run_x = []
 
-        for step in sorted(data_dict.keys()):
-            run_x.append(step)
-            if not self.quantile:
-                center = np.mean(data_dict[step])
-                std = np.std(data_dict[step])
+    #     for step in sorted(data_dict.keys()):
+    #         run_x.append(step)
+    #         if not self.quantile:
+    #             center = np.mean(data_dict[step])
+    #             std = np.std(data_dict[step])
 
-                centers.append(center)
-                mins.append(center-std)
-                maxs.append(center+std)
-            else:
-                centers.append(np.median(data_dict[step]))
-                mins.append(np.percentile(data_dict[step], 10))
-                maxs.append(np.percentile(data_dict[step], 90))
-        return run_x, centers, mins, maxs
+    #             centers.append(center)
+    #             mins.append(center-std)
+    #             maxs.append(center+std)
+    #         else:
+    #             centers.append(np.median(data_dict[step]))
+    #             mins.append(np.percentile(data_dict[step], 10))
+    #             maxs.append(np.percentile(data_dict[step], 90))
+    #     return run_x, centers, mins, maxs
 
 
-    # def fill_plot(self, run_x, ys, **kwargs):
+    def fill_plot(self, run_x, ys, **kwargs):
+        centers, mins, maxs = self.calculate_error_bars(ys)
+        self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
+
+    # def fill_plot(self, data_dict, **kwargs):
+    # #     # manual = True
+    # #     # if manual:
+    # #     run_x, centers, mins, maxs = self.manually_calculate_error_bars(data_dict)
+    # # # else:
+    # # #     run_x = 
     #     centers, mins, maxs = self.calculate_error_bars(ys)
     #     self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
-
-    def fill_plot(self, data_dict, **kwargs):
-        # manual = True
-        # if manual:
-        run_x, centers, mins, maxs = self.manually_calculate_error_bars(data_dict)
-    # else:
-    #     run_x = 
-    #     centers, mins, maxs = self.calculate_error_bars(ys)
-        self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
 
     def plot(self, fname, curve_plot_dict, metric, x_label='steps', title=None):
         # get color
@@ -295,10 +228,10 @@ class CurvePlotter(Plotter):
 
         # plot data
         for i, label in enumerate(curve_plot_dict):
-            # self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
-            #     label=label, color=colors[i])
-            self.fill_plot(curve_plot_dict[label]['data_dict'],
+            self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
                 label=label, color=colors[i])
+            # self.fill_plot(curve_plot_dict[label]['data_dict'],
+            #     label=label, color=colors[i])
 
         # axes labels and legend
         self.apply_labels(x_label, metric)
@@ -322,7 +255,7 @@ class CurvePlotter(Plotter):
             for seed in stats_dict[label]:
                 xs.append(stats_dict[label][seed][mode]['global'][x_label].tolist())
                 ys.append(stats_dict[label][seed][mode]['global'][metric].tolist())
-            run_x, ys, data_dict = self.cap_min_length(xs, ys)
+            run_x, ys = self.cap_min_length(xs, ys)
 
             exp_x_y[label] = dict(x=run_x, ys=ys)
         return exp_x_y
@@ -463,7 +396,8 @@ def plot_vickrey_chain_debug_geb():
 
 
 if __name__ == '__main__':
-    plot_vickrey_chain_debug_geb()
+    # plot_vickrey_chain_debug_geb()
+    plot_1_1_20_debug_return()
 
 
 
