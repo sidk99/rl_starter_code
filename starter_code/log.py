@@ -307,6 +307,7 @@ class EnvLogger(BaseLogger):
         self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
         self.saver = Saver(self.checkpoint_dir)
         print('Qualitative Directory: {}\nQuantitative Directory: {}\nLog Directory: {}\nCheckpoint Directory: {}'.format(self.qualitative_dir, self.quantitative_dir, self.logdir, self.checkpoint_dir))
+        # you should write this into params.json
 
 class EnvManager(EnvLogger):
     def __init__(self, env_name, env_registry, args):
@@ -476,7 +477,8 @@ class VisualEnvManager(EnvManager):
             agent_ids = sorted(bids.keys())
             bids_t = [(agent_id, bids[agent_id][i]) for agent_id in agent_ids]
             self.save_image(fname, i, ret, frame, bids_t)
-        gifname = 'vid{}_{}_{}.gif'.format(self.env_name, epoch, test_example)
+        assert test_example == 0  # if not this would affect clean_gifs
+        gifname = 'vid{}_{}_{}.gif'.format(self.env_name, epoch, test_example)  # always 0
         self.save_gif(self.env_name, gifname, epoch, test_example, remove_images=True)
 
 class GymEnvManager(VisualEnvManager):
