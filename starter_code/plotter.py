@@ -106,10 +106,13 @@ class CurvePlotter(Plotter):
                     # find the minimum. Delete all the minimums
                     step_with_min_value = np.min(xs_for_this_step)
 
+                    print('Inconsistent row: {}'.format(xs_for_this_step))
                     # if I delete I will mutate!
                     for seed_idx, seed_value in enumerate(xs_for_this_step):
                         if seed_value == step_with_min_value:
                             # mutates!
+                            print('Deleting x: {} y: {}'.format(
+                                xs[seed_idx][idx], ys[seed_idx][idx]))
                             del xs[seed_idx][idx]  
                             del ys[seed_idx][idx]
                     # note that we do not advance the idx
@@ -187,6 +190,7 @@ class CurvePlotter(Plotter):
         """
             top-level keys in stats_dict are the labels
         """
+        print('Plotting {} for metric {} mode {}'.format(fname, metric, mode))
         # get data
         curve_plot_dict = self.reorganize_episode_data(stats_dict, mode, metric, x_label)
         self.plot('{}_{}_{}.png'.format(fname, metric, mode), curve_plot_dict, metric, x_label, title)
@@ -213,9 +217,7 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
                 reorganized_dict[state] = {a_id: dict() for a_id in subdict}
 
         for state in reorganized_dict:
-            print('state', state)
             for a_id in reorganized_dict[state]:
-                print('a_id', a_id)
                 xs = []
                 ys = []
                 for seed in stats_dict:
@@ -228,10 +230,9 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
                     xs.append(run_x)
                     ys.append(run_y)
 
-                run_x, ys, data_dict = self.align_x_and_y(xs, ys)
+                run_x, ys = self.align_x_and_y(xs, ys)
                 reorganized_dict[state][a_id]['x'] = run_x
                 reorganized_dict[state][a_id]['ys'] = ys
-                reorganized_dict[state][a_id]['data_dict'] = data_dict
 
         return reorganized_dict
 
@@ -316,11 +317,17 @@ def plot_vickrey_chain_debug_geb():
     p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_payoff')
     p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_bid')
 
+def plot_bandit_geb():
+    pass
+
+
 
 
 if __name__ == '__main__':
-    plot_vickrey_chain_debug_geb()
+    # plot_vickrey_chain_debug_geb()
     # plot_1_1_20_debug_return()
+    # plot_1_2_20_debug_return_hdim16()
+    plot_1_1_20_debug_return_hdim32()
 
 
 
