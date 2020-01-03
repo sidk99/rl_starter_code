@@ -387,9 +387,14 @@ class TabularEnvManager(EnvManager):
             self.agent_data[metric][state][a_id][step] = step_dict[a_key][metric]
 
     def visualize_data(self, state, title, metric):
-        for a_id in self.agent_data[metric][state]:
+        colors = plt.cm.viridis(np.linspace(0,1,len(self.agent_data[metric][state])))
+
+        for i, a_id in enumerate(self.agent_data[metric][state]):
             data_indices, data_values = zip(*self.agent_data[metric][state][a_id].items())
-            plt.plot(data_indices, data_values, label='{} for agent {}'.format(metric, a_id), color='C{}'.format(a_id))
+            plt.plot(data_indices, data_values, label='{} for agent {}'.format(metric, a_id),
+             color=colors[i]
+                )
+
         plt.legend()
         if 'bid' in metric:
             plt.ylim(-0.1, 1.1)
