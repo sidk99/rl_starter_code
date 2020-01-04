@@ -167,7 +167,9 @@ class CurvePlotter(Plotter):
         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
         # title
-        if title: plt.title(title)
+        if not title:
+            title = fname.replace('.png', '')
+            plt.title(title)
 
         # save in exp_subroot
         plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, fname), bbox_inches="tight")
@@ -249,6 +251,15 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
             curve_plot_dict = reorganized_data[state]
             self.plot('{}_state_{}_{}_{}.png'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title)
 
+    def plot_all_state_metrics(self, fname, stats_dict, mode, metrics, x_label='steps', title=None):
+        for metric in metrics:
+            self.plot_state_metrics(fname, stats_dict, mode, metric, x_label, title)
+
+    def load_plot_all_state_metrics(self, fname, exp_dir, metrics, mode='test'):
+        stats_dict = self.load_all_stats(exp_dirs={fname : exp_dir})
+        self.plot_all_state_metrics(fname=fname, stats_dict=stats_dict, mode=mode, metrics=metrics)
+
+
 ###############################################################################################
 
 def plot_1_1_20_debug_return():
@@ -279,10 +290,13 @@ def plot_1_2_20_debug_return_hdim16():
     p = CurvePlotter(exp_subroot='debug_plot_hdim16')
     stats_dict = p.load_all_stats(exp_dirs={
         'English': 'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0',
-        'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'})
+        'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0',
+        'Centralized': 'CP-0_plr4e-05_optadam_ppo_ec0'})
     for mode in ['train', 'test']:
         for metric in ['mean_return', 'min_return', 'max_return']:
-            p.plot_episode_metrics(fname='English_vs_Vickrey', stats_dict=stats_dict, mode=mode, metric=metric)
+            p.plot_episode_metrics(
+                fname='English_vs_Vickrey_vs_Centralized', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
 
 def plot_vickrey_chain_debug_geb():
     p = MultiAgentCurvePlotter(exp_subroot='server/debug_vickrey_chain_geb')
@@ -290,44 +304,191 @@ def plot_vickrey_chain_debug_geb():
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_2' : 'CW2_plr4e-05_optadam_ppo_aucv_red2_ec0',
         })
-    p.plot_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metric='mean_payoff')
-    p.plot_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metric='mean_bid')
+    p.plot_all_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_3' : 'CW3_plr4e-05_optadam_ppo_aucv_red2_ec0',
         })
-    p.plot_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metric='mean_payoff')
-    p.plot_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metric='mean_bid')
+    p.plot_all_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_4' : 'CW4_plr4e-05_optadam_ppo_aucv_red2_ec0',
         })
-    p.plot_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metric='mean_payoff')
-    p.plot_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metric='mean_bid')
+    p.plot_all_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_5' : 'CW5_plr4e-05_optadam_ppo_aucv_red2_ec0',
         })
-    p.plot_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metric='mean_payoff')
-    p.plot_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metric='mean_bid')
+    p.plot_all_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_6' : 'CW6_plr4e-05_optadam_ppo_aucv_red2_ec0',
         })
-    p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_payoff')
-    p.plot_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metric='mean_bid')
+    p.plot_all_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
 def plot_bandit_geb():
-    pass
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_bandit_claude')
 
+
+    p.load_plot_all_state_metrics(
+        fname='English_2_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucbb_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_2_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='English_3_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucbb_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_3_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='English_4_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucbb_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_4_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='English_9_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucbb_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_9_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_2_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucv_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_2_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_3_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucv_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_3_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_4_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucv_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_4_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_9_Arm_Bandit_ec0.0', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucv_red2_ec0.0', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_9_Arm_Bandit_ec0.001', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+
+
+
+def plot_english_chain_debug_geb():
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_english_chain_geb')
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_2' : 'CW2_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        })
+    p.plot_all_state_metrics(fname='Chain_2', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_3' : 'CW3_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        })
+    p.plot_all_state_metrics(fname='Chain_3', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_4' : 'CW4_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        })
+    p.plot_all_state_metrics(fname='Chain_4', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_5' : 'CW5_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        })
+    p.plot_all_state_metrics(fname='Chain_5', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_6' : 'CW6_plr4e-05_optadam_ppo_aucbb_red2_ec0',
+        })
+    p.plot_all_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+
+def plot_entropy_chain_debug_claude():
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy')
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_2_English_ec0.001' : 'CW2_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_2_English_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_2_Vickrey_ec0.001' : 'CW2_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_2_Vickrey_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_4_English_ec0.001' : 'CW4_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_4_English_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_4_Vickrey_ec0.001' : 'CW4_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_4_Vickrey_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_6_English_ec0.001' : 'CW6_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_6_English_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
+
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Chain_6_Vickrey_ec0.001' : 'CW6_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        })
+    p.plot_all_state_metrics(fname='Chain_6_Vickrey_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
 
 
 if __name__ == '__main__':
-    # plot_vickrey_chain_debug_geb()
     # plot_1_1_20_debug_return()
+    # plot_1_1_20_debug_return_hdim32()
+
+
+    # plot_vickrey_chain_debug_geb()
     # plot_1_2_20_debug_return_hdim16()
-    plot_1_1_20_debug_return_hdim32()
+
+
+    # current
+    plot_bandit_geb()
+    plot_english_chain_debug_geb()
+    plot_entropy_chain_debug_claude()
+
+    # then actually we will just keep on iterating on these
+    # now put these figures into the paper actually - programmatically.
 
 
 

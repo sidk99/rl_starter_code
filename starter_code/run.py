@@ -27,6 +27,9 @@ def parse_args():
     parser.add_argument('--max_buffer_size', type=int, default=4096)
     parser.add_argument('--optim_batch_size', type=int, default=256)
 
+    parser.add_argument('--visualize_every', type=int, default=50)
+    parser.add_argument('--eval_every', type=int, default=50)
+
 
     args = parser.parse_args()
     return args
