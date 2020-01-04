@@ -5,6 +5,11 @@ from gym_minigrid.wrappers import ImgObsWrapper
 import babyai
 import pprint
 
+"""
+    Minigrid reward range: (0,1)
+    CartPole reward range: (-inf, inf)
+"""
+
 def dict_transpose(d):
     """
         input: {
