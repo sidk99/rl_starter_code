@@ -6,7 +6,6 @@ import time
 import torch
 import starter_code.env_utils as eu
 from starter_code.utils import AttrDict, from_np, to_np
-from starter_code.filter import MeanStdFilter, NoFilter
 
 import multiprocessing as mp
 
