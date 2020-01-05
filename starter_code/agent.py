@@ -4,8 +4,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
-import rlkit.torch.pytorch_util as ptu 
-from rlkit.core.serializable import Serializable
+# import rlkit.torch.pytorch_util as ptu 
+# from rlkit.core.serializable import Serializable
 
 from starter_code.utils import AttrDict
 
