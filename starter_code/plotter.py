@@ -326,7 +326,7 @@ def plot_vickrey_chain_debug_geb():
         })
     p.plot_all_state_metrics(fname='Chain_6', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
-def plot_bandit_geb():
+def plot_bandit_claude():
     p = MultiAgentCurvePlotter(exp_subroot='server/debug_bandit_claude')
 
 
@@ -338,6 +338,14 @@ def plot_bandit_geb():
         fname='English_2_Arm_Bandit_ec0.001', 
         exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
         metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_2_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucbb_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_2_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucbb_red2_ec0.1', 
+        metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
         fname='English_3_Arm_Bandit_ec0.0', 
@@ -346,6 +354,14 @@ def plot_bandit_geb():
     p.load_plot_all_state_metrics(
         fname='English_3_Arm_Bandit_ec0.001', 
         exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_3_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucbb_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_3_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucbb_red2_ec0.1', 
         metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
@@ -356,6 +372,14 @@ def plot_bandit_geb():
         fname='English_4_Arm_Bandit_ec0.001', 
         exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
         metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_4_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucbb_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_4_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucbb_red2_ec0.1', 
+        metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
         fname='English_9_Arm_Bandit_ec0.0', 
@@ -364,6 +388,14 @@ def plot_bandit_geb():
     p.load_plot_all_state_metrics(
         fname='English_9_Arm_Bandit_ec0.001', 
         exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucbb_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_9_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucbb_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='English_9_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucbb_red2_ec0.1', 
         metrics=['mean_payoff', 'mean_bid'])
 
 
@@ -375,6 +407,14 @@ def plot_bandit_geb():
         fname='Vickrey_2_Arm_Bandit_ec0.001', 
         exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
         metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_2_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucv_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_2_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T2A_plr4e-05_optadam_ppo_aucv_red2_ec0.1', 
+        metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
         fname='Vickrey_3_Arm_Bandit_ec0.0', 
@@ -383,6 +423,14 @@ def plot_bandit_geb():
     p.load_plot_all_state_metrics(
         fname='Vickrey_3_Arm_Bandit_ec0.001', 
         exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_3_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucv_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_3_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T3A_plr4e-05_optadam_ppo_aucv_red2_ec0.1', 
         metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
@@ -393,6 +441,14 @@ def plot_bandit_geb():
         fname='Vickrey_4_Arm_Bandit_ec0.001', 
         exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
         metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_4_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucv_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_4_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T4A_plr4e-05_optadam_ppo_aucv_red2_ec0.1', 
+        metrics=['mean_payoff', 'mean_bid'])
 
     p.load_plot_all_state_metrics(
         fname='Vickrey_9_Arm_Bandit_ec0.0', 
@@ -401,6 +457,14 @@ def plot_bandit_geb():
     p.load_plot_all_state_metrics(
         fname='Vickrey_9_Arm_Bandit_ec0.001', 
         exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucv_red2_ec0.001', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_9_Arm_Bandit_ec0.01', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucv_red2_ec0.01', 
+        metrics=['mean_payoff', 'mean_bid'])
+    p.load_plot_all_state_metrics(
+        fname='Vickrey_9_Arm_Bandit_ec0.1', 
+        exp_dir='1S1T9A_plr4e-05_optadam_ppo_aucv_red2_ec0.1', 
         metrics=['mean_payoff', 'mean_bid'])
 
 
@@ -483,7 +547,7 @@ if __name__ == '__main__':
 
 
     # current
-    plot_bandit_geb()
+    plot_bandit_claude()
     plot_english_chain_debug_geb()
     plot_entropy_chain_debug_claude()
 
