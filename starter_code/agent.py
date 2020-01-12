@@ -118,11 +118,9 @@ class Agent(nn.Module):
         return None
 
 
-# discount=0.99
 # reward_scale=1.0
 # policy_lr=3E-4
 # qf_lr=3E-4
-# optimizer_class = optim.Adam
 # soft_target_tau=5e-3
 # target_update_period=1
 # use_automatic_entropy_tuning=True

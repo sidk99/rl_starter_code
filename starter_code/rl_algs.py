@@ -297,9 +297,15 @@ Note that these are the args:
 }
 
 
+
+# reward_scale=1.0
+# policy_lr=3E-4
+# qf_lr=3E-4
+# soft_target_tau=5e-3
+# target_update_period=1
+# use_automatic_entropy_tuning=True
+
 """
-
-
 
 
 class SAC(OffPolicyRlAlg):
@@ -310,7 +316,6 @@ class SAC(OffPolicyRlAlg):
     """
     def __init__(self, device, args):
         super(SAC, self).__init__(device, max_buffer_size=int(1e6), num_samples_before_update=1000)
-        # self.device = device
         self.args = args
 
         # # the purpose of this is to tell how many samples to collect before updating
@@ -328,18 +333,6 @@ class SAC(OffPolicyRlAlg):
         # SAC hyperparameters that I am using
         self.optim_batch_size = 256
         self.num_trains_per_train_loop = 1000  # note that this should be a hyperparameter that you standardize
-
-        if self.use_automatic_entropy_tuning:
-            if target_entropy:
-                self.target_entropy = target_entropy
-            else:
-                self.target_entropy = -np.prod(self.env.action_space.shape).item()  # heuristic value from Tuomas
-            self.log_alpha = ptu.zeros(1, requires_grad=True)
-            self.alpha_optimizer = optim.Adam(
-                [self.log_alpha],
-                lr=args.plr,
-            )
-
 
 
         # other hyperparameters not used here
