@@ -24,7 +24,8 @@ def rlalg_config(args):
     return args
 
 def ppo_config(args):
-    args.gamma = 0.99
+    if not hasattr(args, 'gamma'):
+        args.plr = 0.99
     if not hasattr(args, 'plr'):
         args.plr = 4e-5
     if not hasattr(args, 'vlr'):
@@ -37,14 +38,16 @@ def ppo_config(args):
     return args
 
 def a2c_config(args):
-    args.gamma = 0.99
+    if not hasattr(args, 'gamma'):
+        args.plr = 0.99
     args.plr = 1e-4
     args.vlr = 5e-3
     args.opt = 'adam'
     return args
 
 def vpg_config(args):
-    args.gamma = 0.99
+    if not hasattr(args, 'gamma'):
+        args.plr = 0.99
     args.plr = 1e-4
     args.vlr = 5e-3
     args.opt = 'adam'
@@ -55,7 +58,7 @@ def experiment_config(args):
     args.log_every = 10
     args.save_every = 50
     if not hasattr(args, 'visualize_every'):
-        args.visualize_every = 50
+        args.visualize_every = 500
     if not hasattr(args, 'eval_every'):
         args.eval_every = 50
     args.max_epochs = int(1e7)
@@ -91,7 +94,7 @@ def training_config(args):
 
 def build_expname(args):
     args.expname = simplify_name(args.env_name)
-    # args.expname += '_s{}'.format(args.seed)
+    args.expname += '_g{}'.format(args.gamma)
     args.expname += '_plr{}'.format(args.plr)
     args.expname += '_opt{}'.format(args.opt)
     args.expname += '_{}'.format(args.alg_name)

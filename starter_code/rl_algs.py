@@ -50,7 +50,8 @@ class VPG(OnPolicyRLAlg):
     """
     def __init__(self, device, args):
         super(VPG, self).__init__(device=device, max_buffer_size=100)
-        self.gamma = 0.99
+        # self.gamma = 0.99
+        self.gamma = self.args.gamma
 
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
@@ -88,7 +89,8 @@ class A2C(OnPolicyRLAlg):
     """
     def __init__(self, device, args):
         super(A2C, self).__init__(device=device, max_buffer_size=100)
-        self.gamma = 0.99
+        # self.gamma = 0.99
+        self.gamma = self.args.gamma
 
     def unpack_batch(self, batch):
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
@@ -136,7 +138,8 @@ class PPO(OnPolicyRLAlg):
         self.device = device
         self.args = args
 
-        self.gamma = 0.99
+        # self.gamma = 0.99
+        self.gamma = self.args.gamma
         self.tau = 0.95
         self.l2_reg = 1e-3
         self.clip_epsilon = 0.2
