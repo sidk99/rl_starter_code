@@ -76,10 +76,10 @@ class VPG(OnPolicyRLAlg):
             rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
         for log_prob, reward in zip(log_probs, rewards):
             policy_losses.append(-log_prob * reward)
-        agent.policy_optimizer.zero_grad()
+        agent.optimizers['policy'].zero_grad()
         loss = torch.stack(policy_losses).sum()
         loss.backward()
-        agent.policy_optimizer.step()
+        agent.optimizers['policy'].step()
         agent.replay_buffer.clear_buffer()
 
 
@@ -119,12 +119,12 @@ class A2C(OnPolicyRLAlg):
             reward = r - value.item()
             policy_losses.append(-log_prob * reward)
             value_losses.append(F.smooth_l1_loss(value, torch.tensor([r]).to(self.device)))
-        agent.policy_optimizer.zero_grad()
-        agent.value_optimizer.zero_grad()
+        agent.optimizers['policy'].zero_grad()
+        agent.optimizers['valuefn'].zero_grad()
         loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
         loss.backward()
-        agent.policy_optimizer.step()
-        agent.value_optimizer.step()
+        agent.optimizers['policy'].step()
+        agent.optimizers['valuefn'].step()
         agent.replay_buffer.clear_buffer()
 
 
@@ -235,9 +235,9 @@ class PPO(OnPolicyRLAlg):
             # weight decay
             for param in agent.valuefn.parameters():
                 value_loss += param.pow(2).sum() * self.l2_reg
-            agent.value_optimizer.zero_grad()
+            agent.optimizers['valuefn'].zero_grad()
             value_loss.backward()
-            agent.value_optimizer.step()
+            agent.optimizers['valuefn'].step()
 
         """update policy"""
         action_dist = agent.policy.get_action_dist(states)
@@ -249,10 +249,10 @@ class PPO(OnPolicyRLAlg):
         entropy = agent.policy.get_entropy(action_dist).mean()
 
         policy_loss = policy_surr - self.entropy_coeff*entropy
-        agent.policy_optimizer.zero_grad()
+        agent.optimizers['policy'].zero_grad()
         policy_loss.backward()
         torch.nn.utils.clip_grad_norm_(agent.policy.parameters(), 40)
-        agent.policy_optimizer.step()
+        agent.optimizers['policy'].step()
 
         """log"""
         num_clipped = (surr1-surr2).nonzero().size(0)
@@ -370,10 +370,13 @@ class SAC(OffPolicyRlAlg):
         return states, actions, next_states, terminals, rewards
 
     def improve(self, agent):
+        ######################################################################
+        # TODO: self.num_trains_per_train_loop
         for step in range(self.num_trains_per_train_loop):
             batch = agent.replay_buffer.sample(self.optim_batch_size)  # with replacement
             states, actions, next_states, terminals, rewards = self.unpack_batch(batch)
             self.sac_step(agent, states, actions, next_states, terminals, rewards)
+        ######################################################################
 
     def sac_step(self, agent, states, actions, next_states, terminals, rewards):
         """
