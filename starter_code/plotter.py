@@ -168,11 +168,12 @@ class CurvePlotter(Plotter):
 
         # title
         if not title:
-            title = fname.replace('.png', '')
+            title = fname
             plt.title(title)
 
         # save in exp_subroot
-        plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, fname), bbox_inches="tight")
+        plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, '{}.png'.format(
+            fname.replace('.', '-'))), bbox_inches="tight")
         plt.close()
 
     def reorganize_episode_data(self, stats_dict, mode, metric, x_label):
@@ -195,7 +196,7 @@ class CurvePlotter(Plotter):
         print('Plotting {} for metric {} mode {}'.format(fname, metric, mode))
         # get data
         curve_plot_dict = self.reorganize_episode_data(stats_dict, mode, metric, x_label)
-        self.plot('{}_{}_{}.png'.format(fname, metric, mode), curve_plot_dict, metric, x_label, title)
+        self.plot('{}_{}_{}'.format(fname, metric, mode), curve_plot_dict, metric, x_label, title)
 
 
 class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
@@ -249,7 +250,7 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
         # want to do it for each state
         for state in reorganized_data:
             curve_plot_dict = reorganized_data[state]
-            self.plot('{}_state_{}_{}_{}.png'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title)
+            self.plot('{}_state_{}_{}_{}'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title)
 
     def plot_all_state_metrics(self, fname, stats_dict, mode, metrics, x_label='steps', title=None):
         for metric in metrics:
@@ -511,8 +512,6 @@ def plot_entropy_chain_debug_claude():
         })
     p.plot_all_state_metrics(fname='Chain_2_Vickrey_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
 
-
-
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_4_English_ec0.001' : 'CW4_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
         })
@@ -522,8 +521,6 @@ def plot_entropy_chain_debug_claude():
         'Chain_4_Vickrey_ec0.001' : 'CW4_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
         })
     p.plot_all_state_metrics(fname='Chain_4_Vickrey_ec0.001', stats_dict=stats_dict, mode='train', metrics=['mean_payoff', 'mean_bid'])
-
-
 
     stats_dict = p.load_all_stats(exp_dirs={
         'Chain_6_English_ec0.001' : 'CW6_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
@@ -537,6 +534,32 @@ def plot_entropy_chain_debug_claude():
 
 
 
+def plot_1_6_20_debug_lunarlander():
+    p = CurvePlotter(exp_subroot='server/debug_lunarlander_geb')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'FPBSA_ec0.0': 'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.0',
+        'FPBSA_ec0.001': 'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        'Vickrey_ec0.0': 'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.0',
+        'Vickrey_ec0.001': 'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        })
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='LunarLander', stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+def plot_1_7_20_CP_redundancy_1():
+    p = CurvePlotter(exp_subroot='debug_redundancy_CP_geb')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Vickrey': 'CP-0_plr4e-05_optadam_ppo_aucbb_red1_ec0',
+        'FPBSA': 'CP-0_plr4e-05_optadam_ppo_aucv_red1_ec0',
+        })
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='CP_Redundancy_1', stats_dict=stats_dict, mode=mode, metric=metric)
+
+            
+
+
 if __name__ == '__main__':
     # plot_1_1_20_debug_return()
     # plot_1_1_20_debug_return_hdim32()
@@ -546,10 +569,14 @@ if __name__ == '__main__':
     # plot_1_2_20_debug_return_hdim16()
 
 
+    # plot_english_chain_debug_geb()
+    # plot_entropy_chain_debug_claude()
+
+
     # current
-    plot_bandit_claude()
-    plot_english_chain_debug_geb()
-    plot_entropy_chain_debug_claude()
+    # plot_bandit_claude()
+    plot_1_6_20_debug_lunarlander()
+    plot_1_7_20_CP_redundancy_1()
 
     # then actually we will just keep on iterating on these
     # now put these figures into the paper actually - programmatically.

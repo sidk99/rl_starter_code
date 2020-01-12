@@ -97,6 +97,22 @@ def clean_1_2_20_debug_plot_hdim32():
         'CP-0_plr4e-05_optadam_ppo_aucbb_red2_ec0', 
         'CP-0_plr4e-05_optadam_ppo_aucv_red2_ec0'])
 
+def clean_1_6_20_debug_lunar_lander():
+    c = Cleaner(exp_subroot='server/debug_lunarlander_geb')
+    # c.clean_checkpoints([
+    #     'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.0',
+    #     'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+    #     'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.0',
+    #     'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+    #     ])
+
+    c.clean_gifs([
+        'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.0',
+        'LL-2_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.0',
+        'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        ])
+
 if __name__ == '__main__':
-    clean_1_2_20_debug_plot_hdim32()
+    clean_1_6_20_debug_lunar_lander()
 
