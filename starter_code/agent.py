@@ -100,6 +100,7 @@ class Agent(nn.Module):
         self.replay_buffer.push(
             state=transition.state,
             action=transition.action,
+            next_state=transition.next_state,
             mask=transition.mask,
             reward=transition.reward,
             )

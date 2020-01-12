@@ -4,7 +4,7 @@ import numpy as np
 # Taken from
 # https://github.com/pytorch/tutorials/blob/master/Reinforcement%20(Q-)Learning%20with%20PyTorch.ipynb
 
-OnPolicy = namedtuple('OnPolicy', ('state', 'action', 'mask', 'reward'))
+OnPolicy = namedtuple('OnPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
 OffPolicy = namedtuple('OffPolicy', ('state', 'action', 'mask', 'next_state', 'reward'))
 
 
@@ -72,6 +72,7 @@ class StaticMemory():
             ob_dim = (ob_dim,)
         self._states = np.empty((max_replay_buffer_size, *ob_dim))
         self._actions = np.empty((max_replay_buffer_size, action_dim))
+        self._next_states = np.empty((max_replay_buffer_size, *ob_dim))
         self._masks = np.empty((max_replay_buffer_size), dtype='uint8')
         self._rewards = np.empty((max_replay_buffer_size))
 
@@ -83,11 +84,14 @@ class StaticMemory():
         if self._size < self._max_replay_buffer_size:
             self._size += 1
 
-    def push(self, state, action, mask, reward):
+    def push(self, state, action, 
+        next_state, 
+        mask, reward):
         self._states[self._top] = state
         self._actions[self._top] = action
         self._masks[self._top] = mask
         self._rewards[self._top] = reward
+        self._next_states[self._top] = next_state
         self._advance()
 
     def sample(self, batch_size=None):
@@ -100,6 +104,7 @@ class StaticMemory():
         batch = AttrDict(
             state=self._states[indices],
             action=self._actions[indices],
+            next_state=self._next_states[indices],
             mask=self._masks[indices],
             reward=self._rewards[indices],
             )
