@@ -306,8 +306,6 @@ class SAC(OffPolicyRlAlg):
     """
         TODO:
             * self.alpha_optimizer
-            * Off policy replay buffer
-            * Replay element should include next state
             * make sure select_action can be done in batch
     """
     def __init__(self, device, args):
@@ -321,7 +319,7 @@ class SAC(OffPolicyRlAlg):
         # SAC hyperparameters
         self.soft_target_tau = 5e-3
         self.target_update_period = 1
-        self.discount = 0.99
+        self.gamma = 0.99
         self.reward_scale = 1.0
         self.use_automatic_entropy_tuning = True
         self._n_train_steps_total = 0
@@ -379,49 +377,98 @@ class SAC(OffPolicyRlAlg):
 
     def sac_step(self, agent, states, actions, next_states, terminals, rewards):
         """
+            1. unpack batch (note if terminals and masks are flipped!)
+            2. run_policy
+            3. update alpha
+            4. get policy loss
+            5. run Q functions
+            6. get next actions from policy
+            7. get target Q values
+            8. get Bellman target
+            9. get Q function losses
+            10. backward() step()
+            11. polyak averaging
+
+        What do we need when we run the policy?
+            actions, log_pi
+
+        TODO:
+            # 1 unpack batch
+            # 3 update alpha
+            # 8 terminals
+            # 11 polyak averaging
+        """
+
+        """
         Policy and Alpha Loss
         """
-        new_obs_actions = agent.policy.select_action(
+        ######################################################################
+        # 2 SHOULD WORK
+        new_obs_actions, new_obs_actions_dist = agent.policy.select_action(
             states, deterministic=False, reparameterize=True)
-        log_pi = agent.policy.get_log_prob(states, new_obs_actions)  # (bsize, 1)
+        log_pi = agent.policy.get_log_prob(new_obs_actions_dist, new_obs_actions)  # (bsize, 1)
         # NOTE: you should probably replace log_pi with the actual entropy
-
+        ######################################################################
+        ######################################################################
+        # 3 TODO: self.use_automatic_entropy_tuning, self.target_entropy, agent.log_alpha, agent.alpha_optimizer
         if self.use_automatic_entropy_tuning:
-            alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
-            self.alpha_optimizer.zero_grad()
+            alpha_loss = -(agent.log_alpha * (log_pi + self.target_entropy).detach()).mean()
+            agent.alpha_optimizer.zero_grad()
             alpha_loss.backward()
-            self.alpha_optimizer.step()
-            alpha = self.log_alpha.exp()
+            agent.alpha_optimizer.step()
+            alpha = agent.log_alpha.exp()
         else:
             alpha_loss = 0
             alpha = 1
+        ######################################################################
 
+        ######################################################################
+        # 4 VERBATIM
         q_new_actions = torch.min(
             self.qf1(obs, new_obs_actions),
             self.qf2(obs, new_obs_actions),
         )
         policy_loss = (alpha*log_pi - q_new_actions).mean()
+        ######################################################################
 
         """
         QF Loss
         """
+        ######################################################################
+        # 5 VERBATIM
         q1_pred = self.qf1(states, actions)
         q2_pred = self.qf2(states, actions)
-        new_next_actions = agent.policy.select_action(
+        ######################################################################
+        ######################################################################
+        # 6 SHOULD WORK
+        new_next_actions, new_next_actions_dist = agent.policy.select_action(
             next_states, deterministic=False, reparameterize=True)
-        new_log_pi = agent.policy.get_log_prob(next_states, new_next_actions)
+        new_log_pi = agent.policy.get_log_prob(new_next_actions_dist, new_next_actions)
+        ######################################################################
+        ######################################################################
+        # 7 VERBATIM
         target_q_values = torch.min(
             self.target_qf1(next_states, new_next_actions),
             self.target_qf2(next_states, new_next_actions),
             ) - alpha * new_log_pi
+        ######################################################################
 
-        q_target = self.reward_scale * rewards + (1. - terminals) * self.discount * target_q_values
+        ######################################################################
+        # 8 TODO: terminals
+        q_target = self.reward_scale * rewards + (1. - terminals) * self.gamma * target_q_values
+        ######################################################################
+
+        ######################################################################
+        # 9 VERBATIM
         qf1_loss = nn.MSELoss(q1_pred, q_target.detach())
         qf2_loss = nn.MSELoss(q2_pred, q_target.detach())
+        ######################################################################
 
         """
         Update networks
         """
+        ######################################################################
+        # 10 VERBATIM
         self.qf1_optimizer.zero_grad()
         qf1_loss.backward()
         self.qf1_optimizer.step()
@@ -433,10 +480,13 @@ class SAC(OffPolicyRlAlg):
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
+        ######################################################################
 
         """
         Polyak Averaging
         """
+        ######################################################################
+        # 11 TODO: self.target_update_period, self._n_train_steps_total, self.soft_target_tau
         if self._n_train_steps_total % self.target_update_period == 0:
             ptu.soft_update_from_to(
                 self.qf1, self.target_qf1, self.soft_target_tau
@@ -445,6 +495,7 @@ class SAC(OffPolicyRlAlg):
                 self.qf2, self.target_qf2, self.soft_target_tau
             )
         self._n_train_steps_total += 1
+        ######################################################################
 
 
 
