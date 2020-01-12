@@ -9,30 +9,17 @@ from torch.distributions import Categorical
 
 from starter_code.utils import AttrDict
 
-class Agent(nn.Module):
-    """
-        args.opt
-        args.plr
-        args.vlr
-        args.anneal_policy_lr
-        args.anneal_policy_lr_gamma
-    """
-    def __init__(self, policy, valuefn, replay_buffer, args):
-        super(Agent, self).__init__()
-        self.policy = policy
-        self.valuefn = valuefn
+class BaseAgent(nn.Module):
+    def __init__(self, networks, replay_buffer, args):
+        super(BaseAgent, self).__init__()
+        self.bundle_networks(networks)
+
         self.replay_buffer = replay_buffer
         self.args = args
-        self.discrete = self.policy.discrete
 
-        self.bundle_networks()
-        self.initialize_optimizer(lrs=dict(policy=self.args.plr, valuefn=self.args.vlr))
-        self.initialize_optimizer_schedulers(args)
-
-    def bundle_networks(self):
-        self.networks = dict(
-            policy=self.policy, 
-            valuefn=self.valuefn)  
+    def bundle_networks(self, networks):
+        self.networks = networks
+        self.policy = networks['policy']
 
     def initialize_optimizer(self, lrs):
         self.optimizers = {}
@@ -117,6 +104,24 @@ class Agent(nn.Module):
     def get_summary(self):
         return None
 
+class ActorCritic_Agent(BaseAgent):
+    """
+        args.opt
+        args.plr
+        args.vlr
+        args.anneal_policy_lr
+        args.anneal_policy_lr_gamma
+    """
+    def __init__(self, networks, replay_buffer, args):
+        BaseAgent.__init__(self, networks, replay_buffer, args)
+        self.initialize_optimizer(lrs=dict(policy=self.args.plr, valuefn=self.args.vlr))
+        self.initialize_optimizer_schedulers(args)
+        self.discrete = self.policy.discrete  # TODO: should go somewhere else
+
+    def bundle_networks(self, networks):
+        BaseAgent.bundle_networks(self, networks)
+        self.valuefn = networks['valuefn']
+
 
 # reward_scale=1.0
 # policy_lr=3E-4
@@ -124,39 +129,28 @@ class Agent(nn.Module):
 # soft_target_tau=5e-3
 # target_update_period=1
 # use_automatic_entropy_tuning=True
-class SACAgent(Agent):
-    def __init__(self, policy, qf1, qf2, target_qf1, target_qf2, replay_buffer, args):
-        nn.Module.__init__(self)
-        self.policy = policy
-        self.qf1 = qf1
-        self.qf2 = qf2
-        self.target_qf1 = target_qf1
-        self.target_qf2 = target_qf2
-        if args.use_automatic_entropy_tuning:  # TODO
-            self.log_alpha = ptu.zeros(1, requires_grad=True)  # TODO
-
-        self.replay_buffer = replay_buffer
-        self.args = args
-        assert self.policy.discrete == False  # TODO: can SAC only work for continous actions?
-        self.discrete = False
-
-        self.bundle_networks()
+class SAC_Agent(BaseAgent):
+    def __init__(self, networks, replay_buffer, args):
+        BaseAgent.__init__(self, networks, replay_buffer, args)
         self.initialize_optimizer(lrs=dict(
             policy=self.args.plr,
             qf1=self.args.vlr,
             qf2=self.args.vlr))
         self.initialize_optimizer_schedulers(args)
+        assert self.policy.discrete == False  # TODO: can SAC only work for continous actions?
+        self.discrete = False
 
     def bundle_networks(self):
-        # this is just for the state_dict
-        self.networks = dict(
-            policy=self.policy, 
-            qf1=self.qf1,
-            qf2=self.qf2)
-        # note that I am not including self.log_alpha here!
+        BaseAgent.bundle_networks(self, networks)
+        self.qf1 = networks['qf1']
+        self.qf2 = networks['qf2']
+        self.target_qf1 = networks['target_qf1']
+        self.target_qf2 = networks['target_qf2']
+        if args.use_automatic_entropy_tuning:  # TODO
+            self.log_alpha = ptu.zeros(1, requires_grad=True)  # TODO
 
     def initialize_optimizer(self, lrs):
-        Agent.initialize_optimizer(self, lrs)
+        BaseAgent.initialize_optimizer(self, lrs)
         if args.use_automatic_entropy_tuning:
             if self.args.opt == 'adam':
                 self.optimizers['alpha_optimizer'] = optim.Adam(
@@ -167,27 +161,21 @@ class SACAgent(Agent):
             else:
                 assert False
 
-    # initialize_optimizer_schedulers() inherited
-    # step_optimizer_schedulers() inherited
-    # forward() inherited
-    # update() inherited
-    # clear_buffer() inherited
-    # store_transition() inherited
-
     def get_state_dict(self):
         """
             TODO: need to add in the log_alpha paramter here
         """
-        state_dict = Agent.get_state_dict(self)
+        state_dict = BaseAgent.get_state_dict(self)
         if args.use_automatic_entropy_tuning:
             state_dict['log_alpha'] = self.log_alpha.item()  # TODO: figure out if you should detach
         return state_dict
 
     def load_state_dict(self, agent_state_dict, reset_optimizer=True):
-        Agent.load_state_dict(
+        BaseAgent.load_state_dict(
             agent_state_dict=agent_state_dict, 
             reset_optimizer=reset_optimizer)
-        self.log_alpha = agent_state_dict['log_alpha']  # should I convert to tensor?
+        if args.use_automatic_entropy_tuning:
+            self.log_alpha = agent_state_dict['log_alpha']  # should I convert to tensor?
 
 
 

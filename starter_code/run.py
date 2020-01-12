@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import torch
-from starter_code.agent import Agent
+from starter_code.agent import ActorCritic_Agent
 from starter_code.configs import process_config, env_manager_switch
 from starter_code.env_config import EnvRegistry as ER
 from starter_code.experiment import CentralizedExperiment
@@ -72,14 +72,18 @@ class BaseLauncher:
         else:
             raise NotImplementedError
             rreplay_action_dim = task_progression.action_dim
-        # replay_buffer = OnPolicyMemory()
         replay_buffer = StaticMemory(
             max_replay_buffer_size=args.max_buffer_size,
             ob_dim=task_progression.state_dim,
             action_dim=replay_action_dim)
         #############################################
 
-        agent = Agent(policy, critic, replay_buffer, args).to(device)
+        agent = ActorCritic_Agent(
+            networks=dict(
+                policy=policy,
+                valuefn=critic),
+            replay_buffer=replay_buffer, 
+            args=args).to(device)
         return agent
 
     @classmethod
