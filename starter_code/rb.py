@@ -68,7 +68,8 @@ class AttrDict(dict):
 class StaticMemory():
     def __init__(self, max_replay_buffer_size, ob_dim, action_dim):
         self._max_replay_buffer_size = max_replay_buffer_size
-
+        if isinstance(ob_dim, int): 
+            ob_dim = (ob_dim,)
         self._states = np.empty((max_replay_buffer_size, *ob_dim))
         self._actions = np.empty((max_replay_buffer_size, action_dim))
         self._masks = np.empty((max_replay_buffer_size), dtype='uint8')
@@ -92,7 +93,10 @@ class StaticMemory():
     def sample(self, batch_size=None):
         if batch_size is None:
             batch_size = self._max_replay_buffer_size
-        indices = np.random.randint(0, self._size, batch_size)
+            indices = np.arange(self._size)
+        else:
+            np.random.seed(1000)
+            indices = np.random.randint(0, self._size, batch_size)
         batch = AttrDict(
             state=self._states[indices],
             action=self._actions[indices],

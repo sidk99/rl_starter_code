@@ -498,7 +498,8 @@ class MinigridEnvManager(VisualEnvManager):
     def __init__(self, env_name, env_registry, args):
         super(MinigridEnvManager, self).__init__(env_name, env_registry, args)
         full_state_dim = self.env.observation_space.shape  # (H, W, C)
-        self.state_dim = full_state_dim[:-1]  # (H, W)
+        # self.state_dim = full_state_dim[:-1]  # (H, W)
+        self.state_dim = full_state_dim
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
         self.max_episode_length = self.env.max_steps
@@ -508,7 +509,7 @@ def log_string(ordered_dict):
     for i, (k, v) in enumerate(ordered_dict.items()):
         delim = '' if i == 0 else ' | '
         if is_float(v):
-            s += delim + '{}: {:.5f}'.format(k, v)
+            s += delim + '{}: {:.9f}'.format(k, v)
         else:
             s += delim + '{}: {}'.format(k, v)
     return s

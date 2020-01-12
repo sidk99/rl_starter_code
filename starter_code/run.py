@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('--debug', action='store_true')
 
     # debugging
+    parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--max_buffer_size', type=int, default=4096)
     parser.add_argument('--optim_batch_size', type=int, default=256)
 
@@ -58,19 +59,24 @@ class BaseLauncher:
     @classmethod
     def create_organism(cls, device, task_progression, args):
         if 'MiniGrid' in args.env_name[0] or 'BabyAI' in args.env_name[0]:
-            policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim, action_dim=task_progression.action_dim)
-            critic = CNNValueFn(state_dim=task_progression.state_dim)
+            policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim[:-1], action_dim=task_progression.action_dim)
+            critic = CNNValueFn(state_dim=task_progression.state_dim[:-1])
         else:
             policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
             policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
             critic = ValueFn(state_dim=task_progression.state_dim)
 
         #############################################
-        replay_buffer = OnPolicyMemory()
-        # replay_buffer = StaticMemory(
-        #     max_replay_buffer_size=args.max_buffer_size,
-        #     ob_dim=(7,7,3), # hacky task_progression.state_dim,
-        #     action_dim=1)# hacky; 1 because Categorical task_progression.action_dim)
+        if task_progression.is_disc_action:
+            replay_action_dim = 1 
+        else:
+            raise NotImplementedError
+            rreplay_action_dim = task_progression.action_dim
+        # replay_buffer = OnPolicyMemory()
+        replay_buffer = StaticMemory(
+            max_replay_buffer_size=args.max_buffer_size,
+            ob_dim=task_progression.state_dim,
+            action_dim=replay_action_dim)
         #############################################
 
         agent = Agent(policy, critic, replay_buffer, args).to(device)

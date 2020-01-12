@@ -184,6 +184,7 @@ class PPO(OnPolicyRLAlg):
     def improve(self, agent):
         self.reset_record()
         batch = agent.replay_buffer.sample()
+        # batch = agent.replay_buffer.sample(self.optim_batch_size)
         states, actions, masks, rewards = self.unpack_batch(batch)
 
         with torch.no_grad():
@@ -265,6 +266,40 @@ class PPO(OnPolicyRLAlg):
         log['policy_surr'] = policy_surr.item()
         log['policy_loss'] = policy_loss.item()
         return log
+
+
+"""
+Note that these are the args:
+
+
+  "algorithm": "SAC",
+  "version": "normal",
+  "layer_size": 256,
+  "replay_buffer_size": 1000000,
+  "algorithm_kwargs": {
+    "num_epochs": 3000,
+    "num_eval_steps_per_epoch": 5000,
+    "num_trains_per_train_loop": 1000,
+    "num_expl_steps_per_train_loop": 1000,
+    "min_num_steps_before_training": 1000,
+    "max_path_length": 1000,
+    "batch_size": 256
+  },
+  "trainer_kwargs": {
+    "discount": 0.99,
+    "soft_target_tau": 0.005,
+    "target_update_period": 1,
+    "policy_lr": 0.0003,
+    "qf_lr": 0.0003,
+    "reward_scale": 1,
+    "use_automatic_entropy_tuning": true
+  }
+}
+
+
+"""
+
+
 
 
 class SAC(OffPolicyRlAlg):
