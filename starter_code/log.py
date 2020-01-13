@@ -338,6 +338,7 @@ class TabularEnvManager(EnvManager):
         super(TabularEnvManager, self).__init__(env_name, env_registry, args)
         self.state_dim = self.env.state_dim
         self.action_dim = len(self.env.actions)
+        self.is_disc_action = True
         self.starting_states = self.env.starting_states
         self.max_episode_length = self.env.eplen
         self.agent_data = {}
