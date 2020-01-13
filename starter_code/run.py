@@ -58,6 +58,18 @@ class BaseLauncher:
 
     @classmethod
     def create_organism(cls, device, task_progression, args):
+        if task_progression.is_disc_action:
+            replay_action_dim = 1 
+        else:
+            raise NotImplementedError
+            replay_action_dim = task_progression.action_dim
+
+        replay_buffer = StaticMemory(
+            max_replay_buffer_size=args.max_buffer_size,
+            ob_dim=task_progression.state_dim,
+            action_dim=replay_action_dim)
+        #############################################
+
         if 'MiniGrid' in args.env_name[0] or 'BabyAI' in args.env_name[0]:
             policy = DiscreteCNNPolicy(state_dim=task_progression.state_dim[:-1], action_dim=task_progression.action_dim)
             critic = CNNValueFn(state_dim=task_progression.state_dim[:-1])
@@ -65,25 +77,14 @@ class BaseLauncher:
             policy_builder = DiscretePolicy if task_progression.is_disc_action else SimpleGaussianPolicy
             policy = policy_builder(state_dim=task_progression.state_dim, hdim=args.hdim, action_dim=task_progression.action_dim)
             critic = ValueFn(state_dim=task_progression.state_dim)
-
         #############################################
-        if task_progression.is_disc_action:
-            replay_action_dim = 1 
-        else:
-            raise NotImplementedError
-            rreplay_action_dim = task_progression.action_dim
-        replay_buffer = StaticMemory(
-            max_replay_buffer_size=args.max_buffer_size,
-            ob_dim=task_progression.state_dim,
-            action_dim=replay_action_dim)
-        #############################################
-
         agent = ActorCritic_Agent(
             networks=dict(
                 policy=policy,
                 valuefn=critic),
             replay_buffer=replay_buffer, 
             args=args).to(device)
+
         return agent
 
     @classmethod
