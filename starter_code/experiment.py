@@ -102,8 +102,8 @@ class Experiment():
     def main_loop(self, max_epochs):
         # populate replay buffer before training
         for epoch in gt.timed_for(range(max_epochs)):
-            # if epoch % self.args.eval_every == 0:
-            #     self.eval_step(epoch)  # somehow this is not deterministic for decentralized?
+            if epoch % self.args.eval_every == 0:
+                self.eval_step(epoch)  # somehow this is not deterministic for decentralized?
             self.train_step(epoch)
         self.finish_training()
 
