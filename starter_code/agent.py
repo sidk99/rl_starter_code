@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
-# import rlkit.torch.pytorch_util as ptu 
+import rlkit.torch.pytorch_util as ptu 
 # from rlkit.core.serializable import Serializable
 
 from starter_code.utils import AttrDict
@@ -12,10 +12,9 @@ from starter_code.utils import AttrDict
 class BaseAgent(nn.Module):
     def __init__(self, networks, replay_buffer, args):
         super(BaseAgent, self).__init__()
-        self.bundle_networks(networks)
-
-        self.replay_buffer = replay_buffer
         self.args = args
+        self.replay_buffer = replay_buffer
+        self.bundle_networks(networks)
 
     def bundle_networks(self, networks):
         self.networks = networks
@@ -23,13 +22,13 @@ class BaseAgent(nn.Module):
 
     def initialize_optimizer(self, lrs):
         self.optimizers = {}
-        for name, network in self.networks.items():
+        for name in lrs:
             if self.args.opt == 'adam':
                 self.optimizers[name] = optim.Adam(
-                    network.parameters(), lr=lrs[name])
+                    self.networks[name].parameters(), lr=lrs[name])
             elif self.args.opt == 'sgd':
                 self.optimizers[name] = optim.SGD(
-                    network.parameters(), lr=lrs[name], momentum=0.9)
+                    self.networks[name].parameters(), lr=lrs[name], momentum=0.9)
             else:
                 assert False
 
@@ -140,23 +139,23 @@ class SAC_Agent(BaseAgent):
         assert self.policy.discrete == False  # TODO: can SAC only work for continous actions?
         self.discrete = False
 
-    def bundle_networks(self):
+    def bundle_networks(self, networks):
         BaseAgent.bundle_networks(self, networks)
         self.qf1 = networks['qf1']
         self.qf2 = networks['qf2']
         self.target_qf1 = networks['target_qf1']
         self.target_qf2 = networks['target_qf2']
-        if args.use_automatic_entropy_tuning:  # TODO
+        if self.args.use_automatic_entropy_tuning:  # TODO
             self.log_alpha = ptu.zeros(1, requires_grad=True)  # TODO
 
     def initialize_optimizer(self, lrs):
         BaseAgent.initialize_optimizer(self, lrs)
-        if args.use_automatic_entropy_tuning:
+        if self.args.use_automatic_entropy_tuning:
             if self.args.opt == 'adam':
-                self.optimizers['alpha_optimizer'] = optim.Adam(
+                self.optimizers['alpha'] = optim.Adam(
                     [self.log_alpha], lr=self.args.plr)
             elif self.args.opt == 'sgd':
-                self.optimizers['alpha_optimizer'] = optim.SGD(
+                self.optimizers['alpha'] = optim.SGD(
                     [self.log_alpha], lr=self.args.plr, momentum=0.9)
             else:
                 assert False
@@ -166,7 +165,7 @@ class SAC_Agent(BaseAgent):
             TODO: need to add in the log_alpha paramter here
         """
         state_dict = BaseAgent.get_state_dict(self)
-        if args.use_automatic_entropy_tuning:
+        if self.args.use_automatic_entropy_tuning:
             state_dict['log_alpha'] = self.log_alpha.item()  # TODO: figure out if you should detach
         return state_dict
 
@@ -174,7 +173,7 @@ class SAC_Agent(BaseAgent):
         BaseAgent.load_state_dict(
             agent_state_dict=agent_state_dict, 
             reset_optimizer=reset_optimizer)
-        if args.use_automatic_entropy_tuning:
+        if self.args.use_automatic_entropy_tuning:
             self.log_alpha = agent_state_dict['log_alpha']  # should I convert to tensor?
 
 

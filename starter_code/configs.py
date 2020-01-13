@@ -14,14 +14,47 @@ from starter_code.utils import AttrDict
 
 def rlalg_config(args):
     rlalg_configs = dict(
-        ppo = ppo_config,
-        a2c = a2c_config,
-        vpg = vpg_config,
+        ppo=ppo_config,
+        a2c=a2c_config,
+        vpg=vpg_config,
+        sac=sac_config,
     )
     args = rlalg_configs[args.alg_name](args)
     if not hasattr(args, 'parallel_update'):
         args.parallel_update = False
     return args
+
+def sac_config(args):
+    if not hasattr(args, 'gamma'):
+        args.plr = 0.99
+    if not hasattr(args, 'plr'):
+        args.plr = 3e-4
+    if not hasattr(args, 'vlr'):
+        args.vlr = 3e-4
+    if not hasattr(args, 'opt'):
+        args.opt = 'adam'
+    args.use_automatic_entropy_tuning = True
+    return args
+
+#   "algorithm": "SAC",
+#   "version": "normal",
+#   "layer_size": 256,
+#   "replay_buffer_size": 1000000,
+#   "algorithm_kwargs": {
+#     "num_epochs": 3000,
+#     "num_eval_steps_per_epoch": 5000,
+#     "num_trains_per_train_loop": 1000,
+#     "num_expl_steps_per_train_loop": 1000,
+#     "min_num_steps_before_training": 1000,
+#     "max_path_length": 1000,
+#     "batch_size": 256
+#   },
+#   "trainer_kwargs": {
+#     "soft_target_tau": 0.005,
+#     "target_update_period": 1,
+#     "reward_scale": 1,
+#     "use_automatic_entropy_tuning": true
+#   }
 
 def ppo_config(args):
     if not hasattr(args, 'gamma'):
@@ -32,7 +65,6 @@ def ppo_config(args):
         args.vlr = 5e-3
     if not hasattr(args, 'opt'):
         args.opt = 'adam'
-        # args.opt = 'sgd'
     if not hasattr(args, 'entropy_coeff'):
         args.entropy_coeff = 0
     return args

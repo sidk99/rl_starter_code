@@ -15,6 +15,9 @@ import starter_code.utils as u
 import time
 import gtimer as gt
 
+import rlkit.torch.pytorch_util as ptu 
+
+
 eps = np.finfo(np.float32).eps.item()
 
 def analyze_size(obj, obj_name):
@@ -25,7 +28,8 @@ def rlalg_switch(alg_name):
     rlalgs = {
         'ppo': PPO,
         'a2c': A2C,
-        'vpg': VPG
+        'vpg': VPG,
+        'sac': SAC,
     }
     return rlalgs[alg_name]
 
@@ -298,12 +302,6 @@ Note that these are the args:
 
 
 
-# reward_scale=1.0
-# policy_lr=3E-4
-# qf_lr=3E-4
-# soft_target_tau=5e-3
-# target_update_period=1
-# use_automatic_entropy_tuning=True
 
 """
 
@@ -317,6 +315,7 @@ class SAC(OffPolicyRlAlg):
     def __init__(self, device, args):
         super(SAC, self).__init__(device, max_buffer_size=int(1e6), num_samples_before_update=1000)
         self.args = args
+        self.gamma = self.args.gamma
 
         # # the purpose of this is to tell how many samples to collect before updating
         # self.max_buffer_size = 4096  
@@ -324,15 +323,18 @@ class SAC(OffPolicyRlAlg):
         # SAC hyperparameters
         self.soft_target_tau = 5e-3
         self.target_update_period = 1
-        self.gamma = 0.99
         self.reward_scale = 1.0
-        self.use_automatic_entropy_tuning = True
+
         self._n_train_steps_total = 0
-        target_entropy = None
+
+        if hasattr(args, 'target_entropy'):
+            self.target_entropy = args.target_entropy
+        else:
+            self.target_entropy = -args.agent_action_dim  # heuristic value from Tuomas
 
         # SAC hyperparameters that I am using
-        self.optim_batch_size = 256
-        self.num_trains_per_train_loop = 1000  # note that this should be a hyperparameter that you standardize
+        self.optim_batch_size = args.optim_batch_size
+        self.num_trains_per_train_loop = 3#1000  # note that this should be a hyperparameter that you standardize
 
 
         # other hyperparameters not used here
@@ -350,25 +352,32 @@ class SAC(OffPolicyRlAlg):
     def unpack_batch(self, batch):
         """
             NOTE:
-                terminals = 1 - masks
+                terminals = 1 - masks (verified)
+                terminals = done
         """
         states = torch.from_numpy(np.stack(batch.state)).to(torch.float32).to(self.device)  # (bsize, sdim)
         actions = torch.from_numpy(np.stack(batch.action)).to(torch.float32).to(self.device)  # (bsize, adim)
         next_states = torch.from_numpy(np.stack(batch.next_state)).to(torch.float32).to(self.device)  # (bsize, sdim)
-        masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device)  # (bsize)
-        rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device)  # (bsize)
-        terminals = 1 - masks  # terminal = done
+        masks = torch.from_numpy(np.stack(batch.mask)).to(torch.float32).to(self.device).unsqueeze(-1)  # (bsize, 1)
+        rewards = torch.from_numpy(np.stack(batch.reward)).to(torch.float32).to(self.device).unsqueeze(-1)  # (bsize, 1)
+        terminals = (1 - masks)  # terminals = done (verified)
         assert actions.dim() == 2 and (states.dim() == 2 or states.dim() == 4)
-        assert masks.dim() == rewards.dim() == 1
+        assert masks.dim() == rewards.dim() == 2
+        assert masks.shape[-1] == rewards.shape[-1] == 1
         return states, actions, next_states, terminals, rewards
 
     def improve(self, agent):
         ######################################################################
         # TODO: self.num_trains_per_train_loop
         for step in range(self.num_trains_per_train_loop):
+
+
+
+
             batch = agent.replay_buffer.sample(self.optim_batch_size)  # with replacement
             states, actions, next_states, terminals, rewards = self.unpack_batch(batch)
             self.sac_step(agent, states, actions, next_states, terminals, rewards)
+        # assert False
         ######################################################################
 
     def sac_step(self, agent, states, actions, next_states, terminals, rewards):
@@ -399,83 +408,180 @@ class SAC(OffPolicyRlAlg):
         Policy and Alpha Loss
         """
         ######################################################################
-        # 2 SHOULD WORK
+        # 2 SHOULD WORK (tested)
+        """
+            new_obs_actions: (bsize, adim)
+            log_pi: (bsize, adim)
+
+            NOTE: you should probably replace log_pi with the actual entropy
+        """
         new_obs_actions, new_obs_actions_dist = agent.policy.select_action(
             states, deterministic=False, reparameterize=True)
-        log_pi = agent.policy.get_log_prob(new_obs_actions_dist, new_obs_actions)  # (bsize, 1)
-        # NOTE: you should probably replace log_pi with the actual entropy
+        log_pi = agent.policy.get_log_prob(new_obs_actions_dist, new_obs_actions)  # has a gradient
+
         ######################################################################
         ######################################################################
-        # 3 TODO: self.use_automatic_entropy_tuning, self.target_entropy, agent.log_alpha, agent.alpha_optimizer
-        if self.use_automatic_entropy_tuning:
+        # 3 TODO: (tested)
+        """
+            (log_pi + self.target_entropy).detach(): (bsize, adim)
+            agent.log_alpha * (log_pi + self.target_entropy).detach(): (bsize, adim)
+            -(agent.log_alpha * (log_pi + self.target_entropy).detach()).mean(): ()
+
+            # TODO: make sure broadcasting works between log_alpha and log_pi
+        """
+        if self.args.use_automatic_entropy_tuning:
             alpha_loss = -(agent.log_alpha * (log_pi + self.target_entropy).detach()).mean()
-            agent.alpha_optimizer.zero_grad()
+            agent.optimizers['alpha'].zero_grad()
             alpha_loss.backward()
-            agent.alpha_optimizer.step()
+            agent.optimizers['alpha'].step()
             alpha = agent.log_alpha.exp()
         else:
             alpha_loss = 0
             alpha = 1
+
+        print('alpha_loss', alpha_loss)  # at first is 0
+        print('alpha', alpha)
+
         ######################################################################
 
         ######################################################################
-        # 4 VERBATIM
+        # 4 VERBATIM (tested)
+        """
+            q_new_actions: (bsize, adim)
+            alpha*log_pi: (bsize, adim)
+            alpha*log_pi - q_new_actions: (bsize, adim)
+            policy_loss: ()
+        """
         q_new_actions = torch.min(
-            self.qf1(obs, new_obs_actions),
-            self.qf2(obs, new_obs_actions),
+            agent.qf1(states, new_obs_actions),
+            agent.qf2(states, new_obs_actions),
         )
         policy_loss = (alpha*log_pi - q_new_actions).mean()
+
+        print('q_new_actions.shape', q_new_actions.shape)
+        print('policy_loss', policy_loss)
         ######################################################################
 
         """
         QF Loss
         """
         ######################################################################
-        # 5 VERBATIM
-        q1_pred = self.qf1(states, actions)
-        q2_pred = self.qf2(states, actions)
+        # 5 VERBATIM (tested)
+        """
+            q1_pred: (bsize, adim)
+            q2_pred: (bsize, adim)
+        """
+        q1_pred = agent.qf1(states, actions)
+        q2_pred = agent.qf2(states, actions)
+
+        print('q1_pred', q1_pred.shape)
+        print('q2_pred', q2_pred.shape)
         ######################################################################
         ######################################################################
-        # 6 SHOULD WORK
+        # 6 SHOULD WORK (tested)
+        """
+            new_next_actions: (bsize, adim)
+            new_log_pi: (bsize, adim)
+        """
         new_next_actions, new_next_actions_dist = agent.policy.select_action(
             next_states, deterministic=False, reparameterize=True)
         new_log_pi = agent.policy.get_log_prob(new_next_actions_dist, new_next_actions)
+
+        print('new_next_actions', new_next_actions.shape)
+        print('new_log_pi', new_log_pi.shape)
         ######################################################################
         ######################################################################
-        # 7 VERBATIM
+        # 7 VERBATIM (tested)
+        """
+            agent.target_qf1(next_states, new_next_actions): (bsize, adim)
+            agent.target_qf2(next_states, new_next_actions): (bsize, adim)
+            target_q_values: (bsize, adim)
+        """
         target_q_values = torch.min(
-            self.target_qf1(next_states, new_next_actions),
-            self.target_qf2(next_states, new_next_actions),
+            agent.target_qf1(next_states, new_next_actions),
+            agent.target_qf2(next_states, new_next_actions),
             ) - alpha * new_log_pi
+
+        print('target_q_values', target_q_values.shape)
         ######################################################################
 
         ######################################################################
-        # 8 TODO: terminals
+        # 8 (tested)
+        """
+            (1. - terminals) * self.gamma * target_q_values: (bsize, 1)
+            q_target: (bsize, adim)
+
+        """
         q_target = self.reward_scale * rewards + (1. - terminals) * self.gamma * target_q_values
         ######################################################################
 
         ######################################################################
-        # 9 VERBATIM
-        qf1_loss = nn.MSELoss(q1_pred, q_target.detach())
-        qf2_loss = nn.MSELoss(q2_pred, q_target.detach())
+        # 9 VERBATIM: (tested)
+        """
+            qf1_loss: ()
+            qf2_loss: ()
+        """
+        qf1_loss = F.mse_loss(q1_pred, q_target.detach())
+        qf2_loss = F.mse_loss(q2_pred, q_target.detach())
+
+        print('qf1_loss', qf1_loss)
+        print('qf2_loss', qf2_loss)
         ######################################################################
 
         """
         Update networks
         """
         ######################################################################
-        # 10 VERBATIM
-        self.qf1_optimizer.zero_grad()
+        # 10 VERBATIM: TODO: do visualize_params
+
+
+        agent.optimizers['qf1'].zero_grad()
+        agent.optimizers['qf2'].zero_grad()
+        agent.optimizers['policy'].zero_grad()
+
+
+
+        # print('Before networks')
+        # # print('qf1')
+        # # u.visualize_parameters(agent.qf1, print)
+        # print('qf2')
+        # u.visualize_parameters(agent.qf2, print)
+        # # print('target_qf1')
+        # # u.visualize_parameters(agent.target_qf1, print)
+        # print('target_qf2')
+        # u.visualize_parameters(agent.target_qf2, print)
+        # # print('policy')
+        # # u.visualize_parameters(agent.policy, print)
+
+
+
+
         qf1_loss.backward()
-        self.qf1_optimizer.step()
-
-        self.qf2_optimizer.zero_grad()
+        agent.optimizers['qf1'].step()
         qf2_loss.backward()
-        self.qf2_optimizer.step()
-
-        self.policy_optimizer.zero_grad()
+        agent.optimizers['qf2'].step()
         policy_loss.backward()
-        self.policy_optimizer.step()
+        agent.optimizers['policy'].step()
+
+
+
+
+
+        # print('After networks')
+        # # print('qf1')
+        # # u.visualize_parameters(agent.qf1, print)
+        # print('qf2')
+        # u.visualize_parameters(agent.qf2, print)
+        # # print('target_qf1')
+        # # u.visualize_parameters(agent.target_qf1, print)
+        # print('target_qf2')
+        # u.visualize_parameters(agent.target_qf2, print)
+        # # print('policy')
+        # # u.visualize_parameters(agent.policy, print)
+
+
+
+        # do the visualize_params here
         ######################################################################
 
         """
@@ -485,15 +591,28 @@ class SAC(OffPolicyRlAlg):
         # 11 TODO: self.target_update_period, self._n_train_steps_total, self.soft_target_tau
         if self._n_train_steps_total % self.target_update_period == 0:
             ptu.soft_update_from_to(
-                self.qf1, self.target_qf1, self.soft_target_tau
+                agent.qf1, agent.target_qf1, self.soft_target_tau
             )
             ptu.soft_update_from_to(
-                self.qf2, self.target_qf2, self.soft_target_tau
+                agent.qf2, agent.target_qf2, self.soft_target_tau
             )
         self._n_train_steps_total += 1
+
+        # it's possible that you have a lower norm than both after averaging!
+        # this is possible if the vectors originally had a dot product of less than 0
+        # print('after averaging')
+        # # print('qf1')
+        # # u.visualize_parameters(agent.qf1, print)
+        # print('qf2')
+        # u.visualize_parameters(agent.qf2, print)
+        # # print('target_qf1')
+        # # u.visualize_parameters(agent.target_qf1, print)
+        # print('target_qf2')
+        # u.visualize_parameters(agent.target_qf2, print)
+
         ######################################################################
 
-
+        # assert False
 
 
 
