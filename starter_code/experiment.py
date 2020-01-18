@@ -41,7 +41,7 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = False  #if this does not update state_histogram??
+        self.parallel_collect = True  #if this does not update state_histogram??
         self.steps = 0
         self.logger.printf(self.organism)
 
@@ -229,7 +229,8 @@ class Experiment():
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             t1 = time.time()
             self.logger.printf(format_log_string(self.log(epoch, stats, mode='eval')))
-            self.visualize(env_manager, epoch, stats, env_manager.env_name, eval_mode=True)
+            if epoch % self.args.visualize_every == 0:
+                self.visualize(env_manager, epoch, stats, env_manager.env_name, eval_mode=True)
             t2 = time.time()
             self.save(env_manager, epoch, stats)
             t3 = time.time()
