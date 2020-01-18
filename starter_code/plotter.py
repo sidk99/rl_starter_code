@@ -557,6 +557,88 @@ def plot_1_7_20_CP_redundancy_1():
         for metric in ['mean_return', 'min_return', 'max_return']:
             p.plot_episode_metrics(fname='CP_Redundancy_1', stats_dict=stats_dict, mode=mode, metric=metric)
 
+
+def plot_1_13_20_CW6_sparse():
+    """ 
+        Note that here you get 0 reward for every step, and discount is 1.
+        Vickrey can do it if it is not sparse reward.
+
+        In sparse reward scenarios, we observe that FPBSA does better, whereas Vickrey dies with redundancy 1 and with redundancy 2 doesn't converge to optimal solution.
+
+        The discount factor was 0.99 here.
+        You need to scale the discount factor based on the horizon length.
+
+        What we observe:
+            - FPBSA
+                - redundancy 1: bids 0 everywhere and only slightly above 0 at the last step
+                    - ec0: if it is truly sparse reward, then FPBSA bids 0 everywhere and only slightly above 0 at the last step, which is as expected. Note that it bids very low. The payoff everywhere is also 0, except at the last timestep; no return decomposition.
+                    - ec0.001: same behavior as ec0
+                - redundancy 2
+                    - ec0: the payoff at every step is about 0.05. So there is return decomposition here. They all bid slightly under the Q-value, but still pretty high up - possibly because of the redundancy.
+                    - ec0.001: 
+            - Vickrey
+                - redundancy 1: 
+                    -ec0: There is high variance in the bids. Perhaps this is due the fact that there is a gap between the second highest bid and the first highest bid. I observe by random chance, the worse action (which gets 0 terminal reward) accidentally won and kept on bidding high, whereas the better action kept on getting 0 reward because it kept on losing. So the worse action actually ended up bidding about 0.6. What's interesting is that before that timestep, the best action actually outbid the worse action, and bid exactly 0.6, which is the Q-value. So I think in order to fix this we need them to sufficiently be able to explore. SAC helps with this.
+                    - ec0.001: this actually gave the worse action more chances at winning. And since credit is not conserved, the later agents' bid will become a target for previous agents, and then this will mess up the early part of the chain. What we want is that the optimal agent to get a chance to win at the last timestep. If that happens, then by induction we get the result we want.
+                - redundancy 2: 
+                    - ec0: ok what we observe here in the sparse reward setting is that there is no incentive for the worse actions to not bid high, because if you are truly sparse reward, and there is no time pressure, then you can just go back and forth in the same state. Especially since here the discount factor is close to 1. So without a penalty for taking actions, then you don't get optimal reward all the time, because you just end up losing sometime, and then the episode ends before you can recover. 
+
+        Note also that the episode length here was basically just 4, so if you died before the horizon length hit, then you don't get to see the full state space.
+        So I think one confounding factor to this experiment was that the horizon length was too short. 
+
+        The next action item is to redo this experiment, but with a longer horizon length.
+        Let's see if PPO exploration is sufficient, and the gamma is sufficient. 
+        If not, let's see if SAC works.
+
+        Questions:
+            - how does the redundancy affect the FPBSA? Does it make it closer to Vickrey?
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_sparse')
+    exp_dirs = {
+        # 'FPBSA_red1_ec0': 'CW6_plr4e-05_optadam_ppo_aucbb_red1_ec0.0',
+        # 'FPBSA_red1_ec0-001': 'CW6_plr4e-05_optadam_ppo_aucbb_red1_ec0.001',
+        # 'FPBSA_red2_ec0': 'CW6_plr4e-05_optadam_ppo_aucbb_red2_ec0.0',
+        # 'FPBSA_red2_ec0-001': 'CW6_plr4e-05_optadam_ppo_aucbb_red2_ec0.001',
+        'Vickrey_red1_ec0': 'CW6_plr4e-05_optadam_ppo_aucv_red1_ec0.0',
+        'Vickrey_red1_ec0-001': 'CW6_plr4e-05_optadam_ppo_aucv_red1_ec0.001',
+        # 'Vickrey_red2_ec0': 'CW6_plr4e-05_optadam_ppo_aucv_red2_ec0.0',
+        # 'Vickrey_red2_ec0-001': 'CW6_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_Sparse_Redundancy', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+def plot_1_13_20_debug_lunarlander_h():
+    p = CurvePlotter(exp_subroot='server/debug_lunarlander_geb_h')
+    stats_dict = p.load_all_stats(exp_dirs={
+        # 'FPBSA_16-16': 'LL-2_g0.99_plr4e-05_ppo_h16-16_aucbb_red2_ec0',
+        # 'Vickrey_16-16': 'LL-2_g0.99_plr4e-05_ppo_h16-16_aucv_red2_ec0',
+        # 'FPBSA_32-32': 'LL-2_g0.99_plr4e-05_ppo_h32-32_aucbb_red2_ec0',
+        # 'Vickrey_32-32': 'LL-2_g0.99_plr4e-05_ppo_h32-32_aucv_red2_ec0',
+        # 'FPBSA_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
+        # 'Vickrey_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucv_red2_ec0',
+        'FPBSA_64-64': 'LL-2_g0.99_plr4e-05_ppo_h64-64_aucbb_red2_ec0',
+        'Vickrey_64-64': 'LL-2_g0.99_plr4e-05_ppo_h64-64_aucv_red2_ec0',
+        'FPBSA_64': 'LL-2_g0.99_plr4e-05_ppo_h64_aucbb_red2_ec0',
+        'Vickrey_64': 'LL-2_g0.99_plr4e-05_ppo_h64_aucv_red2_ec0',
+        })
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='LunarLander', stats_dict=stats_dict, mode=mode, metric=metric)
+
             
 
 
@@ -575,11 +657,15 @@ if __name__ == '__main__':
 
     # current
     # plot_bandit_claude()
-    plot_1_6_20_debug_lunarlander()
-    plot_1_7_20_CP_redundancy_1()
+    # plot_1_6_20_debug_lunarlander()
+    # plot_1_7_20_CP_redundancy_1()
 
     # then actually we will just keep on iterating on these
     # now put these figures into the paper actually - programmatically.
+
+    # 1/13/20
+    # plot_1_13_20_CW6_sparse()
+    plot_1_13_20_debug_lunarlander_h()
 
 
 
