@@ -33,7 +33,18 @@ def sac_config(args):
         args.vlr = 3e-4
     if not hasattr(args, 'opt'):
         args.opt = 'adam'
+
     args.use_automatic_entropy_tuning = True
+    if not hasattr(args, 'max_buffer_size'):
+        args.max_buffer_size = int(1e6)  # override
+    # args.num_trains_per_train_loop = 20#00  # number of epochs
+    # args.num_samples_before_update = 1000
+    args.num_trains_per_train_loop = 16#00  # number of epochs
+    args.num_samples_before_update = 4096
+    if args.debug:
+        args.max_buffer_size = 300
+        args.num_trains_per_train_loop = 5
+        args.num_samples_before_update = 100
     return args
 
 #   "algorithm": "SAC",
@@ -109,7 +120,8 @@ def lifelong_config(args):
     return args
 
 def network_config(args):
-    args.hdim = [16]
+    if not hasattr(args, 'hdim'):
+        args.hdim = [16]
     if args.debug:
         args.hdim = [20, 20]
     return args
@@ -128,8 +140,9 @@ def build_expname(args):
     args.expname = simplify_name(args.env_name)
     args.expname += '_g{}'.format(args.gamma)
     args.expname += '_plr{}'.format(args.plr)
-    args.expname += '_opt{}'.format(args.opt)
+    # args.expname += '_opt{}'.format(args.opt)
     args.expname += '_{}'.format(args.alg_name)
+    args.expname += '_h{}'.format(args.hdim).replace('[','').replace(']','').replace(', ','-')
     if args.debug:
         args.expname += '_db'
     if hasattr(args, 'auctiontype'):
