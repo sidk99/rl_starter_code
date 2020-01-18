@@ -53,8 +53,7 @@ class VPG(OnPolicyRLAlg):
         args
     """
     def __init__(self, device, args):
-        super(VPG, self).__init__(device=device, max_buffer_size=100)
-        # self.gamma = 0.99
+        super(VPG, self).__init__(device=device, max_buffer_size=args.max_buffer_size)
         self.gamma = self.args.gamma
 
     def unpack_batch(self, batch):
@@ -92,8 +91,7 @@ class A2C(OnPolicyRLAlg):
         args
     """
     def __init__(self, device, args):
-        super(A2C, self).__init__(device=device, max_buffer_size=100)
-        # self.gamma = 0.99
+        super(A2C, self).__init__(device=device, max_buffer_size=args.max_buffer_size)
         self.gamma = self.args.gamma
 
     def unpack_batch(self, batch):
@@ -188,7 +186,6 @@ class PPO(OnPolicyRLAlg):
     def improve(self, agent):
         self.reset_record()
         batch = agent.replay_buffer.sample()
-        # batch = agent.replay_buffer.sample(self.optim_batch_size)
         states, actions, masks, rewards = self.unpack_batch(batch)
 
         with torch.no_grad():
@@ -313,41 +310,27 @@ class SAC(OffPolicyRlAlg):
             * make sure select_action can be done in batch
     """
     def __init__(self, device, args):
-        super(SAC, self).__init__(device, max_buffer_size=int(1e6), num_samples_before_update=1000)
+        super(SAC, self).__init__(device, 
+            max_buffer_size=args.max_buffer_size,
+            num_samples_before_update=args.num_samples_before_update)
         self.args = args
         self.gamma = self.args.gamma
 
-        # # the purpose of this is to tell how many samples to collect before updating
-        # self.max_buffer_size = 4096  
+        self.optim_batch_size = self.args.optim_batch_size
+        self.num_trains_per_train_loop = self.args.num_trains_per_train_loop
 
         # SAC hyperparameters
         self.soft_target_tau = 5e-3
         self.target_update_period = 1
         self.reward_scale = 1.0
 
-        self._n_train_steps_total = 0
-
         if hasattr(args, 'target_entropy'):
             self.target_entropy = args.target_entropy
         else:
             self.target_entropy = -args.agent_action_dim  # heuristic value from Tuomas
 
-        # SAC hyperparameters that I am using
-        self.optim_batch_size = args.optim_batch_size
-        self.num_trains_per_train_loop = 3#1000  # note that this should be a hyperparameter that you standardize
+        self._n_train_steps_total = 0
 
-
-        # other hyperparameters not used here
-        """
-        policy_lr=3E-4
-        qf_lr=3E-4
-
-        self.policy = policy
-        self.qf1 = qf1
-        self.qf2 = qf2
-        self.target_qf1 = target_qf1
-        self.target_qf2 = target_qf2
-        """
 
     def unpack_batch(self, batch):
         """
@@ -370,14 +353,9 @@ class SAC(OffPolicyRlAlg):
         ######################################################################
         # TODO: self.num_trains_per_train_loop
         for step in range(self.num_trains_per_train_loop):
-
-
-
-
             batch = agent.replay_buffer.sample(self.optim_batch_size)  # with replacement
             states, actions, next_states, terminals, rewards = self.unpack_batch(batch)
             self.sac_step(agent, states, actions, next_states, terminals, rewards)
-        # assert False
         ######################################################################
 
     def sac_step(self, agent, states, actions, next_states, terminals, rewards):
@@ -393,15 +371,6 @@ class SAC(OffPolicyRlAlg):
             9. get Q function losses
             10. backward() step()
             11. polyak averaging
-
-        What do we need when we run the policy?
-            actions, log_pi
-
-        TODO:
-            # 1 unpack batch
-            # 3 update alpha
-            # 8 terminals
-            # 11 polyak averaging
         """
 
         """
@@ -418,7 +387,6 @@ class SAC(OffPolicyRlAlg):
         new_obs_actions, new_obs_actions_dist = agent.policy.select_action(
             states, deterministic=False, reparameterize=True)
         log_pi = agent.policy.get_log_prob(new_obs_actions_dist, new_obs_actions)  # has a gradient
-
         ######################################################################
         ######################################################################
         # 3 TODO: (tested)
@@ -438,12 +406,7 @@ class SAC(OffPolicyRlAlg):
         else:
             alpha_loss = 0
             alpha = 1
-
-        print('alpha_loss', alpha_loss)  # at first is 0
-        print('alpha', alpha)
-
         ######################################################################
-
         ######################################################################
         # 4 VERBATIM (tested)
         """
@@ -457,9 +420,6 @@ class SAC(OffPolicyRlAlg):
             agent.qf2(states, new_obs_actions),
         )
         policy_loss = (alpha*log_pi - q_new_actions).mean()
-
-        print('q_new_actions.shape', q_new_actions.shape)
-        print('policy_loss', policy_loss)
         ######################################################################
 
         """
@@ -473,9 +433,6 @@ class SAC(OffPolicyRlAlg):
         """
         q1_pred = agent.qf1(states, actions)
         q2_pred = agent.qf2(states, actions)
-
-        print('q1_pred', q1_pred.shape)
-        print('q2_pred', q2_pred.shape)
         ######################################################################
         ######################################################################
         # 6 SHOULD WORK (tested)
@@ -486,9 +443,6 @@ class SAC(OffPolicyRlAlg):
         new_next_actions, new_next_actions_dist = agent.policy.select_action(
             next_states, deterministic=False, reparameterize=True)
         new_log_pi = agent.policy.get_log_prob(new_next_actions_dist, new_next_actions)
-
-        print('new_next_actions', new_next_actions.shape)
-        print('new_log_pi', new_log_pi.shape)
         ######################################################################
         ######################################################################
         # 7 VERBATIM (tested)
@@ -501,8 +455,6 @@ class SAC(OffPolicyRlAlg):
             agent.target_qf1(next_states, new_next_actions),
             agent.target_qf2(next_states, new_next_actions),
             ) - alpha * new_log_pi
-
-        print('target_q_values', target_q_values.shape)
         ######################################################################
 
         ######################################################################
@@ -523,72 +475,37 @@ class SAC(OffPolicyRlAlg):
         """
         qf1_loss = F.mse_loss(q1_pred, q_target.detach())
         qf2_loss = F.mse_loss(q2_pred, q_target.detach())
-
-        print('qf1_loss', qf1_loss)
-        print('qf2_loss', qf2_loss)
         ######################################################################
 
         """
         Update networks
         """
         ######################################################################
-        # 10 VERBATIM: TODO: do visualize_params
-
+        # 10 VERBATIM: (tested)
 
         agent.optimizers['qf1'].zero_grad()
         agent.optimizers['qf2'].zero_grad()
         agent.optimizers['policy'].zero_grad()
 
 
-
-        # print('Before networks')
-        # # print('qf1')
-        # # u.visualize_parameters(agent.qf1, print)
-        # print('qf2')
-        # u.visualize_parameters(agent.qf2, print)
-        # # print('target_qf1')
-        # # u.visualize_parameters(agent.target_qf1, print)
-        # print('target_qf2')
-        # u.visualize_parameters(agent.target_qf2, print)
-        # # print('policy')
-        # # u.visualize_parameters(agent.policy, print)
-
-
-
-
         qf1_loss.backward()
-        agent.optimizers['qf1'].step()
         qf2_loss.backward()
-        agent.optimizers['qf2'].step()
         policy_loss.backward()
+
+        agent.optimizers['qf1'].step()
+        agent.optimizers['qf2'].step()
         agent.optimizers['policy'].step()
-
-
-
-
-
-        # print('After networks')
-        # # print('qf1')
-        # # u.visualize_parameters(agent.qf1, print)
-        # print('qf2')
-        # u.visualize_parameters(agent.qf2, print)
-        # # print('target_qf1')
-        # # u.visualize_parameters(agent.target_qf1, print)
-        # print('target_qf2')
-        # u.visualize_parameters(agent.target_qf2, print)
-        # # print('policy')
-        # # u.visualize_parameters(agent.policy, print)
-
-
-
-        # do the visualize_params here
         ######################################################################
 
         """
         Polyak Averaging
         """
         ######################################################################
-        # 11 TODO: self.target_update_period, self._n_train_steps_total, self.soft_target_tau
+        # 11 (tested)
+        """
+            it's possible that you have a lower norm than both after averaging!
+            this is possible if the vectors originally had a dot product of less than 0
+        """
         if self._n_train_steps_total % self.target_update_period == 0:
             ptu.soft_update_from_to(
                 agent.qf1, agent.target_qf1, self.soft_target_tau
@@ -597,22 +514,5 @@ class SAC(OffPolicyRlAlg):
                 agent.qf2, agent.target_qf2, self.soft_target_tau
             )
         self._n_train_steps_total += 1
-
-        # it's possible that you have a lower norm than both after averaging!
-        # this is possible if the vectors originally had a dot product of less than 0
-        # print('after averaging')
-        # # print('qf1')
-        # # u.visualize_parameters(agent.qf1, print)
-        # print('qf2')
-        # u.visualize_parameters(agent.qf2, print)
-        # # print('target_qf1')
-        # # u.visualize_parameters(agent.target_qf1, print)
-        # print('target_qf2')
-        # u.visualize_parameters(agent.target_qf2, print)
-
         ######################################################################
-
-        # assert False
-
-
 
