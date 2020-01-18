@@ -2,7 +2,8 @@ import argparse
 import csv
 import os
 
-EXP_ROOT = '/Users/michaelchang/Documents/Researchlink/Berkeley/auction_project/runs'
+# EXP_ROOT = '/Users/michaelchang/Documents/Researchlink/Berkeley/auction_project/runs'
+EXP_ROOT = './runs'
 
 # clean the checkpoints
 # clean the gifs
@@ -113,6 +114,39 @@ def clean_1_6_20_debug_lunar_lander():
         'LL-2_plr4e-05_optadam_ppo_aucv_red2_ec0.001',
         ])
 
+def clean_1_13_20_debug_lunar_lander_h():
+    c = Cleaner(exp_subroot='debug_lunarlander_geb_h')
+    c.clean_gifs([
+        'LL-2_g0.99_plr4e-05_ppo_h32-32_aucv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h16-16_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h16-16_aucv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h64-64_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h64_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h64-64_aucv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32-32_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h64_aucv_red2_ec0',
+        ])
+
+def clean_1_17_20_cartpole_rewscale():
+    c = Cleaner(exp_subroot='debug_plot_hdim16_rewscale')
+    c.clean_gifs([
+        'CP-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0'
+        ])
+
+def clean_1_18_20_lunarlander():
+    c = Cleaner(exp_subroot='debug')
+    c.clean_gifs([
+        'LL-2_g0.99_plr4e-05_ppo_h16_ec0',
+
+        ])
+
+
+
 if __name__ == '__main__':
-    clean_1_6_20_debug_lunar_lander()
+    # clean_1_6_20_debug_lunar_lander()
+    # clean_1_13_20_debug_lunar_lander_h()
+    # clean_1_17_20_cartpole_rewscale()
+    clean_1_18_20_lunarlander()
 
