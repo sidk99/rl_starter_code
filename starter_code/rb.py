@@ -99,7 +99,6 @@ class StaticMemory():
             batch_size = self._max_replay_buffer_size
             indices = np.arange(self._size)
         else:
-            np.random.seed(1000)
             indices = np.random.randint(0, self._size, batch_size)
         batch = AttrDict(
             state=self._states[indices],
