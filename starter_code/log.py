@@ -235,7 +235,18 @@ class MultiBaseLogger(BaseLogger):
         # self.saver = Saver(self.checkpoint_dir)
         ################################################
         self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
-        ujson.dump(vars(args), open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
+
+        params_to_save = vars(args)
+        """
+        rather hacky. This should actually be tightly inside the directory that deals with
+        the environment. But since we only have a single environment per logger it's okay
+        for now.
+        """
+        params_to_save = {
+            **params_to_save, 
+            **er.get_reward_normalization_info(args.env_name[0])}
+
+        ujson.dump(params_to_save, open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
 
         self.print_dirs()
         self.initialize()
