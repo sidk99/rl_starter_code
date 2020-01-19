@@ -176,6 +176,10 @@ class CurvePlotter(Plotter):
             fname.replace('.', '-'))), bbox_inches="tight")
         plt.close()
 
+    def unnormalize_returns(self, returns, shift=0, scale=1):
+        unnormalized = returns/float(scale) + shift
+        return unnormalized
+
     def reorganize_episode_data(self, stats_dict, mode, metric, x_label):
         exp_x_y = dict()
         for label in stats_dict:
@@ -185,6 +189,9 @@ class CurvePlotter(Plotter):
                 xs.append(stats_dict[label][seed][mode]['global'][x_label].tolist())
                 ys.append(stats_dict[label][seed][mode]['global'][metric].tolist())
             run_x, ys = self.align_x_and_y(xs, ys)
+
+            if 'return' in metric:
+                ys = self.unnormalize_returns(ys)
 
             exp_x_y[label] = dict(x=run_x, ys=ys)
         return exp_x_y
@@ -622,18 +629,26 @@ def plot_1_13_20_CW6_sparse():
 
 
 def plot_1_13_20_debug_lunarlander_h():
+    """
+        Observations: 
+            16-16 and 32-32 are less stable to train.
+            64 Vickrey also doesn't that great
+            Overall though it's not getting great reward.
+            Also the bids for everyone is basically 0.5. Not sure why.
+
+    """
     p = CurvePlotter(exp_subroot='server/debug_lunarlander_geb_h')
     stats_dict = p.load_all_stats(exp_dirs={
         # 'FPBSA_16-16': 'LL-2_g0.99_plr4e-05_ppo_h16-16_aucbb_red2_ec0',
         # 'Vickrey_16-16': 'LL-2_g0.99_plr4e-05_ppo_h16-16_aucv_red2_ec0',
         # 'FPBSA_32-32': 'LL-2_g0.99_plr4e-05_ppo_h32-32_aucbb_red2_ec0',
         # 'Vickrey_32-32': 'LL-2_g0.99_plr4e-05_ppo_h32-32_aucv_red2_ec0',
-        # 'FPBSA_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
-        # 'Vickrey_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucv_red2_ec0',
+        'FPBSA_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
+        'Vickrey_32': 'LL-2_g0.99_plr4e-05_ppo_h32_aucv_red2_ec0',
         'FPBSA_64-64': 'LL-2_g0.99_plr4e-05_ppo_h64-64_aucbb_red2_ec0',
         'Vickrey_64-64': 'LL-2_g0.99_plr4e-05_ppo_h64-64_aucv_red2_ec0',
         'FPBSA_64': 'LL-2_g0.99_plr4e-05_ppo_h64_aucbb_red2_ec0',
-        'Vickrey_64': 'LL-2_g0.99_plr4e-05_ppo_h64_aucv_red2_ec0',
+        # 'Vickrey_64': 'LL-2_g0.99_plr4e-05_ppo_h64_aucv_red2_ec0',
         })
     for mode in ['train', 'test']:
         for metric in ['mean_return', 'min_return', 'max_return']:
