@@ -41,9 +41,13 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = False#True  #if this does not update state_histogram??
-        self.steps = 0
+        self.parallel_collect = False  #if this does not update state_histogram??
         self.logger.printf(self.organism)
+
+        self.steps = 0
+        self.min_return = np.inf
+        self.max_return = -np.inf
+
 
     def collect_samples(self, epoch, env_manager):
         """
@@ -92,6 +96,10 @@ class Experiment():
         ######################################################
         # update metrics
         self.steps += stats['total_steps']
+        if stats['min_return'] < self.min_return:
+            self.min_return = stats['min_return']
+        if stats['max_return'] > self.max_return:
+            self.max_return = stats['max_return']
         ######################################################
 
         gt.stamp('Epoch {}: After Collect Samples'.format(epoch))
@@ -114,7 +122,7 @@ class Experiment():
         epoch_stats = self.collect_samples(epoch, train_env_manager)
         if epoch % self.args.log_every == 0:
             self.logger.printf(format_log_string(self.log(epoch, epoch_stats, mode='train')))
-        if epoch % self.args.visualize_every == 0:
+        if epoch % self.args.eval_every == 0:
             # this ticks the epoch and steps
             self.visualize(train_env_manager, epoch, epoch_stats, self.logger.expname)
         if epoch % self.args.save_every == 0:
@@ -155,6 +163,8 @@ class Experiment():
             'std return': epoch_stats['std_return'],
             'min return': epoch_stats['min_return'],
             'max return': epoch_stats['max_return'],
+            'min return ever': self.min_return,
+            'max return ever': self.max_return
             }))
         return [s]
 
@@ -170,15 +180,16 @@ class Experiment():
                     render=True)
                 ##########################################
                 if i == 0 and self.organism.discrete and env_manager.visual:
+                    if epoch % self.args.visualize_every == 0:
 
-                    # you could imagine having the sampler also return the best episode
-                    # or perhaps you could bundle thiis in the stats_collector
+                        # you could imagine having the sampler also return the best episode
+                        # or perhaps you could bundle thiis in the stats_collector
 
-                    bids = evaluation_sampler.get_bids_for_episode(episode_data)
-                    returns = sum([e.reward for e in episode_data])
-                    frames = [e.frame for e in episode_data]
+                        bids = evaluation_sampler.get_bids_for_episode(episode_data)
+                        returns = sum([e.reward for e in episode_data])
+                        frames = [e.frame for e in episode_data]
 
-                    env_manager.save_video(epoch, i, bids, returns, frames)
+                        env_manager.save_video(epoch, i, bids, returns, frames)
 
                 ##########################################
             stats_collector.append(episode_data, eval_mode=True)
@@ -229,8 +240,7 @@ class Experiment():
             stats = self.test(epoch, env_manager, num_test=self.args.num_test)
             t1 = time.time()
             self.logger.printf(format_log_string(self.log(epoch, stats, mode='eval')))
-            if epoch % self.args.visualize_every == 0:
-                self.visualize(env_manager, epoch, stats, env_manager.env_name, eval_mode=True)
+            self.visualize(env_manager, epoch, stats, env_manager.env_name, eval_mode=True)
             t2 = time.time()
             self.save(env_manager, epoch, stats)
             t3 = time.time()
