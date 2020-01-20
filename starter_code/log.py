@@ -53,15 +53,37 @@ class RunningAverage(object):
         super(RunningAverage, self).__init__()
         self.data = {}
 
-    def update_variable(self, key, value):
-        self.data[key] = value # overwrite
-        if 'running_'+key not in self.data:
-            self.data['running_'+key] = value
+    def update_counter(self, key, value):
+        if 'counter_'+key not in self.data:
             self.data['counter_'+key] = 1
         else:
             self.data['counter_'+key] += 1
-            n = self.data['counter_'+key]
+        return self.data['counter_'+key]
+
+    def update_running(self, key, value, n):
+        if 'running_'+key not in self.data:
+            self.data['running_'+key] = value
+        else:
             self.data['running_'+key] = float(n-1)/n * self.data['running_'+key] + 1.0/n * value
+
+    def update_min(self, key, value):
+        if 'min_'+key not in self.data:
+            self.data['min_'+key] = value
+        else:
+            if value < self.data['min_'+key]:
+                self.data['min_'+key] = value
+
+    def update_max(self, key, value):
+        if 'max_'+key not in self.data:
+            self.data['max_'+key] = value
+        else:
+            if value > self.data['max_'+key]:
+                self.data['max_'+key] = value
+
+    def update_variable(self, key, value):
+        self.data[key] = value # overwrite
+        n = self.update_counter(key, value)
+        self.update_running(key, value, n)
 
     def get_value(self, key):
         if 'running_'+key in self.data:
@@ -78,11 +100,9 @@ class RunningAverage(object):
 class ExponentialRunningAverage(RunningAverage):
     def __init__(self):
         super(ExponentialRunningAverage, self).__init__()
-        self.data = {}
         self.alpha = 0.01
 
-    def update_variable(self, key, value):
-        self.data[key] = value # overwrite
+    def update_running(self, key, value, n=None):
         if 'running_'+key not in self.data:
             self.data['running_'+key] = value
         else:
@@ -510,7 +530,6 @@ class MinigridEnvManager(VisualEnvManager):
     def __init__(self, env_name, env_registry, args):
         super(MinigridEnvManager, self).__init__(env_name, env_registry, args)
         full_state_dim = self.env.observation_space.shape  # (H, W, C)
-        # self.state_dim = full_state_dim[:-1]  # (H, W)
         self.state_dim = full_state_dim
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
@@ -521,7 +540,7 @@ def log_string(ordered_dict):
     for i, (k, v) in enumerate(ordered_dict.items()):
         delim = '' if i == 0 else ' | '
         if is_float(v):
-            s += delim + '{}: {:.9f}'.format(k, v)
+            s += delim + '{}: {:.5f}'.format(k, v)
         else:
             s += delim + '{}: {}'.format(k, v)
     return s
