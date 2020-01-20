@@ -5,6 +5,8 @@ from gym_minigrid.wrappers import ImgObsWrapper
 import babyai
 import pprint
 
+from gym.wrappers.time_limit import TimeLimit
+
 
 from envs import OneStateOneStepKActionEnv, OneHotSquareGridWorldK, OneHotGridWorldK, OneHotChainK
 
@@ -92,8 +94,12 @@ class RewardNormalize(gym.RewardWrapper):
 
 class GymRewardNormalize(RewardNormalize):
     def __init__(self, env, scale=1, shift=0):
-        RewardNormalize.__init__(self, env, scale, shift)
-        self._max_episode_steps = env._max_episode_steps
+        if isinstance(env, TimeLimit):
+            self._max_episode_steps = env._max_episode_steps
+            # unwrap the TimeLimit
+            RewardNormalize.__init__(self, env.env, scale, shift)  
+        else:
+            assert False
 
 class MiniGridRewardNormalize(RewardNormalize):
     def __init__(self, env, scale=1, shift=0):
@@ -105,10 +111,10 @@ class EnvRegistry():
     def __init__(self):
         self.envs_type_name = {
             'gym': {
-                'CartPole-v0': dict(reward_shift=0, reward_scale=1.0/200),  # done
+                'CartPole-v0': dict(reward_shift=0, reward_scale=1.0/(200*(1-0))),  # 200 steps * ([1 max] - [0 min])
                 'InvertedPendulum-v2': dict(),
                 'HalfCheetah-v2': dict(),
-                'LunarLander-v2': dict(),
+                'LunarLander-v2': dict(reward_shift=-100, reward_scale=1.0/(1000*(100--100))),  # 1000 steps * ([100 max] - [-100 min]) which seems to be empirically the range.
                 'MountainCar-v0': dict(),
                 'Acrobot-v1': dict(),
                 'Taxi-v2': dict(),
@@ -132,7 +138,7 @@ class EnvRegistry():
                 'MiniGrid-SimpleCrossingS11N5-v0': dict(),
 
                 'MiniGrid-Unlock-v0': dict(),
-                'MiniGrid-Empty-Random-5x5-v0': dict(reward_scale=0.9),  # done
+                'MiniGrid-Empty-Random-5x5-v0': dict(reward_scale=0.9),  # done; TODO: make this a function of the horizon length though, which it so happens is 100. But in general this is not True.
                 'MiniGrid-MultiRoom-N2-S4-v0': dict(),
 
                 # Expanding Action Set
