@@ -82,11 +82,10 @@ def collect_train_samples_parallel(epoch, max_steps, objects, num_workers=8):
     return master_stats_collector
 
 class BasicStepInfo():
-    def __init__(self, state, action_dict, next_state, mask, reward):
+    def __init__(self, state, action_dict, next_state, reward):
         self.state = state
         self.action_dict = action_dict
         self.next_state = next_state
-        self.mask = mask
         self.reward = reward
 
     def __getitem__(self, key):
@@ -105,9 +104,9 @@ class BasicStepInfo():
         return self.__dict__
 
 class AgentStepInfo(BasicStepInfo):
-    def __init__(self, state, action_dict, next_state, mask, reward):
+    def __init__(self, state, action_dict, next_state, reward):
         super(AgentStepInfo, self).__init__(
-            state, action_dict, next_state, mask, reward)
+            state, action_dict, next_state, reward)
         self.action = self.action_dict['stored_action']
         self.action_dist = self.action_dict['action_dist']
 
@@ -126,13 +125,11 @@ class Sampler():
         state_var = from_np(state, 'cpu')
         with torch.no_grad():
             action_dict = organism.forward(state_var, deterministic=self.deterministic)
-        next_state, reward, done, _ = env.step(action_dict['action'])
-        mask = 0 if done else 1
+        next_state, reward, done, info = env.step(action_dict['action'])
         e = self.step_info_builder(
             state=state,
             action_dict=action_dict,
             next_state=next_state,
-            mask=mask,
             reward=reward)
         if render:
             e.frame = eu.render(env=env, scale=0.25)
@@ -163,6 +160,7 @@ class Sampler():
         state = self.begin_episode()
         for t in range(max_steps_this_episode):
             state, done, e = self.sample_timestep(env, self.organism, state, render)
+            e.mask = 0 if done else 1  # set the mask here
             episode_data.append(e)
             if done: break
         if not done:
