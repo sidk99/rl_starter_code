@@ -176,23 +176,34 @@ class CurvePlotter(Plotter):
             fname.replace('.', '-'))), bbox_inches="tight")
         plt.close()
 
-    def unnormalize_returns(self, returns, shift=0, scale=1):
-        unnormalized = returns/float(scale) + shift
+    def unnormalize_returns(self, returns, reward_shift=0, reward_scale=1):
+        unnormalized = returns/float(reward_scale) + reward_shift
         return unnormalized
+
+    def handle_unnormalize_returns(self, seed_run_y, metric, params):
+        if 'return' in metric:
+            reward_params = {}
+            for key in params:
+                if key in ['reward_scale', 'reward_shift']:
+                    reward_params[key] = params[key]
+                # if not, will default to reward_scale=1 and reward_shift=0
+            seed_run_y = self.unnormalize_returns(seed_run_y, **reward_params)
+        return seed_run_y
 
     def reorganize_episode_data(self, stats_dict, mode, metric, x_label):
         exp_x_y = dict()
         for label in stats_dict:
             xs = []
             ys = []
+
             for seed in stats_dict[label]:
-                xs.append(stats_dict[label][seed][mode]['global'][x_label].tolist())
-                ys.append(stats_dict[label][seed][mode]['global'][metric].tolist())
+                seed_run_x = stats_dict[label][seed][mode]['global'][x_label].tolist()
+                seed_run_y = np.array(stats_dict[label][seed][mode]['global'][metric].tolist())
+                seed_run_y = self.handle_unnormalize_returns(
+                    seed_run_y, metric, stats_dict[label][seed]['params'])
+                xs.append(seed_run_x)
+                ys.append(seed_run_y)
             run_x, ys = self.align_x_and_y(xs, ys)
-
-            if 'return' in metric:
-                ys = self.unnormalize_returns(ys)
-
             exp_x_y[label] = dict(x=run_x, ys=ys)
         return exp_x_y
 
@@ -654,6 +665,29 @@ def plot_1_13_20_debug_lunarlander_h():
         for metric in ['mean_return', 'min_return', 'max_return']:
             p.plot_episode_metrics(fname='LunarLander', stats_dict=stats_dict, mode=mode, metric=metric)
 
+
+
+
+def plot_1_20_20_debug_reward_scaling():
+    """ 
+    """
+    p = CurvePlotter(exp_subroot='debug')
+    exp_dirs = {
+        'CartPole': 'CP-0_g0.99_plr4e-05_ppo_h20-20_db_aucv_red2_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='debug_reward_scaling', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
             
 
 
@@ -680,7 +714,9 @@ if __name__ == '__main__':
 
     # 1/13/20
     # plot_1_13_20_CW6_sparse()
-    plot_1_13_20_debug_lunarlander_h()
+    # plot_1_13_20_debug_lunarlander_h()
+
+    plot_1_20_20_debug_reward_scaling()
 
 
 
