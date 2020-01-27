@@ -48,6 +48,9 @@ class Experiment():
         self.min_return = np.inf
         self.max_return = -np.inf
 
+        if args.ado and self.parallel_collect:
+            raise Exception('Cannot do agent dropout with parallel data collection')
+
 
     def collect_samples(self, epoch, env_manager):
         """
