@@ -139,7 +139,6 @@ def clean_1_18_20_lunarlander():
     c = Cleaner(exp_subroot='debug')
     c.clean_gifs([
         'LL-2_g0.99_plr4e-05_ppo_h16_ec0',
-
         ])
 
 

@@ -210,6 +210,8 @@ class Experiment():
             env_manager.update_variable(
                 name=metric, index=epoch, value=stats[metric], include_running_avg=True)
 
+        # just literally save to CSV right now
+
     def plot_metrics(self, env_manager, name, metrics):
         env_manager.plot(
             var_pairs=[(('steps', k)) for k in metrics],
