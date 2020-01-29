@@ -36,7 +36,6 @@ def collect_train_samples_serial(epoch, max_steps, objects, pid=0, queue=None):
         stats_collector.append(episode_data)
         num_steps += len(episode_data)
     end = time.time()
-    # print('PID: {} Time to collect samples: {}'.format(pid, end-start))
     objects['printer']('PID: {} Time to collect samples: {}'.format(pid, end-start))
 
     if queue is not None:
@@ -72,7 +71,6 @@ def collect_train_samples_parallel(epoch, max_steps, objects, num_workers=8):
         worker_pid, worker_stats_data = queue.get()
         master_stats_collector.extend(worker_stats_data)
     end = time.time()
-    # print('Time to extend master_stats_collector: {}'.format(end-start))
     objects['printer']('Time to extend master_stats_collector: {}'.format(end-start))
 
     for j, worker in enumerate(workers):
@@ -132,7 +130,8 @@ class Sampler():
             next_state=next_state,
             reward=reward)
         if render:
-            e.frame = eu.render(env=env, scale=0.25)
+            # e.frame = eu.render(env=env, scale=0.25)
+            e.frame = eu.render(env=env, scale=1)#0.25)
         return next_state, done, e
 
     def begin_episode(self):
