@@ -14,7 +14,7 @@ from starter_code.log import ExponentialRunningAverage
 from starter_code.sampler import Sampler, AgentStepInfo, Centralized_RL_Stats, collect_train_samples_serial, collect_train_samples_parallel
 import starter_code.utils as u
 from starter_code.utils import AttrDict, is_float
-from starter_code.log import log_string, format_log_string
+from starter_code.log import log_string, format_log_string, TabularEnvManager
 
 
 """
@@ -41,7 +41,7 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = True  #if this does not update state_histogram??
+        self.parallel_collect = False#True  #if this does not update state_histogram??
         self.logger.printf(self.organism)
 
         self.steps = 0
@@ -178,22 +178,55 @@ class Experiment():
                     max_steps_this_episode=env_manager.max_episode_length,
                     render=True)
                 ##########################################
-                if i == 0 and self.organism.discrete and env_manager.visual:
-                    if epoch % self.args.visualize_every == 0:
+                if epoch % self.args.visualize_every == 0:
+                    if i == 0 and self.organism.discrete:
+                        self.get_qualitative_output(
+                            env_manager, evaluation_sampler, episode_data, epoch, i)
+                        # if env_manager.visual:
+                        #     # you could imagine having the sampler also return the best episode
+                        #     # or perhaps you could bundle thiis in the stats_collector
 
-                        # you could imagine having the sampler also return the best episode
-                        # or perhaps you could bundle thiis in the stats_collector
+                        #     bids = evaluation_sampler.get_bids_for_episode(episode_data)
+                        #     returns = sum([e.reward for e in episode_data])
+                        #     frames = [e.frame for e in episode_data]
 
-                        bids = evaluation_sampler.get_bids_for_episode(episode_data)
-                        returns = sum([e.reward for e in episode_data])
-                        frames = [e.frame for e in episode_data]
-
-                        env_manager.save_video(epoch, i, bids, returns, frames)
+                        #     env_manager.save_video(epoch, i, bids, returns, frames)
 
                 ##########################################
             stats_collector.append(episode_data, eval_mode=True)
         stats = stats_collector.bundle_batch_stats(eval_mode=True)
         return stats
+
+    def get_qualitative_output(self, env_manager, evaluation_sampler, episode_data, epoch, i):
+        if env_manager.visual:
+            # you could imagine having the sampler also return the best episode
+            # or perhaps you could bundle thiis in the stats_collector
+
+            bids = evaluation_sampler.get_bids_for_episode(episode_data)
+            returns = sum([e.reward for e in episode_data])
+            frames = [e.frame for e in episode_data]
+
+            env_manager.save_video(epoch, i, bids, returns, frames)
+        elif isinstance(env_manager, TabularEnvManager):
+            """
+            sorted:
+
+            | time t | state | action | winner | bids | payoffs |
+            | time t+1 | state | action | winner | bids | payoffs |
+            """ 
+            for t, step_data in enumerate(episode_data):
+                step_dict = OrderedDict(
+                    t='{}\t'.format(t),
+                    state=env_manager.env.from_onehot(step_data.state),
+                    action=step_data.action,
+                    next_state=env_manager.env.from_onehot(step_data.state),
+                    reward='{}\t'.format(step_data.reward),
+                    mask=step_data.mask,
+                    winner=step_data.winner,
+                    bids=', '.join(['{}: {:.5f}'.format(a_id, bid) for a_id, bid in step_data.bids.items()]),
+                    payoffs=', '.join(['{}: {:.5f}'.format(a_id, payoff) for a_id, payoff in step_data.payoffs.items()]),)
+                self.logger.printf(log_string(step_dict))
+
 
     def update_metrics(self, env_manager, epoch, stats, metrics):
         """

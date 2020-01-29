@@ -955,6 +955,59 @@ def plot_1_28_20_CW6_long_horizon_stepcost():
 
 
 
+def plot_1_29_20_CW6_long_horizon_highstepcost():
+    """ 
+        Here we have a small step cost. The purpose is to see whether the step cost would discourage self-loops
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost_long_horizon_-01')
+    exp_dirs = {
+        'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+        'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
+        'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
+        'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_HighStepCost_Redundancy_Long_Horizon_gamma0-99', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+    # exp_dirs = {
+    #     'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+    #     'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
+    #     'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+    #     'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
+    #     'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+    #     'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.1',
+    #     'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+    #     'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='Chain_HighStepCost_Redundancy_Long_Horizon_gamma1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+
 
 
 
@@ -996,4 +1049,5 @@ if __name__ == '__main__':
     # 1/28/20
     # plot_1_28_20_debug_babyai_sac()
     # plot_1_28_20_CW6_long_horizon()
-    plot_1_28_20_CW6_long_horizon_stepcost()
+    # plot_1_28_20_CW6_long_horizon_stepcost()
+    plot_1_29_20_CW6_long_horizon_highstepcost()
