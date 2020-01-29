@@ -196,4 +196,21 @@ def get_first_key(dictionary):
     for key in dictionary:
         return dictionary[key]
 
+def split_groups(sorted_list):
+    # print(sorted(sorted_list))
+    # assert False
+    np.array_equal(sorted(sorted_list), sorted_list)
+    # assert np. == sorted_list
+
+    # determine split indices
+    diff = sorted_list - np.roll(sorted_list, 1)
+    idxs = np.where(diff>0)[0]
+
+    starts = [0]+list(idxs)
+    stops = list(idxs) + [None]
+
+    return lambda lst: [lst[strt:stop] for strt,stop in zip(starts,stops)]
+
+
+
 
