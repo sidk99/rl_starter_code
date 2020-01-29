@@ -21,7 +21,7 @@ class CNN(nn.Module):
         self.image_embedding_size = ((n-1)//2-2)*((m-1)//2-2)*64
     def forward(self, x):
         # (bsize, H, W, C) --> (bsize, C, H, W)
-        x = x.transpose(1, 3).transpose(2, 3)
+        x = x.transpose(1, 3).transpose(2, 3).contiguous()
         x = self.image_conv(x)
         x = x.reshape(x.shape[0], -1)
         return x
