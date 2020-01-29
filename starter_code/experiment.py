@@ -41,16 +41,12 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = False  #if this does not update state_histogram??
+        self.parallel_collect = True  #if this does not update state_histogram??
         self.logger.printf(self.organism)
 
         self.steps = 0
         self.min_return = np.inf
         self.max_return = -np.inf
-
-        if args.ado and self.parallel_collect:
-            raise Exception('Cannot do agent dropout with parallel data collection')
-
 
     def collect_samples(self, epoch, env_manager):
         """
