@@ -109,6 +109,19 @@ class MiniGridRewardNormalize(RewardNormalize):
 
 class EnvRegistry():
     def __init__(self):
+        self.atari_envs = {
+            'Breakout-ram-v4': dict(),
+            'Pong-ram-v4': dict(),
+            'SpaceInvaders-ram-v4': dict(),
+            'Enduro-ram-v4': dict(),
+
+            'Breakout-ramNoFrameskip-v4': dict(),
+            'Pong-ramNoFrameskip-v4': dict(),
+            'SpaceInvaders-ramNoFrameskip-v4': dict(),
+            'Enduro-ramNoFrameskip-v4': dict(),
+        }
+
+
         self.envs_type_name = {
             'gym': {
                 'CartPole-v0': dict(reward_shift=0, reward_scale=1.0/(200*(1-0))),  # 200 steps * ([1 max] - [0 min])
@@ -186,6 +199,9 @@ class EnvRegistry():
                 'CW6': dict(constructor=lambda: OneHotChainK(6)),
             }
         }
+
+        self.envs_type_name['gym'] = {**self.envs_type_name['gym'], **self.atari_envs}
+
         self.typecheck(self.envs_type_name)
         self.env_infos = build_env_infos(self.envs_type_name)
 
