@@ -141,11 +141,29 @@ def clean_1_18_20_lunarlander():
         'LL-2_g0.99_plr4e-05_ppo_h16_ec0',
         ])
 
+def clean_1_19_20_minigrid_h():
+    c = Cleaner(exp_subroot='debug_minigrid_geb_h')
+    c.clean_gifs([
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.01',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.01',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.01',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.01',
+        ])
+
 
 
 if __name__ == '__main__':
     # clean_1_6_20_debug_lunar_lander()
     # clean_1_13_20_debug_lunar_lander_h()
     # clean_1_17_20_cartpole_rewscale()
-    clean_1_18_20_lunarlander()
+    # clean_1_18_20_lunarlander()
+    clean_1_19_20_minigrid_h()
 

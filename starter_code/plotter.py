@@ -153,12 +153,12 @@ class CurvePlotter(Plotter):
         centers, mins, maxs = self.calculate_error_bars(ys)
         self.custom_plot(run_x, centers, mins, maxs, **kwargs) 
 
-    def plot(self, fname, curve_plot_dict, metric, x_label='steps', title=None):
+    def plot(self, fname, curve_plot_dict, metric, x_label='steps', title=None, ylim=None):
         # get color
         colors = plt.cm.viridis(np.linspace(0,1,len(curve_plot_dict)))
 
         # plot data
-        for i, label in enumerate(curve_plot_dict):
+        for i, label in sorted(enumerate(curve_plot_dict)):
             self.fill_plot(curve_plot_dict[label]['x'], curve_plot_dict[label]['ys'], 
                 label=label, color=colors[i])
 
@@ -170,6 +170,10 @@ class CurvePlotter(Plotter):
         if not title:
             title = fname
             plt.title(title)
+
+        # ylim
+        if ylim:
+            plt.ylim(ylim)
 
         # save in exp_subroot
         plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, '{}.png'.format(
@@ -268,7 +272,13 @@ class MultiAgentCurvePlotter(MultiAgentPlotter, CurvePlotter):
         # want to do it for each state
         for state in reorganized_data:
             curve_plot_dict = reorganized_data[state]
-            self.plot('{}_state_{}_{}_{}'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title)
+            if 'bid' in metric:
+                ylim=[0,1]
+            elif 'payoff' in metric:
+                ylim = [-1, 1]
+            else:
+                assert False
+            self.plot('{}_state_{}_{}_{}'.format(fname, state, metric, mode), curve_plot_dict, metric, x_label, title, ylim=ylim)
 
     def plot_all_state_metrics(self, fname, stats_dict, mode, metrics, x_label='steps', title=None):
         for metric in metrics:
@@ -666,8 +676,6 @@ def plot_1_13_20_debug_lunarlander_h():
             p.plot_episode_metrics(fname='LunarLander', stats_dict=stats_dict, mode=mode, metric=metric)
 
 
-
-
 def plot_1_20_20_debug_reward_scaling():
     """ 
     """
@@ -688,7 +696,268 @@ def plot_1_20_20_debug_reward_scaling():
     #         exp_dir=exp_dir, 
     #         metrics=['mean_payoff', 'mean_bid'])
 
+
+
+def plot_1_19_20_debug_minigrid_geb_h():
+    """
+        Observations: 
+            bucket brigrade seems to be better than vickrey in practice
+            perhaps this is because vickrey has an unbounded price of anarchy
+            so one potential solution is to try better exploration, like SAC.
+
+        Next steps
+            - Try better exploration
+    """
+    p = CurvePlotter(exp_subroot='server/debug_minigrid_geb_h')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Bucket Brigade ec0': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'Bucket Brigade ec0.001': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        'Bucket Brigade ec0.01': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.01',
+        'Vickrey ec0': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Vickrey ec0.001': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        'Vickrey ec0.01': 'BAI-OOD-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.01',
+        })
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='MiniGrid Open-One-Door', stats_dict=stats_dict, mode=mode, metric=metric)
+
+    p = CurvePlotter(exp_subroot='server/debug_minigrid_geb_h')
+    stats_dict = p.load_all_stats(exp_dirs={
+        'Bucket Brigade ec0': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'Bucket Brigade ec0.001': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        'Bucket Brigade ec0.01': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.01',
+        'Vickrey ec0': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Vickrey ec0.001': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        'Vickrey ec0.01': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.01',
+        })
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='MiniGrid Pickup-Key', stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+
+def plot_1_27_20_bandit_ado():
+    """ 
+        Redundancy 2 gets higher performance
+        Vickrey converges faster than English
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/bandit_ado')
+    exp_dirs = {
+        'Bucket_Brigade_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red1_ec0.0',
+        # 'Bucket_Brigade_Redundancy_1_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red1_ec0.001',
+        'Bucket_Brigade_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red2_ec0.0',
+        # 'Bucket_Brigade_Redundancy_2_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red2_ec0.001',
+        'Vickrey_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red1_ec0.0',
+        # 'Vickrey_Redundancy_1_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red1_ec0.001',
+        'Vickrey_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red2_ec0.0',
+        # 'Vickrey_Redundancy_2_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red2_ec0.001',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Bandit Agent Dropout', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
             
+def plot_1_27_20_debug_atari_breakout():
+    """
+        Purpose: trying to figure out the reward range is for horizon 100
+    """
+    p = CurvePlotter(exp_subroot='debug')
+    exp_dirs = {
+        'Breakout_ec0': 'B--4_g0.99_plr4e-05_ppo_h128-128_ec0',
+        'Breakout_ec0-01': 'B--4_g0.99_plr4e-05_ppo_h128-128_ec0.01',
+        'Breakout_ec1': 'B--4_g0.99_plr4e-05_ppo_h128-128_ec1.0',
+        'Breakout_nfs_ec0': 'B-NF-4_g0.99_plr4e-05_ppo_h128-128_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='debug_atari_breakout', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+def plot_1_28_20_debug_babyai_sac():
+    """
+        Purpose: trying to figure out the reward range is for horizon 100
+    """
+    p = CurvePlotter(exp_subroot='server/debug_minigrid_geb_sac')
+    exp_dirs = {
+            'BucketBrigade_PickupKey': 'BAI-PK-0_g0.99_plr4e-05_sac_h16_aucbb_red2_ec0',
+            'Vickrey_PickupKey': 'BAI-PK-0_g0.99_plr4e-05_sac_h16_aucv_red2_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='debug_minigrid_pickupkey_geb_sac', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    exp_dirs = {
+            'BucketBrigade_OpenOneDoor': 'BAI-OOD-0_g0.99_plr4e-05_sac_h16_aucbb_red2_ec0',
+            'Vickrey_OpenOneDoor': 'BAI-OOD-0_g0.99_plr4e-05_sac_h16_aucv_red2_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='debug_minigrid_openonedoor_geb_sac', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+
+def plot_1_28_20_CW6_long_horizon():
+    """ 
+        The hope for this experiment was to use longer horizon to allow the agent to hit the goal before being cut off
+        Note that this is a sparse reward
+
+        Global Objective
+            BucketBrigade 
+                gamma 0.99: solves it
+                gamma 1: only fails when redundancy is 1 and ec is 0
+
+            Vickrey
+                gamma 0.99: fails
+                gamma 1: fails
+
+        the exploration bonus either is too low or not having an effect
+
+        Now let's look at what the bidding behavior is
+            BucketBrigade
+                gamma 0.99
+                    redundancy 1
+                        ec 0: winner bids very close to 0, but just slightly; gets payoff of 0 at all steps except the last
+                        ec 0.001: 
+                    redundancy 2
+                        ec 0: 
+                        ec 0.001
+
+                gamma 1
+                    redundancy 1
+                        ec 0
+                        ec 0.001
+                    redundancy 2
+                        ec 0
+                        ec 0.001
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_sparse_long_horizon')
+    exp_dirs = {
+        # 'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+        # 'BucketBrigade_Redundancy_1_ec0-001_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.001',
+        # 'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        # 'BucketBrigade_Redundancy_2_ec0-001_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        # 'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+        # 'Vickrey_Redundancy_1_ec0-001_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.001',
+        # 'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        # 'Vickrey_Redundancy_2_ec0-001_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_Sparse_Redundancy_Long_Horizon_gamma0-99', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+    exp_dirs = {
+        # 'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+        # 'BucketBrigade_Redundancy_1_ec0-001_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.001',
+        # 'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        # 'BucketBrigade_Redundancy_2_ec0-001_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.001',
+        # 'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-001_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.001',
+        # 'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-001_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.001',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_Sparse_Redundancy_Long_Horizon_gamma1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+
+
+def plot_1_28_20_CW6_long_horizon_stepcost():
+    """ 
+        Here we have a small step cost. The purpose is to see whether the step cost would discourage self-loops
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost_long_horizon')
+    # exp_dirs = {
+    #     'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+    #     'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
+    #     'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+    #     'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
+    #     'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+    #     'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.1',
+    #     'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+    #     'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='Chain_StepCost_Redundancy_Long_Horizon_gamma0-99', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+    exp_dirs = {
+        'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+        'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
+        'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
+        'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_StepCost_Redundancy_Long_Horizon_gamma1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
@@ -716,8 +985,15 @@ if __name__ == '__main__':
     # plot_1_13_20_CW6_sparse()
     # plot_1_13_20_debug_lunarlander_h()
 
-    plot_1_20_20_debug_reward_scaling()
+    # plot_1_20_20_debug_reward_scaling()
 
+    # plot_1_19_20_debug_minigrid_geb_h()
 
+    # 1/27/20
+    # plot_1_27_20_bandit_ado()
+    # plot_1_27_20_debug_atari_breakout()
 
-
+    # 1/28/20
+    # plot_1_28_20_debug_babyai_sac()
+    # plot_1_28_20_CW6_long_horizon()
+    plot_1_28_20_CW6_long_horizon_stepcost()
