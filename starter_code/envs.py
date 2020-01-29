@@ -24,7 +24,7 @@ def not_in_array(np_array, value):
 
 
 class GridWorldK(object):
-    def __init__(self, height, width, goal):
+    def __init__(self, height, width, goal, step_reward=-0.1):
         self.height = height
         self.width = width
         self.num_states = self.height * self.width
@@ -36,7 +36,7 @@ class GridWorldK(object):
         self.actions = self.get_actions()#{0: 'L', 1: 'R', 2: 'D', 3: 'U'}
         self.transitions = self.create_transitions()
 
-        self.step_reward = 0#-0.1  # NOTE THAT THIS IS SPARSE REWARD!
+        self.step_reward = step_reward#-0.005#-0.1  # NOTE THAT THIS IS SPARSE REWARD!
         self.goal_reward = 0.8  # note that for GW2 I use 0.5 here
         self.rewards = self.create_rewards()
 
@@ -179,25 +179,17 @@ class MultiStepEnv(OneHotEnv):
         pass
 
 class OneHotGridWorldK(GridWorldK, OneHotEnv):
-    def __init__(self, height, width, rand_init=False, goal=-1):
-        super(OneHotGridWorldK, self).__init__(height=height, width=width, goal=goal)
+    def __init__(self, height, width, rand_init=False, goal=-1, eplencoeff=4, step_reward=-0.1):
+        super(OneHotGridWorldK, self).__init__(
+            height=height, width=width, goal=goal, step_reward=step_reward)
         self.actions = list(self.actions.keys())
         self.transitions = convert_grid_to_dict(self.transitions)
         self.rewards = convert_grid_to_dict(self.rewards)
         self.Qs = convert_grid_to_dict(self.Qs)
-
-        # self.eplen = 4*(size-1)  # size-1 is how long it takes to traverse edge. optimal path from one corner to the other is 2*(size-1)
-        # self.eplen = 2 * (height-1 + width - 1)
-        # self.eplen = 4 * (height-1 + width - 1)  # maybe give it more room
-
-        self.eplen = 20 * (height-1 + width - 1)  # let's just be very generous with the horizon length
+        self.eplen = eplencoeff * (height-1 + width - 1)  # previously, eplencoeff=4, then I tried eplencoeff=20
 
         self.goal_states = [self.goal_idx]
         self.starting_states = self.get_initial_states(rand_init, self.goal_states)
-
-        # import pprint
-        # pprint.pprint(self.__dict__)
-        # assert False
 
     def get_initial_states(self, rand_init, goal_states):
         if rand_init:
@@ -234,13 +226,27 @@ class OneHotGridWorldK(GridWorldK, OneHotEnv):
         pass
 
 class OneHotSquareGridWorldK(OneHotGridWorldK):
-    def __init__(self, size, rand_init=False, goal=-1):
-        super(OneHotSquareGridWorldK, self).__init__(height=size, width=size, rand_init=rand_init, goal=goal)
+    def __init__(self, size, rand_init=False, goal=-1, eplencoeff=4, step_reward=-0.1):
+        super(OneHotSquareGridWorldK, self).__init__(
+            height=size, 
+            width=size, 
+            rand_init=rand_init, 
+            goal=goal,
+            eplencoeff=eplencoeff, 
+            step_reward=step_reward
+            )
 
 
 class OneHotChainK(OneHotGridWorldK):
-    def __init__(self, length, rand_init=False, goal=-1):
-        super(OneHotChainK, self).__init__(height=1, width=length, rand_init=rand_init, goal=goal)
+    def __init__(self, length, rand_init=False, goal=-1, eplencoeff=4, step_reward=-0.1):
+        super(OneHotChainK, self).__init__(
+            height=1, 
+            width=length, 
+            rand_init=rand_init, 
+            goal=goal, 
+            eplencoeff=eplencoeff, 
+            step_reward=step_reward
+            )
 
     def get_actions(self):
         return {0: 'L', 1: 'R'}

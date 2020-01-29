@@ -8,7 +8,7 @@ import pprint
 from gym.wrappers.time_limit import TimeLimit
 
 
-from envs import OneStateOneStepKActionEnv, OneHotSquareGridWorldK, OneHotGridWorldK, OneHotChainK
+from starter_code.envs import OneStateOneStepKActionEnv, OneHotSquareGridWorldK, OneHotGridWorldK, OneHotChainK
 
 """
     Minigrid reward range: (0,1)
@@ -192,11 +192,16 @@ class EnvRegistry():
                 'GW2RG2': dict(constructor=lambda: OneHotSquareGridWorldK(2, rand_init=True, goal=2)),
                 'GW2RG3': dict(constructor=lambda: OneHotSquareGridWorldK(2, rand_init=True, goal=3)),
 
-                'CW2': dict(constructor=lambda: OneHotChainK(2)),
-                'CW3': dict(constructor=lambda: OneHotChainK(3)),
-                'CW4': dict(constructor=lambda: OneHotChainK(4)),
-                'CW5': dict(constructor=lambda: OneHotChainK(5)),
-                'CW6': dict(constructor=lambda: OneHotChainK(6)),
+                'CW2': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
+                    2, eplencoeff=eplencoeff, step_reward=step_reward)),
+                'CW3': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
+                    3, eplencoeff=eplencoeff, step_reward=step_reward)),
+                'CW4': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
+                    4, eplencoeff=eplencoeff, step_reward=step_reward)),
+                'CW5': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
+                    5, eplencoeff=eplencoeff, step_reward=step_reward)),
+                'CW6': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
+                    6, eplencoeff=eplencoeff, step_reward=step_reward)),
             }
         }
 

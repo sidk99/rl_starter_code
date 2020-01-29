@@ -358,7 +358,15 @@ class EnvManager(EnvLogger):
         super(EnvManager, self).__init__(args)
         self.env_name = env_name
         self.env_type = env_registry.get_env_type(env_name)
-        self.env = env_registry.get_env_constructor(env_name)()
+
+        # should make this more clean
+        if 'CW' in env_name:
+            self.env = env_registry.get_env_constructor(env_name)(
+                # eplencoeff=4, step_reward=-0.1)
+                eplencoeff=args.eplencoeff, step_reward=args.step_reward)
+        else:
+            self.env = env_registry.get_env_constructor(env_name)()
+
         self.visual = False  # default
         self.initialize()
 

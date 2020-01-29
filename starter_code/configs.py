@@ -140,9 +140,12 @@ def build_expname(args):
     args.expname = simplify_name(args.env_name)
     args.expname += '_g{}'.format(args.gamma)
     args.expname += '_plr{}'.format(args.plr)
-    # args.expname += '_opt{}'.format(args.opt)
     args.expname += '_{}'.format(args.alg_name)
     args.expname += '_h{}'.format(args.hdim).replace('[','').replace(']','').replace(', ','-')
+    print(args.env_name)
+    if 'CW' in args.env_name[0]:
+        assert len(args.env_name) == 1
+        args.expname += '_elc{}_sr{}'.format(args.eplencoeff, args.step_reward)
     if args.debug:
         args.expname += '_db'
     if hasattr(args, 'auctiontype'):
