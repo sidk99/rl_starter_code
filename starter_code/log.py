@@ -246,14 +246,6 @@ class MultiBaseLogger(BaseLogger):
         self.subroot = os.path.join('runs', args.subroot)
         self.exproot = os.path.join(self.subroot, self.expname)
         self.logdir = create_logdir(root=self.exproot, dirname='seed{}'.format(args.seed), setdate=True)  # is it just a matter of doing this?
-
-        ################################################
-        # unnecessary actually
-        # self.qualitative_dir = create_logdir(root=self.logdir, dirname='qualitative', setdate=False)
-        # self.quantitative_dir = create_logdir(root=self.logdir, dirname='quantitative', setdate=False)
-        # self.checkpoint_dir = create_logdir(root=self.logdir, dirname='checkpoints', setdate=False)
-        # self.saver = Saver(self.checkpoint_dir)
-        ################################################
         self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
 
         params_to_save = vars(args)
@@ -332,6 +324,45 @@ class MultiBaseLogger(BaseLogger):
             print('Removed {}'.format(self.logdir))
         else:
             print('Did not remove {}'.format(self.logdir))
+
+class ClassificationLogger(MultiBaseLogger):
+    def __init__(self, args):
+        BaseLogger.__init__(self, args)
+        self.args = args
+        self.expname = args.expname
+
+        self.subroot = os.path.join('./classification/runs', args.subroot)
+        self.exproot = os.path.join(self.subroot, self.expname)
+        self.logdir = create_logdir(root=self.exproot, dirname='seed{}'.format(args.seed), setdate=True)
+        self.code_dir = create_logdir(root=self.logdir, dirname='code', setdate=False)
+
+        params_to_save = vars(args)
+        ujson.dump(params_to_save, open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
+
+        self.save_source_code()
+        self.print_dirs()
+        self.initialize()
+
+    def save_source_code(self):
+        for src_folder in ['classification']:
+            dest_src_folder = os.path.join(self.code_dir, src_folder)
+            os.makedirs(dest_src_folder)
+            for src_file in [x for x in os.listdir(src_folder) if '.py' in x]:
+                print('Copying {} to {}'.format(
+                    os.path.join(src_folder, src_file), dest_src_folder))
+                shutil.copy2(
+                    os.path.join(src_folder, src_file), 
+                    dest_src_folder)
+
+    def initialize(self):
+        self.add_variable('epoch')
+
+        self.add_variable('test_accuracy', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('train_accuracy', incl_run_avg=True, metric={'value': -np.inf, 'cmp': operator.ge})
+        self.add_variable('test_loss', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+        self.add_variable('train_loss', incl_run_avg=True, metric={'value': np.inf, 'cmp': operator.le})
+
+
 
 class EnvLogger(BaseLogger):
     def __init__(self, args):
