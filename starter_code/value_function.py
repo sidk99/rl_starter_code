@@ -13,6 +13,16 @@ class SimpleValueFn(nn.Module):
         state_values = self.value_head(state)
         return state_values
 
+class SimpleQFn(nn.Module):
+    def __init__(self, state_dim, action_dim, hdim):
+        super(SimpleQFn, self).__init__()
+        self.Q_head = MLP(dims=[state_dim+action_dim, *hdim, 1])
+
+    def forward(self, state, action):
+        raise NotImplementedError('need to concatenate action and state')
+        Q_values = self.Q_head(state)
+        return Q_values
+
 class CNNValueFn(nn.Module):
     def __init__(self, state_dim):
         super(CNNValueFn, self).__init__()
@@ -22,6 +32,24 @@ class CNNValueFn(nn.Module):
     def forward(self, state):
         state_values = self.decoder(self.encoder(state))
         return state_values
+
+class CNNQFn(nn.Module):
+    def __init__(self, state_dim, action_dim, hdim=16):
+        """
+            hdim is for embedding action.
+            So if the action is discrete hdim=16 should be large enough
+        """
+        super(CNNQFn, self).__init__()
+        self.encoder = CNN(*state_dim)
+        self.action_encoder = nn.Linear(action_dim, hdim)
+        self.decoder = nn.Linear(self.encoder.image_embedding_size+hdim, 1)
+
+    def forward(self, state, action):
+        image_encoded = self.encoder(state)
+        action_encoded = F.relu(self.action_encoder(action))
+        Q_values = self.decoder(
+            torch.cat((image_encoded, action_encoded), dim=-1))
+        return Q_values
 
 
 class ValueFn(nn.Module):
