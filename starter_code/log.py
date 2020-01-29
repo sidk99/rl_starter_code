@@ -267,9 +267,25 @@ class MultiBaseLogger(BaseLogger):
             **er.get_reward_normalization_info(args.env_name[0])}
 
         ujson.dump(params_to_save, open(os.path.join(self.code_dir, 'params.json'), 'w'), sort_keys=True, indent=4)
+        self.save_source_code()
 
         self.print_dirs()
         self.initialize()
+
+    def save_source_code(self):
+        for src_folder in ['starter_code', 'information_economy/scratch']:
+            dest_src_folder = os.path.join(self.code_dir, src_folder)
+            os.makedirs(dest_src_folder)
+            for src_file in [x for x in os.listdir(src_folder) if '.py' in x]:
+                print('Copying {} to {}'.format(
+                    os.path.join(src_folder, src_file), dest_src_folder))
+                shutil.copy2(
+                    os.path.join(src_folder, src_file), 
+                    dest_src_folder)
+        for src_file in [x for x in os.listdir('.') if '.py' in x]:
+            print('Copying {} to {}'.format(
+                src_file, self.code_dir))
+            shutil.copy2(src_file, self.code_dir)
 
     def print_dirs(self):
         s = []
@@ -277,9 +293,6 @@ class MultiBaseLogger(BaseLogger):
         s.append('exproot: {}'.format(self.exproot))
         s.append('logdir: {}'.format(self.logdir))
         self.printf('\n'.join(s))
-
-    def save_source_code(self):
-        pass
 
     def initialize(self):
         self.add_variable('epoch')
@@ -421,7 +434,7 @@ class TabularEnvManager(EnvManager):
     def visualize_data(self, state, title, metric):
         colors = plt.cm.viridis(np.linspace(0,1,len(self.agent_data[metric][state])))
 
-        for i, a_id in enumerate(self.agent_data[metric][state]):
+        for i, a_id in sorted(enumerate(self.agent_data[metric][state])):
             data_indices, data_values = zip(*self.agent_data[metric][state][a_id].items())
             plt.plot(data_indices, data_values, label='{} for agent {}'.format(metric, a_id),
              color=colors[i]
@@ -524,6 +537,9 @@ class GymEnvManager(VisualEnvManager):
         self.state_dim = self.env.observation_space.shape[0]
         self.is_disc_action = len(self.env.action_space.shape) == 0
         self.action_dim = self.env.action_space.n if self.is_disc_action else self.env.action_space.shape[0]
+        # if env_name in env_registry.atari_envs:
+        #     self.max_episode_length = 100
+        # else:
         self.max_episode_length = self.env._max_episode_steps
 
 class MinigridEnvManager(VisualEnvManager):
