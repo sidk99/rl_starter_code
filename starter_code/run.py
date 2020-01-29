@@ -31,6 +31,9 @@ def parse_args():
     parser.add_argument('--visualize_every', type=int, default=500)
     parser.add_argument('--eval_every', type=int, default=50)
 
+    parser.add_argument('--entropy_coeff', type=float, default=0)
+    parser.add_argument('--hdim', nargs='+', type=int, default=[16])
+
 
     args = parser.parse_args()
     return args
