@@ -5,7 +5,6 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 import rlkit.torch.pytorch_util as ptu 
-# from rlkit.core.serializable import Serializable
 
 from starter_code.utils import AttrDict
 
@@ -146,7 +145,8 @@ class SAC_Agent(BaseAgent):
         self.target_qf1 = networks['target_qf1']
         self.target_qf2 = networks['target_qf2']
         if self.args.use_automatic_entropy_tuning:  # TODO
-            self.log_alpha = ptu.zeros(1, requires_grad=True)  # TODO
+            # self.log_alpha = ptu.zeros(1, requires_grad=True)  # TODO you could also make it a nn.Parameter
+            self.log_alpha = nn.Parameter(torch.zeros(1))#ptu.zeros(1, requires_grad=True)  # TODO you could also make it a nn.Parameter
 
     def initialize_optimizer(self, lrs):
         BaseAgent.initialize_optimizer(self, lrs)
