@@ -143,6 +143,8 @@ def build_expname(args):
     args.expname += '_{}'.format(args.alg_name)
     args.expname += '_h{}'.format(args.hdim).replace('[','').replace(']','').replace(', ','-')
     print(args.env_name)
+    if hasattr(args, 'clone'):
+        args.expname += '_cln'
     if 'CW' in args.env_name[0]:
         assert len(args.env_name) == 1
         args.expname += '_elc{}_sr{}'.format(args.eplencoeff, args.step_reward)

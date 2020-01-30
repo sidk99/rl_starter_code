@@ -920,32 +920,6 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
         'CCVickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
         }
 
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0
-# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0
-# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1
-
-
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
     for mode in ['train', 'test']:
         for metric in ['mean_return', 'min_return', 'max_return']:
@@ -987,6 +961,37 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
 
 
 
+def plot_1_30_20_CW6_shorthorizon_compare_ccv():
+    """ 
+        Compare CCV with bucket brigade 
+        eplen=4
+        step_reward=0
+        gamma=0.99
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='debug')
+    exp_dirs = {
+
+         'CCV red 2': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
+         'BB red 2': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
+         'BB red 1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red1_ec0.1',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_StepCost0_Eplen4_Redundancy_gamma0-99', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+
 
 if __name__ == '__main__':
     # plot_1_1_20_debug_return()
@@ -1024,4 +1029,6 @@ if __name__ == '__main__':
     # 1/28/20
     # plot_1_28_20_debug_babyai_sac()
     # plot_1_28_20_CW6_long_horizon()
-    plot_1_29_20_CW6_long_horizon_stepcost()
+    # plot_1_29_20_CW6_long_horizon_stepcost()
+
+    plot_1_30_20_CW6_shorthorizon_compare_ccv()
