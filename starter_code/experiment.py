@@ -41,7 +41,7 @@ class Experiment():
         self.logger = logger
         self.device = device
         self.args = args
-        self.parallel_collect = False  #if this does not update state_histogram??
+        self.parallel_collect = True  #if this does not update state_histogram??
         self.logger.printf(self.organism)
 
         self.steps = 0

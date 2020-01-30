@@ -906,18 +906,18 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
     p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost-01_horizonx4')
     exp_dirs = {
         'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0',
-        'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
+        # 'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
         'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
-        'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
-        'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
-        'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
-        'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
-        'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+        # 'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
+        # 'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        # 'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        # 'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        # 'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
 
         'CCVickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
-        'CCVickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
+        # 'CCVickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
         'CCVickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0',
-        'CCVickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
+        # 'CCVickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
@@ -926,25 +926,27 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
             p.plot_episode_metrics(fname='Chain_StepCost-01_Redundancy_Horizonx4_gamma0-99', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
-    for fname, exp_dir in exp_dirs.items():
-        p.load_plot_all_state_metrics(
-            fname=fname, 
-            exp_dir=exp_dir, 
-            metrics=['mean_payoff', 'mean_bid'])
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
 
     exp_dirs = {
         'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0',
-        'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
+        # 'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
         'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
-        'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
-        'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
-        'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
-        'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
-        'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+        # 'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
+
+        # 'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        # 'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        # 'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        # 'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+        
         'CCVickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
-        'CCVickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
+        # 'CCVickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
         'CCVickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0',
-        'CCVickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
+        # 'CCVickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
@@ -953,11 +955,11 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
             p.plot_episode_metrics(fname='Chain_StepCost-01_Redundancy_Horizonx4_gamma1', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
-    for fname, exp_dir in exp_dirs.items():
-        p.load_plot_all_state_metrics(
-            fname=fname, 
-            exp_dir=exp_dir, 
-            metrics=['mean_payoff', 'mean_bid'])
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
 
 
 
@@ -971,9 +973,16 @@ def plot_1_30_20_CW6_shorthorizon_compare_ccv():
     p = MultiAgentCurvePlotter(exp_subroot='debug')
     exp_dirs = {
 
-         'CCV red 2': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
-         'BB red 2': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
-         'BB red 1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red1_ec0.1',
+         'CCV red 2 cln': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
+         'CCV red 2': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.1',
+         'CCV red 1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.1',
+
+         'BB red 2 cln': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
+         'BB red 2': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.1',
+         'BB red 1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.1',
+
+
+
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
@@ -1029,6 +1038,7 @@ if __name__ == '__main__':
     # 1/28/20
     # plot_1_28_20_debug_babyai_sac()
     # plot_1_28_20_CW6_long_horizon()
-    # plot_1_29_20_CW6_long_horizon_stepcost()
+    plot_1_29_20_CW6_long_horizon_stepcost()
 
-    plot_1_30_20_CW6_shorthorizon_compare_ccv()
+    # 1/30/20
+    # plot_1_30_20_CW6_shorthorizon_compare_ccv()
