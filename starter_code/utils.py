@@ -197,10 +197,7 @@ def get_first_key(dictionary):
         return dictionary[key]
 
 def split_groups(sorted_list):
-    # print(sorted(sorted_list))
-    # assert False
     np.array_equal(sorted(sorted_list), sorted_list)
-    # assert np. == sorted_list
 
     # determine split indices
     diff = sorted_list - np.roll(sorted_list, 1)

@@ -899,52 +899,57 @@ def plot_1_28_20_CW6_long_horizon():
 
 
 
-
-
-
-def plot_1_28_20_CW6_long_horizon_stepcost():
+def plot_1_29_20_CW6_long_horizon_stepcost():
     """ 
-        Here we have a small step cost. The purpose is to see whether the step cost would discourage self-loops
+        Here we hope to recover the original experiment that worked. Then we will try to break it.
     """
-    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost_long_horizon')
-    # exp_dirs = {
-    #     'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
-    #     'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
-    #     'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
-    #     'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
-    #     'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
-    #     'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.1',
-    #     'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
-    #     'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.1',
-    #     }
-
-    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
-    # for mode in ['train', 'test']:
-    #     for metric in ['mean_return', 'min_return', 'max_return']:
-    #         p.plot_episode_metrics(fname='Chain_StepCost_Redundancy_Long_Horizon_gamma0-99', 
-    #             stats_dict=stats_dict, mode=mode, metric=metric)
-
-    # for fname, exp_dir in exp_dirs.items():
-    #     p.load_plot_all_state_metrics(
-    #         fname=fname, 
-    #         exp_dir=exp_dir, 
-    #         metrics=['mean_payoff', 'mean_bid'])
-
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost-01_horizonx4')
     exp_dirs = {
-        'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
-        'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
-        'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
-        'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
-        'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.0',
-        'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.1',
-        'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.0',
-        'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+        'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0',
+        'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
+        'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
+        'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
+        'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+
+        'CCVickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
+        'CCVickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
+        'CCVickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0',
+        'CCVickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
         }
+
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0
+# CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0
+# CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1
+
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
     for mode in ['train', 'test']:
         for metric in ['mean_return', 'min_return', 'max_return']:
-            p.plot_episode_metrics(fname='Chain_StepCost_Redundancy_Long_Horizon_gamma1', 
+            p.plot_episode_metrics(fname='Chain_StepCost-01_Redundancy_Horizonx4_gamma0-99', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
     for fname, exp_dir in exp_dirs.items():
@@ -953,28 +958,25 @@ def plot_1_28_20_CW6_long_horizon_stepcost():
             exp_dir=exp_dir, 
             metrics=['mean_payoff', 'mean_bid'])
 
-
-
-def plot_1_29_20_CW6_long_horizon_highstepcost():
-    """ 
-        Here we have a small step cost. The purpose is to see whether the step cost would discourage self-loops
-    """
-    p = MultiAgentCurvePlotter(exp_subroot='server/debug_chain_claude_entropy_stepcost_long_horizon_-01')
     exp_dirs = {
-        'BucketBrigade_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
-        'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
-        'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
-        'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
-        'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
-        'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.1',
-        'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
-        'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.1',
+        'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.0',
+        'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
+        'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
+        'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
+        'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+        'CCVickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
+        'CCVickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
+        'CCVickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0',
+        'CCVickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.1',
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
     for mode in ['train', 'test']:
         for metric in ['mean_return', 'min_return', 'max_return']:
-            p.plot_episode_metrics(fname='Chain_HighStepCost_Redundancy_Long_Horizon_gamma0-99', 
+            p.plot_episode_metrics(fname='Chain_StepCost-01_Redundancy_Horizonx4_gamma1', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
     for fname, exp_dir in exp_dirs.items():
@@ -982,33 +984,6 @@ def plot_1_29_20_CW6_long_horizon_highstepcost():
             fname=fname, 
             exp_dir=exp_dir, 
             metrics=['mean_payoff', 'mean_bid'])
-
-    # exp_dirs = {
-    #     'BucketBrigade_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
-    #     'BucketBrigade_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red1_ec0.1',
-    #     'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
-    #     'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucbb_red2_ec0.1',
-    #     'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.0',
-    #     'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red1_ec0.1',
-    #     'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.0',
-    #     'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_aucv_red2_ec0.1',
-    #     }
-
-    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
-    # for mode in ['train', 'test']:
-    #     for metric in ['mean_return', 'min_return', 'max_return']:
-    #         p.plot_episode_metrics(fname='Chain_HighStepCost_Redundancy_Long_Horizon_gamma1', 
-    #             stats_dict=stats_dict, mode=mode, metric=metric)
-
-    # for fname, exp_dir in exp_dirs.items():
-    #     p.load_plot_all_state_metrics(
-    #         fname=fname, 
-    #         exp_dir=exp_dir, 
-    #         metrics=['mean_payoff', 'mean_bid'])
-
-
-
-
 
 
 
@@ -1049,5 +1024,4 @@ if __name__ == '__main__':
     # 1/28/20
     # plot_1_28_20_debug_babyai_sac()
     # plot_1_28_20_CW6_long_horizon()
-    # plot_1_28_20_CW6_long_horizon_stepcost()
-    plot_1_29_20_CW6_long_horizon_highstepcost()
+    plot_1_29_20_CW6_long_horizon_stepcost()
