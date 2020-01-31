@@ -909,10 +909,10 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
         # 'BucketBrigade_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red1_ec0.1',
         'BucketBrigade_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
         # 'BucketBrigade_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
-        # 'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
-        # 'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
-        # 'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
-        # 'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+        'Vickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
 
         'CCVickrey_Redundancy_1_ec0_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
         # 'CCVickrey_Redundancy_1_ec0-1_gamma0-99': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
@@ -938,11 +938,11 @@ def plot_1_29_20_CW6_long_horizon_stepcost():
         'BucketBrigade_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.0',
         # 'BucketBrigade_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucbb_red2_ec0.1',
 
-        # 'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
-        # 'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
-        # 'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
-        # 'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
-        
+        'Vickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.0',
+        'Vickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red1_ec0.1',
+        'Vickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.0',
+        'Vickrey_Redundancy_2_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucv_red2_ec0.1',
+
         'CCVickrey_Redundancy_1_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.0',
         # 'CCVickrey_Redundancy_1_ec0-1_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red1_ec0.1',
         'CCVickrey_Redundancy_2_ec0_gamma1': 'CW6_g1.0_plr4e-05_ppo_h16_elc4_sr-0.1_aucccv_red2_ec0.0',
@@ -998,6 +998,66 @@ def plot_1_30_20_CW6_shorthorizon_compare_ccv():
             metrics=['mean_payoff', 'mean_bid'])
 
 
+def plot_1_30_20_CW6_gcp_chain():
+    """ 
+        horizon length 4
+        step_reward 0
+        
+        bb v ccv 
+        bb-clone v-clone ccv-clone
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/chain_gcp')
+    exp_dirs = {
+        'Bucket Brigade Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.0',
+        'Credit Conserving Vickrey Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.0',
+        # 'Vickrey Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.0',
+        'Bucket Brigade Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.0',
+        'Bucket Brigade Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.0',
+        'Credit Conserving Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.0',
+        'Credit Conserving Vickrey Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.0',
+        # 'Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.0',
+        # 'Vickrey Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP ec 0', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+    # exp_dirs = {
+    #     'Bucket Brigade Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
+    #     'Credit Conserving Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
+    #     'Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.1',
+    #     'Bucket Brigade Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.1',
+    #     'Bucket Brigade Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.1',
+    #     'Credit Conserving Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.1',
+    #     'Credit Conserving Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.1',
+    #     'Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.1',
+    #     'Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.1',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='Chain_GCP ec 0.1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
 
 
 
@@ -1042,3 +1102,4 @@ if __name__ == '__main__':
 
     # 1/30/20
     # plot_1_30_20_CW6_shorthorizon_compare_ccv()
+    plot_1_30_20_CW6_gcp_chain()
