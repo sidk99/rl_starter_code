@@ -127,7 +127,13 @@ class EnvRegistry():
                 'CartPole-v0': dict(reward_shift=0, reward_scale=1.0/(200*(1-0))),  # 200 steps * ([1 max] - [0 min])
                 'InvertedPendulum-v2': dict(),
                 'HalfCheetah-v2': dict(),
-                'LunarLander-v2': dict(reward_shift=-100, reward_scale=1.0/(1000*(100--100))),  # 1000 steps * ([100 max] - [-100 min]) which seems to be empirically the range.
+                # 'LunarLander-v2': dict(reward_shift=-100, reward_scale=1.0/(1000*(100--100))),  # 1000 steps * ([100 max] - [-100 min]) which seems to be empirically the range. --> This causes it to be between 0 and 0.5
+
+                # 'LunarLander-v2': dict(reward_shift=0, reward_scale=1.0/(500*(100--100))),  # 1000 steps * ([100 max] - [-100 min]) which seems to be empirically the range. --> This causes it to be between 0 and 0.5
+
+
+                'LunarLander-v2': dict(reward_shift=0, reward_scale=1.0/250),  # DONE_I_THINKs
+
                 'MountainCar-v0': dict(),
                 'Acrobot-v1': dict(),
                 'Taxi-v2': dict(),
@@ -155,8 +161,15 @@ class EnvRegistry():
                 'MiniGrid-MultiRoom-N2-S4-v0': dict(),
 
                 # Expanding Action Set
-                'BabyAI-PickupKey-v0': dict(),
-                'BabyAI-OpenOneDoor-v0': dict(),
+                'BabyAI-PickupKey-v0': dict(reward_scale=1.0),  # 64 steps
+                'BabyAI-OpenDoorDebug-v0': dict(reward_scale=1.0/2),  # 576 steps DONE_I_THINK
+
+
+
+                'BabyAI-OpenOneDoor-v0': dict(reward_scale=0.8),
+
+
+
             },
             'tab': {
                 # 0. purpose: one-arm bandit; simplest case of regressing to Q-value; sanity check
