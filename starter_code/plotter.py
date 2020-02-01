@@ -744,14 +744,30 @@ def plot_1_27_20_bandit_ado():
     """
     p = MultiAgentCurvePlotter(exp_subroot='server/bandit_ado')
     exp_dirs = {
-        'Bucket_Brigade_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red1_ec0.0',
+        # we have results here, but not necessary for the plot
         # 'Bucket_Brigade_Redundancy_1_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red1_ec0.001',
-        'Bucket_Brigade_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red2_ec0.0',
         # 'Bucket_Brigade_Redundancy_2_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red2_ec0.001',
-        'Vickrey_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red1_ec0.0',
         # 'Vickrey_Redundancy_1_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red1_ec0.001',
-        'Vickrey_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red2_ec0.0',
         # 'Vickrey_Redundancy_2_ec0-001': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red2_ec0.001',
+
+
+
+        'Bucket_Brigade_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red1_ec0.0',
+        'Bucket_Brigade_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucbb_ado_red2_ec0.0',
+        'Bucket_Brigade_clone_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_cln_aucbb_ado_red2_ec0.0',
+
+        
+        'Vickrey_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red1_ec0.0',
+        'Vickrey_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucv_ado_red2_ec0.0',
+        'Vickrey_clone_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_cln_aucv_ado_red2_ec0.0',
+
+
+        'Credit_Conserving_Vickrey_Redundancy_1_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucccv_ado_red1_ec0.0',
+        'Credit_Conserving_Vickrey_Redundancy_2_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_aucccv_ado_red2_ec0.0',
+        'Credit_Conserving_Vickrey_clone_ec0': '1S1T4A_g0.99_plr4e-05_ppo_h16_cln_aucccv_ado_red2_ec0.0',
+
+
+
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
@@ -1010,13 +1026,14 @@ def plot_1_30_20_CW6_gcp_chain():
     exp_dirs = {
         'Bucket Brigade Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.0',
         'Credit Conserving Vickrey Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.0',
-        # 'Vickrey Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.0',
-        'Bucket Brigade Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.0',
+        'Vickrey Clone ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.0',
+
+        'Bucket Brigade Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.0',  # can finish
         'Bucket Brigade Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.0',
-        'Credit Conserving Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.0',
+        'Credit Conserving Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.0',  # can finish
         'Credit Conserving Vickrey Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.0',
-        # 'Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.0',
-        # 'Vickrey Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.0',
+        'Vickrey Red 1 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.0',  # can finish
+        'Vickrey Red 2 ec 0': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.0',
         }
 
     stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
@@ -1025,35 +1042,111 @@ def plot_1_30_20_CW6_gcp_chain():
             p.plot_episode_metrics(fname='Chain_GCP ec 0', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
-    # for fname, exp_dir in exp_dirs.items():
-    #     p.load_plot_all_state_metrics(
-    #         fname=fname, 
-    #         exp_dir=exp_dir, 
-    #         metrics=['mean_payoff', 'mean_bid'])
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
 
-    # exp_dirs = {
-    #     'Bucket Brigade Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
-    #     'Credit Conserving Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
-    #     'Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.1',
-    #     'Bucket Brigade Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.1',
-    #     'Bucket Brigade Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.1',
-    #     'Credit Conserving Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.1',
-    #     'Credit Conserving Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.1',
-    #     'Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.1',
-    #     'Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.1',
-    #     }
+    exp_dirs = {
+        'Bucket Brigade Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
+        'Credit Conserving Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucccv_red2_ec0.1',
+        'Vickrey Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucv_red2_ec0.1',
 
-    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
-    # for mode in ['train', 'test']:
-    #     for metric in ['mean_return', 'min_return', 'max_return']:
-    #         p.plot_episode_metrics(fname='Chain_GCP ec 0.1', 
-    #             stats_dict=stats_dict, mode=mode, metric=metric)
+        'Bucket Brigade Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red1_ec0.1',  # can finish
+        'Bucket Brigade Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucbb_red2_ec0.1',
+        'Credit Conserving Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red1_ec0.1',  # can finish
+        'Credit Conserving Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucccv_red2_ec0.1',
+        'Vickrey Red 1 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red1_ec0.1',  # can finish
+        'Vickrey Red 2 ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_elc4_sr0.0_aucv_red2_ec0.1',
+        }
 
-    # for fname, exp_dir in exp_dirs.items():
-    #     p.load_plot_all_state_metrics(
-    #         fname=fname, 
-    #         exp_dir=exp_dir, 
-    #         metrics=['mean_payoff', 'mean_bid'])
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP ec 0.1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+
+def plot_1_31_20_CW6_gcp_lunarlander():
+    """ 
+        lunar lander
+
+        Observations: seems to be plateauing really hard.
+        All seem to be performing the same
+    """
+    p = CurvePlotter(exp_subroot='server/lunarlander')
+    exp_dirs = {
+        'Bucket Brigade Redundancy 1': 'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red1_ec0',
+        'Bucket Brigade Redundancy 2': 'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
+        'Bucket Brigade Clone': 'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucbb_red2_ec0',
+
+        'Credit Conserving Vickrey Redundancy 1': 'LL-2_g0.99_plr4e-05_ppo_h32_aucccv_red1_ec0',
+        'Credit Conserving Vickrey Redundancy 2': 'LL-2_g0.99_plr4e-05_ppo_h32_aucccv_red2_ec0',
+        'Credit Conserving Vickrey Clone': 'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucccv_red2_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='LunarLander_GCP', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+def plot_1_31_20_CW6_gcp_babyai():
+    """ 
+        babyai
+
+    """
+    p = CurvePlotter(exp_subroot='server/babyai')
+    exp_dirs = {
+
+        'Bucket Brigade Redundancy 1': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
+        'Bucket Brigade Redundancy 2': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0',
+        'Bucket Brigade Clone': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0',
+
+        'Credit Conserving Vickrey Redundancy 1': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0',
+        'Credit Conserving Vickrey Redundancy 2': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucccv_red2_ec0',
+        'Credit Conserving Vickrey Clone': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0',
+
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='BabyAI_PickupKey_GCP', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+
+
+    p = CurvePlotter(exp_subroot='server/babyai')
+    exp_dirs = {
+
+        'Bucket Brigade Redundancy 1': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
+        'Bucket Brigade Redundancy 2': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0',
+        'Bucket Brigade Clone': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0',
+
+        'Credit Conserving Vickrey Redundancy 1': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0',
+        'Credit Conserving Vickrey Redundancy 2': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucccv_red2_ec0',
+        'Credit Conserving Vickrey Clone': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0',
+
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='BabyAI_OpenDoorDebug_GCP', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
 
 
 
@@ -1092,14 +1185,18 @@ if __name__ == '__main__':
     # plot_1_19_20_debug_minigrid_geb_h()
 
     # 1/27/20
-    # plot_1_27_20_bandit_ado()
+    plot_1_27_20_bandit_ado()
     # plot_1_27_20_debug_atari_breakout()
 
     # 1/28/20
     # plot_1_28_20_debug_babyai_sac()
     # plot_1_28_20_CW6_long_horizon()
-    plot_1_29_20_CW6_long_horizon_stepcost()
+    # plot_1_29_20_CW6_long_horizon_stepcost()
 
     # 1/30/20
     # plot_1_30_20_CW6_shorthorizon_compare_ccv()
-    plot_1_30_20_CW6_gcp_chain()
+    # plot_1_30_20_CW6_gcp_chain()
+
+    # 1/31/20
+    # plot_1_31_20_CW6_gcp_lunarlander()
+    # plot_1_31_20_CW6_gcp_babyai()

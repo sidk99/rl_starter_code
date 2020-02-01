@@ -265,7 +265,96 @@ class OneStateOneStepKActionEnv(MultiStepEnv):
         self.starting_states = [0]
 
 
+class CounterExample1Env(MultiStepEnv):
+    """
+        infinite-horizon
 
+        0, 0 --> -1: 0
+        0, 1 --> 1: 0.9
+        1, 0 --> 0: 0.9
+        1, 1 --> 1: 0.3
+
+        Theoretically it shouldn't work.
+    """
+    def __init__(self):
+        super(CounterExample1Env, self).__init__()
+        big = 0.8
+        small = 0.1
+
+        self.eplen = 10
+
+        big = big/self.eplen  # reward scale
+        small = small/self.eplen
+
+        self.states = [0, 1]
+        self.actions = [0, 1]
+        self.transitions = {
+            # -1 is an absorbing state
+            (2, 0): 2,
+            (2, 1): 2,
+
+            (0, 0): 2,
+            (0, 1): 1,
+            (1, 0): 0,
+            (1, 1): 1,
+        }
+        self.rewards = {
+            (2, 0): 0,
+            (2, 1): 0,
+            (0, 0): 0,
+            (0, 1): big,
+            (1, 0): big,
+            (1, 1): small
+        }
+        # Qs are actually not correct
+        self.Qs = {
+            (0, 0): 0,
+            (0, 1): 0,
+            (1, 0): 0,
+            (1, 1): 0,
+
+            (2, 0): 0,
+            (2, 1): 0,
+        }
+        # do not specify self.Q
+        self.starting_states = [0]
+
+    def step(self, action):
+        # make this infinite horizon
+        next_state, reward, done, _ = MultiStepEnv.step(self, action)
+        return next_state, reward, False, _ 
+
+def test_CounterExample1Env():
+    action_sequences = {
+        (0, 0, 0, 0, 0, 0): [0, 2, 2, 2, 2, 2, 2],
+        (0, 1, 1, 1, 1, 1): [0, 2, 2, 2, 2, 2, 2],
+        (0, 1, 0, 1, 0, 1): [0, 2, 2, 2, 2, 2, 2],
+        (1, 0, 0, 0, 0, 0): [0, 1, 0, 2, 2, 2, 2],
+        (1, 0, 1, 0, 1, 0): [0, 1, 0, 1, 0, 1, 0],
+        (1, 1, 1, 1, 1, 1): [0, 1, 1, 1, 1, 1, 1],
+        }
+
+
+    for action_sequence in action_sequences:
+        env = CounterExample1Env()
+        states = []
+        rewards = []
+        dones = []
+
+        state = env.reset()
+        states.append(state)
+
+        for action in action_sequence:
+            next_state, reward, done, _ = env.step(action)
+            states.append(next_state)
+            rewards.append(reward)
+            dones.append(done)
+
+        print('Action Sequence: {}'.format(action_sequence))
+        print('Expected State Sequence: {}'.format(action_sequences[action_sequence]))
+        print('Actual State Sequence: {}'.format(action_sequences[action_sequence]))
+        print('Rewards: {}'.format(rewards))
+        print('Dones: {}'.format(dones))
 
 
 
@@ -296,9 +385,9 @@ if __name__ == '__main__':
     #     print(np.where((grid_states==i)))
     # print(np.where((grid_states==-1)))
 
+    # GW3 = GridWorldK(4)
 
-
-    GW3 = GridWorldK(4)
+    test_CounterExample1Env()
 
 
 

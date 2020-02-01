@@ -8,7 +8,7 @@ import pprint
 from gym.wrappers.time_limit import TimeLimit
 
 
-from starter_code.envs import OneStateOneStepKActionEnv, OneHotSquareGridWorldK, OneHotGridWorldK, OneHotChainK
+from starter_code.envs import OneStateOneStepKActionEnv, OneHotSquareGridWorldK, OneHotGridWorldK, OneHotChainK, CounterExample1Env
 
 """
     Minigrid reward range: (0,1)
@@ -215,6 +215,8 @@ class EnvRegistry():
                     5, eplencoeff=eplencoeff, step_reward=step_reward)),
                 'CW6': dict(constructor=lambda eplencoeff, step_reward: OneHotChainK(
                     6, eplencoeff=eplencoeff, step_reward=step_reward)),
+
+                'CE1': dict(constructor=lambda: CounterExample1Env()),  # no reward scaling for now
             }
         }
 

@@ -159,11 +159,48 @@ def clean_1_19_20_minigrid_h():
         ])
 
 
+def clean_1_31_20_gcp_lunarlander():
+    c = Cleaner(exp_subroot='lunarlander')
+    c.clean_gifs([
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red1_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucccv_red1_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_aucccv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucccv_red2_ec0',
+        ])
+
+def clean_1_31_20_gcp_babyai():
+    c = Cleaner(exp_subroot='babyai')
+    c.clean_gifs([
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucccv_red2_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_aucccv_red2_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0',
+        ])
+
+
+
+
 
 if __name__ == '__main__':
     # clean_1_6_20_debug_lunar_lander()
     # clean_1_13_20_debug_lunar_lander_h()
     # clean_1_17_20_cartpole_rewscale()
     # clean_1_18_20_lunarlander()
-    clean_1_19_20_minigrid_h()
+    # clean_1_19_20_minigrid_h()
+
+    # 1/31/20
+    clean_1_31_20_gcp_lunarlander()
+    clean_1_31_20_gcp_babyai()
+
+
 
