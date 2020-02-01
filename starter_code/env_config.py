@@ -217,6 +217,8 @@ class EnvRegistry():
                     6, eplencoeff=eplencoeff, step_reward=step_reward)),
 
                 'CE1': dict(constructor=lambda: CounterExample1Env()),  # no reward scaling for now
+                'CE1-1': dict(constructor=lambda: CounterExample1Env(absorbing_reward=-1)),  # no reward scaling for now
+                'CE1-2': dict(constructor=lambda: CounterExample1Env(absorbing_reward=-1, asymmetric_coeff=2)),  # no reward scaling for now
             }
         }
 

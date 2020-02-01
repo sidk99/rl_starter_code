@@ -276,7 +276,7 @@ class CounterExample1Env(MultiStepEnv):
 
         Theoretically it shouldn't work.
     """
-    def __init__(self):
+    def __init__(self, absorbing_reward=0, asymmetric_coeff=1):
         super(CounterExample1Env, self).__init__()
         big = 0.8
         small = 0.1
@@ -300,8 +300,9 @@ class CounterExample1Env(MultiStepEnv):
             (1, 1): 1,
         }
         self.rewards = {
-            (2, 0): 0,
-            (2, 1): 0,
+            (2, 0): absorbing_reward,
+            # (2, 1): absorbing_reward,
+            (2, 1): asymmetric_coeff*absorbing_reward,  # for asymmetry
             (0, 0): 0,
             (0, 1): big,
             (1, 0): big,
