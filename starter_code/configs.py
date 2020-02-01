@@ -145,6 +145,8 @@ def build_expname(args):
     print(args.env_name)
     if hasattr(args, 'clone') and args.clone:
         args.expname += '_cln'
+    if hasattr(args, 'memoryless') and args.memoryless:
+        args.expname += '_mryls'
     if 'CW' in args.env_name[0]:
         assert len(args.env_name) == 1
         args.expname += '_elc{}_sr{}'.format(args.eplencoeff, args.step_reward)

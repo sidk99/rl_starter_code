@@ -282,9 +282,10 @@ class CounterExample1Env(MultiStepEnv):
         small = 0.1
 
         self.eplen = 10
+        normalizing_coeff = 1.0
 
-        big = big/self.eplen  # reward scale
-        small = small/self.eplen
+        big = big/normalizing_coeff  # reward scale
+        small = small/normalizing_coeff
 
         self.states = [0, 1]
         self.actions = [0, 1]
@@ -320,9 +321,10 @@ class CounterExample1Env(MultiStepEnv):
         self.starting_states = [0]
 
     def step(self, action):
-        # make this infinite horizon
         next_state, reward, done, _ = MultiStepEnv.step(self, action)
-        return next_state, reward, False, _ 
+        # make this infinite horizon
+        return next_state, reward, False, _
+
 
 def test_CounterExample1Env():
     action_sequences = {
