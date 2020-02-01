@@ -39,7 +39,7 @@ class Experiment():
         self.task_progression = task_progression
         self.rl_alg = rl_alg
         self.logger = logger
-        self.device = device
+        self.device = device 
         self.args = args
         self.parallel_collect = True  #if this does not update state_histogram??
         self.logger.printf(self.organism)
@@ -219,7 +219,7 @@ class Experiment():
                     t='{}\t'.format(t),
                     state=env_manager.env.from_onehot(step_data.state),
                     action=step_data.action,
-                    next_state=env_manager.env.from_onehot(step_data.state),
+                    next_state=env_manager.env.from_onehot(step_data.next_state),  # fixed bug!
                     reward='{}\t'.format(step_data.reward),
                     mask=step_data.mask,
                     winner=step_data.winner,
