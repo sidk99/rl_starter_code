@@ -148,7 +148,7 @@ class EnvRegistry():
                 'MiniGrid-Empty-Random-6x6-v0': dict(),
                 'MiniGrid-Empty-6x6-v0': dict(),
                 'MiniGrid-Empty-Random-7x7-v0': dict(),
-                'MiniGrid-Empty-Random-8x8-v0': dict(),
+                'MiniGrid-Empty-Random-8x8-v0': dict(reward_scale=0.75),
                 'MiniGrid-Empty-Random-9x9-v0': dict(),
 
                 'MiniGrid-SimpleCrossingS9N1-v0': dict(),
@@ -219,6 +219,7 @@ class EnvRegistry():
                 'CE1': dict(constructor=lambda: CounterExample1Env()),  # no reward scaling for now
                 'CE1-1': dict(constructor=lambda: CounterExample1Env(absorbing_reward=-1)),  # no reward scaling for now
                 'CE1-2': dict(constructor=lambda: CounterExample1Env(absorbing_reward=-1, asymmetric_coeff=2)),  # no reward scaling for now
+                'CE1-3': dict(constructor=lambda: CounterExample1Env(absorbing_reward=-1, asymmetric_coeff=2, big_reward=0.4)),  # no reward scaling for now
             }
         }
 
