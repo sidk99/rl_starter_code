@@ -130,8 +130,7 @@ class Sampler():
             next_state=next_state,
             reward=reward)
         if render:
-            # e.frame = eu.render(env=env, scale=0.25)
-            e.frame = eu.render(env=env, scale=1)#0.25)
+            e.frame = eu.render(env=env, scale=1)
         return next_state, done, e
 
     def begin_episode(self):
