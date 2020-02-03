@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import pprint
+import shutil
 import ujson
 
 from starter_code.utils import all_same, get_first_key
@@ -68,6 +69,13 @@ class Plotter():
             # now traverse the seeds
             fp_exp_dir = os.path.join(EXP_ROOT, self.exp_subroot, exp_dir)
             for seed_dir in [x for x in os.listdir(fp_exp_dir) if 'seed' in x]:
+                ########
+                # killed seed 3 and 4 for minigrid and babyai
+                ########
+                if 'BAI' in exp_dir or 'MG-E-R' in exp_dir:
+                    if 'seed3' in seed_dir or 'seed4' in seed_dir and 'BAI' in exp_dir:
+                        continue
+
                 fp_seed_dir = os.path.join(fp_exp_dir, seed_dir)
                 seed = seed_dir[len('seed'):seed_dir.find('__')]
                 stats_dict[label][seed] = self.load_stats_for_seed(seed, fp_seed_dir)
@@ -174,6 +182,8 @@ class CurvePlotter(Plotter):
         # ylim
         if ylim:
             plt.ylim(ylim)
+
+        # plt.xscale('log')
 
         # save in exp_subroot
         plt.savefig(os.path.join(EXP_ROOT, self.exp_subroot, '{}.png'.format(
@@ -1042,11 +1052,11 @@ def plot_1_30_20_CW6_gcp_chain():
             p.plot_episode_metrics(fname='Chain_GCP ec 0', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
-    for fname, exp_dir in exp_dirs.items():
-        p.load_plot_all_state_metrics(
-            fname=fname, 
-            exp_dir=exp_dir, 
-            metrics=['mean_payoff', 'mean_bid'])
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
 
     exp_dirs = {
         'Bucket Brigade Clone ec 0.1': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc4_sr0.0_aucbb_red2_ec0.1',
@@ -1067,11 +1077,11 @@ def plot_1_30_20_CW6_gcp_chain():
             p.plot_episode_metrics(fname='Chain_GCP ec 0.1', 
                 stats_dict=stats_dict, mode=mode, metric=metric)
 
-    for fname, exp_dir in exp_dirs.items():
-        p.load_plot_all_state_metrics(
-            fname=fname, 
-            exp_dir=exp_dir, 
-            metrics=['mean_payoff', 'mean_bid'])
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
 
 
 
@@ -1152,6 +1162,702 @@ def plot_1_31_20_CW6_gcp_babyai():
 
 
 
+def plot_1_31_20_CE1_geb():
+    """ 
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/exception1')
+    exp_dirs = {
+        'Bucket Brigade Redundancy 1': 'CE1_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0.0',
+        'Bucket Brigade Redundancy 2': 'CE1_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0.0',
+        'Credit Conserving Vickrey Redundancy 1': 'CE1_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'Credit Conserving Vickrey Redundancy 2': 'CE1_g0.99_plr4e-05_ppo_h16_aucccv_red2_ec0.0',
+        'Vickrey Redundancy 1': 'CE1_g0.99_plr4e-05_ppo_h16_aucv_red1_ec0.0',
+        'Vickrey Redundancy 2': 'CE1_g0.99_plr4e-05_ppo_h16_aucv_red2_ec0.0',
+        'Bucket Brigade Clone': 'CE1_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0.0',
+        'Credit Conserving Vickrey Clone': 'CE1_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'Vickrey Clone': 'CE1_g0.99_plr4e-05_ppo_h16_cln_aucv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Exception1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+def plot_2_1_20_memoryless():
+    """ 
+        CE1-1 is more clear cut than CE1
+
+        What about CE1-2?
+
+        It turns out that this isn't actually memoryless!
+
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='debug_memoryless')
+    exp_dirs = {
+        'CE1 CCV Red 1 gamma 0.99': 'CE1_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1 CCV Red 2 clone gamma 0.99': 'CE1_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'CE1 CCV Red 1 gamma 1': 'CE1_g1.0_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1 CCV Red 2 clone gamma 1': 'CE1_g1.0_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='memoryless_ce1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+    p = MultiAgentCurvePlotter(exp_subroot='debug_memoryless')
+    exp_dirs = {
+        'CE1-1 CCV Red 1 gamma 0.99': 'CE1-1_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1-1 CCV Red 2 clone gamma 0.99': 'CE1-1_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'CE1-1 CCV Red 1 gamma 1': 'CE1-1_g1.0_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1-1 CCV Red 2 clone gamma 1': 'CE1-1_g1.0_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='memoryless_ce1-1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+    p = MultiAgentCurvePlotter(exp_subroot='debug_memoryless')
+    exp_dirs = {
+        'CE1-2 CCV Red 1 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1-2 CCV Red 2 clone gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'CE1-2 CCV Red 1 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'CE1-2 CCV Red 2 clone gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='memoryless_ce1-2', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_memoryless_geb')
+    exp_dirs = {
+        'GEB CE1 CCV Red 1 gamma 0.99': 'CE1_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'GEB CE1 CCV Red 2 clone gamma 0.99': 'CE1_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'GEB CE1 CCV Red 1 gamma 1': 'CE1_g1.0_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'GEB CE1 CCV Red 2 clone gamma 1': 'CE1_g1.0_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='memoryless_ce1_geb', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+    p = MultiAgentCurvePlotter(exp_subroot='server/debug_memoryless_asym_geb')
+    exp_dirs = {
+        'GEB CE1-2 CCV Red 1 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'GEB CE1-2 CCV Red 2 clone gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        'GEB CE1-2 CCV Red 1 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_aucccv_red1_ec0.0',
+        'GEB CE1-2 CCV Red 2 clone gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_cln_aucccv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='memoryless_ce1-2_geb', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+def plot_1_30_20_CW6_gcp_chain_long():
+    """ 
+        horizon length 20
+        step_reward 0
+        
+        bb v ccv 
+        bb-clone v-clone ccv-clone
+
+
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/chain_gcp_long')
+    exp_dirs = {
+
+            'G099_Bucket_Brigade_Red1': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucbb_red1_ec0.0',
+            'G099_Bucket_Brigade_Red2': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucbb_red2_ec0.0',
+            'G099_Bucket_Brigade_Red2_clone': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucbb_red2_ec0.0',
+            'G099_CreditConserving_Vickrey_Red1': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucccv_red1_ec0.0',
+            'G099_CreditConserving_Vickrey_Red2': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucccv_red2_ec0.0',
+            'G099_CreditConserving_Vickrey_Red2_clone': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucccv_red2_ec0.0',
+            # 'G099_Vickrey_Red1': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucv_red1_ec0.0',
+            # 'G099_Vickrey_Red2': 'CW6_g0.99_plr4e-05_ppo_h16_elc20_sr0.0_aucv_red2_ec0.0',
+            # 'G099_Vickrey_Red2_clone': 'CW6_g0.99_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP_long_gamma099', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+    exp_dirs = {
+
+            'G1_Bucket_Brigade_Red1': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucbb_red1_ec0.0',
+            'G1_Bucket_Brigade_Red2': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucbb_red2_ec0.0',
+            'G1_Bucket_Brigade_Red2_clone': 'CW6_g1.0_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucbb_red2_ec0.0',
+            'G1_CreditConserving_Vickrey_Red1': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucccv_red1_ec0.0',
+            'G1_CreditConserving_Vickrey_Red2': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucccv_red2_ec0.0',
+            'G1_CreditConserving_Vickrey_Red2_clone': 'CW6_g1.0_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucccv_red2_ec0.0',
+            # 'G1_Vickrey_Red1': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucv_red1_ec0.0',
+            # 'G1_Vickrey_Red2': 'CW6_g1.0_plr4e-05_ppo_h16_elc20_sr0.0_aucv_red2_ec0.0',
+            # 'G1_Vickrey_Red2_clone': 'CW6_g1.0_plr4e-05_ppo_h16_cln_elc20_sr0.0_aucv_red2_ec0.0',
+
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP_long_gamma1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+# now plot minigrid-empty
+
+
+
+def plot_2_1_20_gcp_mg_empty():
+    """ 
+        mg_empty
+
+    """
+    p = CurvePlotter(exp_subroot='server/mg_empty')
+    exp_dirs = {
+
+            'BucketBrigade_Red_1': 'MG-E-R-55-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
+            'BucketBrigade_Clone': 'MG-E-R-55-0_g0.99_plr4e-05_ppo_h16_cln_aucbb_red2_ec0',
+
+            'CCVickrey_Red_1': 'MG-E-R-55-0_g0.99_plr4e-05_ppo_h16_aucccv_red1_ec0',
+            'CCVickrey_Clone': 'MG-E-R-55-0_g0.99_plr4e-05_ppo_h16_cln_aucccv_red2_ec0',
+
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='MG_EmptyR5x5_GCP', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+def plot_2_1_20_actual_memoryless():
+    """ 
+        This ACTUALLY is memoryless
+
+
+    """
+    # p = MultiAgentCurvePlotter(exp_subroot='debug_actual_memoryless')
+    # exp_dirs = {
+    #     'CE1-2 CCV Red 2 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.0',
+    #     'CE1-2 CCV Red 1 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.0',
+    #     'CE1-2 CCV Red 2 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.0',
+    #     'CE1-2 CCV Red 1 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.0',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='actual_memoryless_ce1-2', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+    # p = MultiAgentCurvePlotter(exp_subroot='debug_actual_memoryless_entropy')
+    # exp_dirs = {
+    #     'EC1 CE1-2 CCV Red 2 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec1.0',
+    #     'EC1 CE1-2 CCV Red 1 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec1.0',
+    #     'EC1 CE1-2 CCV Red 2 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec1.0',
+    #     'EC1 CE1-2 CCV Red 1 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_mryls_aucccv_red1_ec1.0',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='actual_memoryless_ce1-2_ec1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+
+    # exp_dirs = {
+    #     'EC0-1 CE1-2 CCV Red 2 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.1',
+    #     'EC0-1 CE1-2 CCV Red 1 gamma 0.99': 'CE1-2_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.1',
+    #     'EC0-1 CE1-2 CCV Red 2 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.1',
+    #     'EC0-1 CE1-2 CCV Red 1 gamma 1': 'CE1-2_g1.0_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.1',
+    #     }
+
+    # stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    # for mode in ['train', 'test']:
+    #     for metric in ['mean_return', 'min_return', 'max_return']:
+    #         p.plot_episode_metrics(fname='actual_memoryless_ce1-2_ec0-1', 
+    #             stats_dict=stats_dict, mode=mode, metric=metric)
+
+    # for fname, exp_dir in exp_dirs.items():
+    #     p.load_plot_all_state_metrics(
+    #         fname=fname, 
+    #         exp_dir=exp_dir, 
+    #         metrics=['mean_payoff', 'mean_bid'])
+
+    p = MultiAgentCurvePlotter(exp_subroot='debug_actual_memoryless_entropy_tighter')
+    exp_dirs = {
+        'CCV Red 2 clone gamma 099': 'CE1-3_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.0',
+        'CCV Red 1 gamma 099': 'CE1-3_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.0',
+        'CCV Red 2 clone gamma 1': 'CE1-3_g1.0_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0.0',
+        'CCV Red 1 gamma 1': 'CE1-3_g1.0_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0.0',
+
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='actual_memoryless_ce1-3', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+
+
+
+
+def plot_2_1_20_CW6_gcp_chain_memoryless():
+    """ 
+        horizon length 4
+        step_reward 0
+        
+        bb v ccv 
+        bb-clone v-clone ccv-clone
+
+        memoryless
+
+
+    """
+    p = MultiAgentCurvePlotter(exp_subroot='server/chain_gcp_memoryless')
+    exp_dirs = {
+        'Bucket_Brigade_Red_1_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucbb_red1_ec0.0',
+        'Bucket_Brigade_Red_2_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucbb_red2_ec0.0',
+        'Bucket_Brigade_Red_2_clone_g099': 'CW6_g0.99_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucbb_red2_ec0.0',
+
+        'Credit_Conserving_Vickrey_Red_1_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucccv_red1_ec0.0',
+        'Credit_Conserving_Vickrey_Red_2_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucccv_red2_ec0.0',
+        'Credit_Conserving_Vickrey_Red_2_clone_g099': 'CW6_g0.99_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucccv_red2_ec0.0',
+
+        'Vickrey_Red_1_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucv_red1_ec0.0',
+        'Vickrey_Red_2_g099': 'CW6_g0.99_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucv_red2_ec0.0',
+        'Vickrey_Red_2_clone_g099': 'CW6_g0.99_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP_memoryless_g099', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+    exp_dirs = {
+        'Bucket_Brigade_Red_1_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucbb_red1_ec0.0',
+        'Bucket_Brigade_Red_2_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucbb_red2_ec0.0',
+        'Bucket_Brigade_Red_2_clone_g1': 'CW6_g1.0_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucbb_red2_ec0.0',
+
+        'Credit_Conserving_Vickrey_Red_1_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucccv_red1_ec0.0',
+        'Credit_Conserving_Vickrey_Red_2_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucccv_red2_ec0.0',
+        'Credit_Conserving_Vickrey_Red_2_clone_g1': 'CW6_g1.0_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucccv_red2_ec0.0',
+
+        'Vickrey_Red_1_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucv_red1_ec0.0',
+        'Vickrey_Red_2_g1': 'CW6_g1.0_plr4e-05_ppo_h16_mryls_elc4_sr0.0_aucv_red2_ec0.0',
+        'Vickrey_Red_2_clone_g1': 'CW6_g1.0_plr4e-05_ppo_h16_cln_mryls_elc4_sr0.0_aucv_red2_ec0.0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='Chain_GCP_memoryless_g1', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    for fname, exp_dir in exp_dirs.items():
+        p.load_plot_all_state_metrics(
+            fname=fname, 
+            exp_dir=exp_dir, 
+            metrics=['mean_payoff', 'mean_bid'])
+
+
+# plot lunar lander memoryless
+def plot_1_31_20_CW6_gcp_lunarlander_memoryless():
+    """ 
+        lunar lander: memoryless
+
+
+    """
+    p = CurvePlotter(exp_subroot='server/lunarlander')
+    exp_dirs = {
+            'BucketBrigade_Memoryless_Clone': 'LL-2_g0.99_plr4e-05_ppo_h32_cln_mryls_aucbb_red2_ec0',
+            'CreditConservingVickrey_Memoryless_Clone': 'LL-2_g0.99_plr4e-05_ppo_h32_cln_mryls_aucccv_red2_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='LunarLander_Memoryless', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+# plot babyai memoryless
+def plot_2_2_20_gcp_babyai():
+    """ 
+        babyai
+
+    """
+    p = CurvePlotter(exp_subroot='server/babyai_memoryless')
+    exp_dirs = {
+        'CCV_Clone': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'CCV_Red1': 'BAI-PK-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='BabyAI_PickupKey_GCP_memoryless', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+    exp_dirs = {
+        'CCV_Clone': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'CCV_Red1': 'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='BabyAI_OpenDoorDebug_GCP_memoryless', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+# plot minigrid memoryless
+def plot_2_2_20_gcp_mg88_memoryless():
+    """ 
+        mg88memoryless
+
+    """
+    p = CurvePlotter(exp_subroot='server/mg_empty8x8_memoryless')
+    exp_dirs = {
+        'CCV_Clone': 'MG-E-R-88-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'CCV_Red1':  'MG-E-R-88-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        }
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='MinigridRandomEmpty8x8_GCP_memoryless', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+
+
+def plot_2_3_20_gcp_mg88_memoryless_sweep():
+    """ 
+        mg88memoryless
+
+        Note that for each run, there are different vlrs that I have not shown.
+
+    """
+    # unorganized_exp_subroot = 'server/mg_empty8x8_memoryless_sweep'
+    # unorganized_exp_dirs = {
+    #     'plr1e-05': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0',
+    #     'plr1e-05_Memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     'plr1e-06': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_aucccv_red2_ec0',
+    #     'plr1e-06_Memoryless': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     'plr2e-05': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_aucccv_red2_ec0',
+    #     'plr2e-05_Memoryless': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     'plr3e-06': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0',
+    #     'plr3e-06_Memoryless': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     'plr5e-06': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0',
+    #     'plr5e-06_Memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     'pl8e-06': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0',
+    #     'pl8e-06_Memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0',
+    #     }
+
+    # reorganize_folders(exp_subroot=unorganized_exp_subroot, exp_dirs=unorganized_exp_dirs.values())
+    # assert False
+
+    p = CurvePlotter(exp_subroot='server/mg_empty8x8_memoryless_sweep_reorg')
+
+    # filter_pass 1: kill the bad max_return
+    # exp_dirs = {
+    #     # 'plr1e-05_vlr_0.001': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.001', # maxreturn bad
+    #     'plr1e-05_vlr_0.005': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     # 'plr1e-05_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # maxreturn bad
+    #     'plr1e-05_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',
+    #     'plr1e-05_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',
+    #     'plr1e-05_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+
+    #     # 'plr1e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # all bad
+    #     # 'plr1e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # all bad
+    #     # 'plr1e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # all bad
+    #     # 'plr1e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',  # all bad
+    #     # 'plr1e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # all bad
+    #     # 'plr1e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr1e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',  # all bad
+
+    #     # 'plr2e-05_vlr_0.001': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # too wild
+    #     # 'plr2e-05_vlr_0.005': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # too wild
+    #     # 'plr2e-05_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # too wild
+    #     # 'plr2e-05_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',  # too wild
+    #     # 'plr2e-05_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # too wild
+    #     # 'plr2e-05_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr2e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',  # too wild
+
+    #     'plr3e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     'plr3e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     'plr3e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',
+    #     # 'plr3e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',  # max_return crashed
+    #     # 'plr3e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # max_return crashed
+    #     # 'plr3e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',  # max_return crashed
+
+    #     'plr5e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     'plr5e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     'plr5e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',
+    #     'plr5e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',
+    #     'plr5e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',
+    #     'plr5e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+
+    #     'plr8e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     'plr8e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     # 'plr8e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # died
+    #     'plr8e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',
+    #     'plr8e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',
+    #     'plr8e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+    #     }
+
+    # filter_pass 2: kill the bad mean_return
+    # exp_dirs = {
+    #     # # plr1e-05
+    #     'plr1e-05_vlr_0.005': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     # 'plr1e-05_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',  # meanreturn_unstable
+    #     'plr1e-05_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',
+    #     'plr1e-05_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+
+    #      # plr1e-06
+
+    #      # plr2e-05
+
+    #     #  # plr3e-06
+    #     'plr3e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     'plr3e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     'plr3e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',
+
+    #     # # plr5e-06
+    #     'plr5e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     # 'plr5e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # meanreturn_unstable
+    #     'plr5e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',
+    #     'plr5e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',
+    #     # 'plr5e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # meanreturn_unstable
+    #     'plr5e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+
+    #     # # plr8e-06
+    #     'plr8e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',
+    #     'plr8e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',
+    #     # 'plr8e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',  # meanreturn_unstable
+    #     # 'plr8e-06_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # meanreturn_unstable
+    #     'plr8e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+    #     }
+
+    # filter_pass 3: select the best min_return
+    exp_dirs = {
+        # # plr1e-05
+        # 'plr1e-05_vlr_0.005': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # min_return unstable
+        # 'plr1e-05_vlr_0.005_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.005',  # min_return unstable
+        # 'plr1e-05_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr1e-05_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',  # min_return unstable
+
+         # plr1e-06
+
+         # plr2e-05
+
+        #  # plr3e-06
+        # 'plr3e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # min_return slower to converge
+        # 'plr3e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # min_return slower to converge
+        # 'plr3e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr3e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # min_return slower to converge
+
+        # # # plr5e-06
+        # 'plr5e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # min_return has potential
+        # 'plr5e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # min_return has potential
+        # # 'plr5e-06_vlr_0.001_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr0.001',
+        # # 'plr5e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+
+        # # # plr8e-06
+        # 'plr8e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # best_min_return I've seen
+        # 'plr8e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # best_min_return I've seen  # more stable  # best
+        # # 'plr8e-06_vlr_4e-05_memoryless': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_mryls_aucccv_red2_ec0_vlr4e-05',
+        }
+
+    # filter_pass 4: these are the best
+    # exp_dirs = {
+    #     # plr1e-05
+
+    #     # plr1e-06
+
+    #     # plr2e-05
+
+    #     # plr3e-06
+
+    #     # plr5e-06
+    #     'plr5e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # min_return has potential
+    #     'plr5e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # min_return has potential
+
+    #     # plr8e-06
+    #     'plr8e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # best_min_return I've seen
+    #     'plr8e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # best_min_return I've seen  # more stable  # best
+    #     }
+
+
+    # new runs
+    exp_dirs = {
+        # plr5e-06
+        'plr5e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # min_return has potential
+        'plr5e-06_vlr_4e-05': 'MG-E-R-88-0_g0.99_plr5e-06_ppo_h16_cln_aucccv_red2_ec0_vlr4e-05',  # min_return has potential
+
+        # plr6e-06
+        'plr6e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.001_ppo_h16_cln_aucccv_red2_ec0',
+        'plr6e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.001_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr6e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.003_ppo_h16_cln_aucccv_red2_ec0',
+        'plr6e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.003_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr6e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.005_ppo_h16_cln_aucccv_red2_ec0',
+        'plr6e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr6e-06_vlr0.005_ppo_h16_cln_mryls_aucccv_red2_ec0',
+
+
+
+        # plr7e-06
+
+        'plr7e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.001_ppo_h16_cln_aucccv_red2_ec0',
+        'plr7e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.001_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr7e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.003_ppo_h16_cln_aucccv_red2_ec0',
+        'plr7e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.003_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr7e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.005_ppo_h16_cln_aucccv_red2_ec0',
+        'plr7e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr7e-06_vlr0.005_ppo_h16_cln_mryls_aucccv_red2_ec0',
+
+
+        # plr8e-06
+        'plr8e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.001',  # best_min_return I've seen
+        'plr8e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr8e-06_ppo_h16_cln_aucccv_red2_ec0_vlr0.005',  # best_min_return I've seen  # more stable  # best
+
+        # plr9e-06
+
+        'plr9e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.001_ppo_h16_cln_aucccv_red2_ec0',
+        'plr9e-06_vlr_0.001': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.001_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr9e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.003_ppo_h16_cln_aucccv_red2_ec0',
+        'plr9e-06_vlr_0.003': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.003_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'plr9e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.005_ppo_h16_cln_aucccv_red2_ec0',
+        'plr9e-06_vlr_0.005': 'MG-E-R-88-0_g0.99_plr9e-06_vlr0.005_ppo_h16_cln_mryls_aucccv_red2_ec0',
+
+
+        }
+
+
+    stats_dict = p.load_all_stats(exp_dirs=exp_dirs)
+    for mode in ['train', 'test']:
+        for metric in ['mean_return', 'min_return', 'max_return']:
+            p.plot_episode_metrics(fname='MinigridRandomEmpty8x8_GCP_memoryless_sweep', 
+                stats_dict=stats_dict, mode=mode, metric=metric)
+
+# I should write some code to re-organize the folders
+def reorganize_folders(exp_subroot, exp_dirs):
+    """
+    """
+    exp_subroot = os.path.join(EXP_ROOT, exp_subroot)
+    new_subroot = '{}_reorg'.format(exp_subroot)
+    mkdirp(new_subroot)
+    for exp_dir in exp_dirs:
+        fp_exp_dir = os.path.join(exp_subroot, exp_dir)
+        for seed_dir in [x for x in os.listdir(fp_exp_dir) if 'seed' in x]:
+            fp_seed_dir = os.path.join(fp_exp_dir, seed_dir)
+            # read json
+            exp_dir_params = ujson.load(open(os.path.join(fp_seed_dir, 'code', 'params.json'), 'r'))
+            # get the vlr value
+            vlr = exp_dir_params['vlr']
+            # get new exp_name
+            new_exp_dir = exp_dir + '_vlr{}'.format(vlr)
+            # make the new directory
+            fp_new_exp_dir = os.path.join(new_subroot, new_exp_dir)
+            mkdirp(fp_new_exp_dir)
+            # copy subtree into new directory
+            fp_new_seed_dir = os.path.join(fp_new_exp_dir, seed_dir)
+            print('Copying {} to {}'.format(fp_seed_dir, fp_new_seed_dir))
+            shutil.copytree(fp_seed_dir, fp_new_seed_dir)
+
+
+
+
+
+
 
 
 
@@ -1185,7 +1891,7 @@ if __name__ == '__main__':
     # plot_1_19_20_debug_minigrid_geb_h()
 
     # 1/27/20
-    plot_1_27_20_bandit_ado()
+    # plot_1_27_20_bandit_ado()
     # plot_1_27_20_debug_atari_breakout()
 
     # 1/28/20
@@ -1200,3 +1906,25 @@ if __name__ == '__main__':
     # 1/31/20
     # plot_1_31_20_CW6_gcp_lunarlander()
     # plot_1_31_20_CW6_gcp_babyai()
+
+    # plot_1_31_20_CE1_geb()
+    plot_2_1_20_memoryless()  # <--
+    # plot_1_30_20_CW6_gcp_chain_long()
+    # plot_2_1_20_gcp_mg_empty()
+
+    # thsi is for what is ACTUALLY memoryless
+    # plot_2_1_20_actual_memoryless()
+    plot_2_1_20_CW6_gcp_chain_memoryless()  # <--
+
+    # plot lunar lander memoryless
+    # plot_1_31_20_CW6_gcp_lunarlander_memoryless()
+
+    # plot babyai memoryless
+    # plot_2_2_20_gcp_babyai()
+
+    # plot minigrid memoryless
+    # plot_2_2_20_gcp_mg88_memoryless()
+
+
+    plot_2_3_20_gcp_mg88_memoryless_sweep()
+

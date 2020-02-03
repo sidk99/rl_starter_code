@@ -160,7 +160,7 @@ def clean_1_19_20_minigrid_h():
 
 
 def clean_1_31_20_gcp_lunarlander():
-    c = Cleaner(exp_subroot='lunarlander')
+    c = Cleaner(exp_subroot='server/lunarlander')
     c.clean_gifs([
         'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red1_ec0',
         'LL-2_g0.99_plr4e-05_ppo_h32_aucbb_red2_ec0',
@@ -168,10 +168,12 @@ def clean_1_31_20_gcp_lunarlander():
         'LL-2_g0.99_plr4e-05_ppo_h32_aucccv_red2_ec0',
         'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucbb_red2_ec0',
         'LL-2_g0.99_plr4e-05_ppo_h32_cln_aucccv_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_cln_mryls_aucbb_red2_ec0',
+        'LL-2_g0.99_plr4e-05_ppo_h32_cln_mryls_aucccv_red2_ec0',
         ])
 
 def clean_1_31_20_gcp_babyai():
-    c = Cleaner(exp_subroot='babyai')
+    c = Cleaner(exp_subroot='server/babyai')
     c.clean_gifs([
         'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red1_ec0',
         'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_aucbb_red2_ec0',
@@ -188,6 +190,20 @@ def clean_1_31_20_gcp_babyai():
         ])
 
 
+    c = Cleaner(exp_subroot='server/babyai_memoryless')
+    c.clean_gifs([
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'BAI-ODD-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'BAI-PK-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        ])
+
+def clean_2_2_20_mg_empty8x8_memoryless():
+    c = Cleaner(exp_subroot='server/mg_empty8x8_memoryless')
+    c.clean_gifs([
+        'MG-E-R-88-0_g0.99_plr4e-05_ppo_h16_cln_mryls_aucccv_red2_ec0',
+        'MG-E-R-88-0_g0.99_plr4e-05_ppo_h16_mryls_aucccv_red1_ec0',
+        ])
 
 
 
@@ -201,6 +217,7 @@ if __name__ == '__main__':
     # 1/31/20
     clean_1_31_20_gcp_lunarlander()
     clean_1_31_20_gcp_babyai()
+    clean_2_2_20_mg_empty8x8_memoryless()
 
 
 
