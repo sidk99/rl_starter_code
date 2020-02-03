@@ -140,6 +140,7 @@ def build_expname(args):
     args.expname = simplify_name(args.env_name)
     args.expname += '_g{}'.format(args.gamma)
     args.expname += '_plr{}'.format(args.plr)
+    args.expname += '_vlr{}'.format(args.vlr)
     args.expname += '_{}'.format(args.alg_name)
     args.expname += '_h{}'.format(args.hdim).replace('[','').replace(']','').replace(', ','-')
     print(args.env_name)
